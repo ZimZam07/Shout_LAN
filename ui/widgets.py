@@ -224,8 +224,9 @@ class LineChart(QWidget):
 
 class TopologyView(QWidget):
     """
-    Draws THIS node in the centre and the nodes it has ACTUALLY heard around it.
-    Nothing is drawn for nodes that were never heard.
+    Draws THIS node, the nodes it has ACTUALLY heard, and nodes reached via a relay.
+    Nothing is drawn for nodes that were never heard (except relays named in a route,
+    which are marked "not heard yet").
     """
 
     def __init__(self):
@@ -236,44 +237,70 @@ class TopologyView(QWidget):
         self.setMinimumHeight(220)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-    def set_data(self, me, nodes, simulated):
+    def set_data(self, me, nodes, simulated, routes=None):
         self.me, self.nodes, self.simulated = me, nodes, simulated
+        self.routes = routes or {}
         self.update()
 
     def paintEvent(self, _):
+        """
+        Left-to-right picture: this laptop -> the neighbours it has really heard
+        -> nodes reached through a relay (routing table, dashed orange).
+        """
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
-        c = QPointF(self.width() / 2, self.height() / 2)
         if self.me is None:
             p.setPen(QColor(style.MUTED))
             p.drawText(self.rect(), Qt.AlignCenter, "Engine not connected")
             return
-        radius = min(self.width(), self.height()) / 2 - 56
+        routes = getattr(self, "routes", {}) or {}
         others = sorted(self.nodes.items())
+        relays = sorted({v for v in routes.values() if v not in self.nodes})
+        column2 = [nid for nid, _ in others] + relays          # direct neighbours (+ unheard relays)
+        w, h = self.width(), self.height()
+        x_me, x_mid, x_far = w * 0.15, w * 0.5, w * 0.85
+
+        def ys(n):
+            return [h * (i + 1) / (n + 1) for i in range(n)]
+
+        me = QPointF(x_me, h / 2)
+        mid_pos = {nid: QPointF(x_mid, y) for nid, y in zip(column2, ys(len(column2)))}
+        far_pos = {dst: QPointF(x_far, y) for (dst, _), y in zip(sorted(routes.items()),
+                                                                  ys(len(routes)))}
         now = time.time()
-        for i, (nid, info) in enumerate(others):
-            ang = -math.pi / 2 + 2 * math.pi * i / max(1, len(others))
-            pt = QPointF(c.x() + radius * math.cos(ang), c.y() + radius * math.sin(ang))
-            age = now - info.get("last_heard", now)
-            fresh = age < 120
-            pen = QPen(QColor(style.ACCENT if fresh else style.BORDER), 2,
-                       Qt.SolidLine if not self.simulated else Qt.DashLine)
-            p.setPen(pen)
-            p.drawLine(c, pt)
-            self._node(p, pt, str(nid), style.SURFACE, style.ACCENT if fresh else style.MUTED)
-            # label on the far side of the node, so the connecting line never crosses it
-            lp = QPointF(pt.x() + 38 * math.cos(ang), pt.y() + 38 * math.sin(ang))
-            p.setPen(QColor(style.MUTED))
-            p.setFont(QFont("Segoe UI", 8))
-            p.drawText(QRectF(lp.x() - 60, lp.y() - 8, 120, 16), Qt.AlignCenter,
-                       f"node {nid} · heard {age:.0f} s ago")
-        self._node(p, c, str(self.me), style.ACCENT, "white", big=True)
-        p.setPen(QColor(style.MUTED))
         p.setFont(QFont("Segoe UI", 8))
-        p.drawText(QRectF(c.x() - 60, c.y() + 28, 120, 16), Qt.AlignCenter, "this laptop")
-        if not others:
-            p.drawText(QRectF(0, self.height() - 22, self.width(), 18), Qt.AlignCenter,
+        for nid, pt in mid_pos.items():
+            info = self.nodes.get(nid)
+            fresh = info is not None and now - info.get("last_heard", 0) < 120
+            p.setPen(QPen(QColor(style.ACCENT if fresh else style.BORDER), 2,
+                          Qt.DashLine if self.simulated or info is None else Qt.SolidLine))
+            p.drawLine(me, pt)
+        for dst, pt in far_pos.items():
+            via = routes[dst]
+            p.setPen(QPen(QColor(style.WARN), 2, Qt.DashLine))
+            p.drawLine(mid_pos.get(via, me), pt)
+        for nid, pt in mid_pos.items():
+            info = self.nodes.get(nid)
+            fresh = info is not None and now - info.get("last_heard", 0) < 120
+            self._node(p, pt, str(nid), style.SURFACE, style.ACCENT if fresh else style.MUTED)
+            label = (f"heard {now - info['last_heard']:.0f} s ago" if info else "not heard yet")
+            p.setPen(QColor(style.MUTED))
+            p.drawText(QRectF(pt.x() - 70, pt.y() + 20, 140, 16), Qt.AlignCenter, label)
+        for dst, pt in far_pos.items():
+            self._node(p, pt, str(dst), style.SURFACE, style.WARN)
+            p.setPen(QColor(style.MUTED))
+            p.drawText(QRectF(pt.x() - 70, pt.y() + 20, 140, 16), Qt.AlignCenter,
+                       f"via node {routes[dst]}")
+        self._node(p, me, str(self.me), style.ACCENT, "white", big=True)
+        p.setPen(QColor(style.MUTED))
+        p.drawText(QRectF(me.x() - 60, me.y() + 26, 120, 16), Qt.AlignCenter, "this laptop")
+        if not others and not routes:
+            p.drawText(QRectF(0, h - 22, w, 18), Qt.AlignCenter,
                        "No other node heard yet - press Discover")
+        elif routes:
+            p.drawText(QRectF(0, 4, w, 16), Qt.AlignCenter,
+                       "blue = heard directly" + (" (dashed: SIMULATED)" if self.simulated else "")
+                       + "        orange = reached through a relay")
 
     @staticmethod
     def _node(p, pt, text, fill, fg, big=False):

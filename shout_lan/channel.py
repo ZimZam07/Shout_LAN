@@ -165,7 +165,7 @@ class SimulatedAir:
     collision behaviour is studied in aloha_sim.py instead).
     """
 
-    def __init__(self, noise=0.002, gain=0.3, loss=0.0, time_scale=1.0, seed=None):
+    def __init__(self, noise=0.002, gain=0.3, loss=0.0, time_scale=1.0, seed=None, hears=None):
         self.noise = noise
         self.gain = gain
         self.loss = loss                    # probability that a transmission is lost completely
@@ -174,6 +174,8 @@ class SimulatedAir:
         self.lock = threading.Lock()
         self.rng = random.Random(seed)
         self.busy_until = 0.0               # for carrier sensing in the simulation
+        # optional range model for multi-hop tests: {node_name: [names it can hear]}
+        self.hears = hears
 
     def attach(self, channel):
         with self.lock:
@@ -192,7 +194,8 @@ class SimulatedAir:
     def broadcast(self, sender, samples):
         lost = self.rng.random() < self.loss
         with self.lock:
-            receivers = [n for n in self.nodes if n is not sender]
+            receivers = [n for n in self.nodes if n is not sender and
+                         (self.hears is None or sender.name in self.hears.get(n.name, []))]
         if not lost:
             for node in receivers:
                 node._hear(np.asarray(samples, dtype=np.float32) * self.gain)
@@ -203,8 +206,9 @@ class SimulatedChannel:
     kind = "simulated"
     label = "SIMULATED channel (software, not sound)"
 
-    def __init__(self, air):
+    def __init__(self, air, name=None):
         self.air = air
+        self.name = name                    # used only by the optional range model
         self.lock = threading.Lock()
         self.pending = []                   # samples waiting to be read by this node
         self.np_rng = np.random.default_rng()
@@ -265,9 +269,11 @@ class UdpSimulatedChannel:
     MAX_NODES = 20
     CHUNK = 16000                # samples per datagram (int16 -> 32 kB)
 
-    def __init__(self, node_id, gain=0.3, noise=0.002, loss=0.0):
+    def __init__(self, node_id, gain=0.3, noise=0.002, loss=0.0, neighbours=None):
         import socket
         self.node_id = node_id
+        # nodes this one can reach (SIMULATED range, for multi-hop demos); None = everyone
+        self.neighbours = set(neighbours) if neighbours else None
         self.gain = gain
         self.noise = noise
         self.loss = loss
@@ -336,7 +342,7 @@ class UdpSimulatedChannel:
         chunks = [pcm[i:i + self.CHUNK] for i in range(0, len(pcm), self.CHUNK)]
         duration = len(samples) / config.SAMPLE_RATE
         for n in range(1, self.MAX_NODES + 1):       # tell the others the channel is now busy
-            if n != self.node_id:
+            if n != self.node_id and (self.neighbours is None or n in self.neighbours):
                 try:
                     self.sock.sendto(struct.pack("!BHHH", self.node_id, self.tx_id, 0xFFFF,
                                                  min(65535, int(duration * 1000))),
@@ -346,7 +352,7 @@ class UdpSimulatedChannel:
         time.sleep(duration)                         # the "air" takes as long as sound would
         if not self.last_lost:
             for n in range(1, self.MAX_NODES + 1):
-                if n == self.node_id:
+                if n == self.node_id or (self.neighbours is not None and n not in self.neighbours):
                     continue
                 for i, chunk in enumerate(chunks):
                     header = struct.pack("!BHHH", self.node_id, self.tx_id, i, len(chunks))

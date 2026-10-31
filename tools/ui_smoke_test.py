@@ -201,6 +201,56 @@ def main():
         [b for b in perf.arq_group.buttons() if b.property("key") == "sw"][0].click()
         pump(app, 2)
 
+        # ---- M7: relay A -> B -> C. Node 3 can only hear node 2 (SIMULATED range).
+        third = subprocess.Popen([sys.executable, "-u", os.path.join(ROOT, "run_engine.py"),
+                                  "--node", "3", "--simulated", "--port", "5203", "--hears", "2"],
+                                 cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        try:
+            import socket as _socket
+            from shout_lan.linebuffer import LineBuffer
+            time.sleep(2.5)
+            watch = _socket.create_connection(("127.0.0.1", 5203), timeout=5)
+            watch.settimeout(0.05)
+            wbuf, wev = LineBuffer(), []
+            w.nav.button(0).click()
+            ov = w.pages[0]
+            ov.route_dst.setValue(3)
+            ov.route_via.setValue(2)
+            ov.route_add.click()
+            check("route 3 via 2 shown in the routing table",
+                  pump(app, 5, lambda: w.status and w.status["routes"].get("3") == 2
+                       and ov.routes.rowCount() == 1))
+            pump(app, 0.5)
+            w.grab().save(os.path.join(SHOTS, "9_overview_routes.png"))
+            w.nav.button(2).click()
+            msgs.dst.setValue(3)
+            msgs.input.setText("HELLO COMPUTER C VIA B")
+            msgs.send_btn.click()
+
+            def node3_got_it():
+                try:
+                    data = watch.recv(65536)
+                    if data:
+                        wev.extend(wbuf.feed(data))
+                except OSError:
+                    pass
+                return any(e.get("event") == "message_rx" and e.get("origin") == 1 and
+                           e.get("hops") == 2 for e in wev)
+            check("node 3 (out of range) receives the message relayed by node 2 (2 hops)",
+                  pump(app, 180, node3_got_it))
+            check("sender shows the honest relay status",
+                  pump(app, 30, lambda: any(i.get("via") == 2 and i.get("status") == "delivered"
+                                            for i in msgs.items)))
+            pump(app, 1)
+            w.grab().save(os.path.join(SHOTS, "10_messages_relay.png"))
+            ov.route_del.click()
+            pump(app, 2)
+            msgs.dst.setValue(2)
+            watch.close()
+        finally:
+            third.terminate()
+            third.wait(timeout=10)
+
         # ---- every remaining control does something real (DoD A4)
         w.nav.button(1).click()
         page.volume.setValue(30)
@@ -221,7 +271,7 @@ def main():
         w.nav.button(2).click()
         msgs.ping_btn.click()
         check("Ping button runs an acoustic-style ping (summary event)",
-              pump(app, 40, lambda: "Ping statistics" in msgs.progress_label.text()))
+              pump(app, 90, lambda: "Ping statistics" in msgs.progress_label.text()))
         w.nav.button(3).click()
         w.pages[3].dropack_btn.click()
         check("Drop next ACK button arms the injection",

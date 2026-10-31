@@ -63,14 +63,16 @@ class StopAndWaitSender:
     def __init__(self, engine):
         self.engine = engine
 
-    def send(self, msg_id, dst, pieces, base_flags=0, final=None, ftype=fr.DATA):
+    def send(self, msg_id, dst, pieces, base_flags=0, final=None, ftype=fr.DATA,
+             origin=None, ttl=fr.DEFAULT_TTL):
         """Send all fragments of one message. Returns True only if every fragment was ACKed."""
         e = self.engine
         for index, (payload, flags) in enumerate(pieces):
             seq = e.next_seq()
             frame = fr.Frame(ftype, src=e.node_id, dst=dst, seq=seq, payload=payload,
-                             flags=flags | base_flags, origin=e.node_id,
-                             final=final if final is not None else dst)
+                             flags=flags | base_flags,
+                             origin=origin if origin is not None else e.node_id,
+                             final=final if final is not None else dst, ttl=ttl)
             if not self._send_one(msg_id, frame, index, len(pieces)):
                 return False
         return True
@@ -159,12 +161,15 @@ class SelectiveRepeatSender:
     def __init__(self, engine):
         self.engine = engine
 
-    def send(self, msg_id, dst, pieces, base_flags=0, final=None):
+    def send(self, msg_id, dst, pieces, base_flags=0, final=None, origin=None,
+             ttl=fr.DEFAULT_TTL):
         e = self.engine
         n = len(pieces)
         frames = [fr.Frame(fr.SRDATA, src=e.node_id, dst=dst, seq=e.next_seq(), payload=p,
-                           flags=f | base_flags, origin=e.node_id,
-                           final=final if final is not None else dst) for p, f in pieces]
+                           flags=f | base_flags,
+                           origin=origin if origin is not None else e.node_id,
+                           final=final if final is not None else dst, ttl=ttl)
+                  for p, f in pieces]
         acked = [False] * n
         sent_before = [False] * n
         base = 0                         # index of the oldest unacknowledged frame

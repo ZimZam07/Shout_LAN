@@ -11,6 +11,8 @@ Audio arrives in small chunks, so the receiver keeps a buffer and remembers
 where it is in the middle of a frame.
 """
 
+import time
+
 import numpy as np
 
 from shout_lan import frame as fr
@@ -27,6 +29,7 @@ class FrameReceiver:
         self.score = 0.0
         self.total_bytes = None     # known after the header is decoded
         self.gains = None           # per-tone channel gains of the current frame
+        self.detected_at = 0.0
 
     def reset(self):
         self.buffer = np.zeros(0, dtype=np.float32)
@@ -71,6 +74,7 @@ class FrameReceiver:
                 self._drop(len(self.buffer) - keep)
                 return None
             self.first_bit, self.score = found
+            self.detected_at = time.time()            # when this frame's preamble was found
             self.total_bytes = None
             self.gains = m.estimate_gains(self.buffer, self.first_bit)
 
@@ -97,6 +101,7 @@ class FrameReceiver:
         except fr.FrameError as exc:
             return self._finish_bad(str(exc), raw, n_bits)
         result = {"ok": True, "frame": frame, "raw": raw, "score": self.score,
+                  "detected_at": self.detected_at,
                   "confidence": float(np.mean(conf)) if conf else 0.0}
         self._finish(n_bits)
         return result
@@ -108,7 +113,8 @@ class FrameReceiver:
         self._drop(end)
 
     def _finish_bad(self, error, raw, n_bits):
-        result = {"ok": False, "error": error, "raw": raw, "score": self.score}
+        result = {"ok": False, "error": error, "raw": raw, "score": self.score,
+                  "detected_at": self.detected_at}
         # Skip past this preamble only (not the whole guessed length): if the
         # header was garbage, the length is garbage too.
         end_pre = self.first_bit

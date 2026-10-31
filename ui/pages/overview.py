@@ -3,7 +3,7 @@
 import time
 
 from PySide6.QtWidgets import (QGridLayout, QHBoxLayout, QLabel, QListWidget, QPushButton,
-                               QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
+                               QSpinBox, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
                                QHeaderView, QAbstractItemView)
 
 from ui.widgets import Card, Chip, TopologyView, page_header
@@ -48,8 +48,46 @@ class OverviewPage(QWidget):
         self.table.verticalHeader().setVisible(False)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.table.setMinimumHeight(120)
+        self.table.setMinimumHeight(90)
         nodes.add(self.table)
+
+        # --- routing table (network layer)
+        rt_title = QLabel("Routing table (network layer)")
+        rt_title.setObjectName("cardTitle")
+        nodes.add(rt_title)
+        hint = QLabel("To reach a node that is out of hearing range, send through a neighbour "
+                      "(relay). Messages carry origin, final destination and a TTL.")
+        hint.setObjectName("muted")
+        hint.setWordWrap(True)
+        nodes.add(hint)
+        self.routes = QTableWidget(0, 2)
+        self.routes.setHorizontalHeaderLabels(["Destination", "Next hop (relay)"])
+        self.routes.verticalHeader().setVisible(False)
+        self.routes.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.routes.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.routes.setMaximumHeight(110)
+        nodes.add(self.routes)
+        row = QHBoxLayout()
+        row.addWidget(QLabel("Reach node"))
+        self.route_dst = QSpinBox()
+        self.route_dst.setRange(1, 254)
+        self.route_dst.setValue(3)
+        row.addWidget(self.route_dst)
+        row.addWidget(QLabel("via node"))
+        self.route_via = QSpinBox()
+        self.route_via.setRange(1, 254)
+        self.route_via.setValue(2)
+        row.addWidget(self.route_via)
+        self.route_add = QPushButton("Add route")
+        self.route_del = QPushButton("Remove")
+        row.addWidget(self.route_add)
+        row.addWidget(self.route_del)
+        row.addStretch()
+        nodes.add(row)
+        self.route_add.clicked.connect(lambda: self.app.command(
+            {"cmd": "set_route", "dst": self.route_dst.value(), "via": self.route_via.value()}))
+        self.route_del.clicked.connect(lambda: self.app.command(
+            {"cmd": "set_route", "dst": self.route_dst.value(), "via": None}))
         grid.addWidget(nodes, 0, 1)
 
         # --- topology
@@ -76,6 +114,9 @@ class OverviewPage(QWidget):
             self.table.setRowCount(0)
             self.topology.set_data(None, {}, False)
             self.discover_btn.setEnabled(False)
+            self.routes.setRowCount(0)
+            for w in (self.route_add, self.route_del):
+                w.setEnabled(False)
             return
         self.discover_btn.setEnabled(True)
         self.node_label.setText(f"Node {s['node_id']}")
@@ -91,7 +132,14 @@ class OverviewPage(QWidget):
             self.table.setItem(row, 0, QTableWidgetItem(f"Node {nid}"))
             self.table.setItem(row, 1, QTableWidgetItem(f"{now - info['last_heard']:.0f} s ago"))
             self.table.setItem(row, 2, QTableWidgetItem(f"{info['score']:.2f}"))
-        self.topology.set_data(s["node_id"], nodes, sim)
+        routes = {int(k): v for k, v in s.get("routes", {}).items()}
+        self.routes.setRowCount(len(routes))
+        for row, (dst, via) in enumerate(sorted(routes.items())):
+            self.routes.setItem(row, 0, QTableWidgetItem(f"Node {dst}"))
+            self.routes.setItem(row, 1, QTableWidgetItem(f"Node {via}"))
+        for w in (self.route_add, self.route_del):
+            w.setEnabled(True)
+        self.topology.set_data(s["node_id"], nodes, sim, routes)
 
     def on_event(self, e):
         text = e.get("text")

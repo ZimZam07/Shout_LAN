@@ -28,7 +28,11 @@ from shout_lan.receiver import FrameReceiver
 from shout_lan.security import SecurityError
 from shout_lan.stats import Stats
 
-MUTE_AFTER_TX = 0.15       # seconds the acoustic receiver stays deaf after we stop talking
+OWN_ECHO_GUARD = 0.3       # seconds after our own transmission whose band energy CSMA ignores
+# Half-duplex handling: the microphone is NEVER switched off (a reply that starts while
+# our speaker is still finishing must not lose its preamble - found in silent tests).
+# Instead: our own frames are ignored by source address, and a corrupted frame whose
+# preamble was detected while we were transmitting is treated as our own echo.
 
 
 class Engine:
@@ -58,6 +62,7 @@ class Engine:
         self.sr_receivers = {}                  # neighbour id -> SelectiveRepeatReceiver
         self.reassemblers = {}                  # origin id   -> Reassembler
         self.nodes = {}                         # neighbour id -> {"last_heard": t, "score": s}
+        self.routes = {}                        # NETWORK LAYER routing table: final dst -> next hop
         self.nodes_lock = threading.Lock()
         ack_air = self.modem.airtime(fr.OVERHEAD * 8)
         self.timer = arq.RetransmissionTimer(initial=ack_air + 2.5, minimum=ack_air + 0.8)
@@ -77,7 +82,8 @@ class Engine:
         self.listeners = []
         self.listeners_lock = threading.Lock()
         self.transmitting = False
-        self.mute_until = 0.0
+        self.tx_started = 0.0                   # time our current/last transmission started
+        self.tx_ended = 0.0                     # time our last transmission ended
         self.running = False
         self.threads = []
         self.capture = None                     # list while calibration records raw audio
@@ -189,6 +195,7 @@ class Engine:
             if item is None:
                 break
             if "samples" in item:                      # calibration sweep (not a frame)
+                self.tx_started = time.time()
                 self.transmitting = True
                 try:
                     self.channel.transmit(item["samples"])
@@ -196,13 +203,14 @@ class Engine:
                     self.emit("error", text=f"Transmission failed: {exc}")
                 finally:
                     self.transmitting = False
-                    self.mute_until = time.time() + MUTE_AFTER_TX
+                    self.tx_ended = time.time()
                 item["done"].set()
                 continue
             frame, raw = item["frame"], item["raw"]
             samples = self.modem.modulate_bytes(raw)
             airtime = len(samples) / config.SAMPLE_RATE
             self.emit("tx_start", seq=frame.seq, type=frame.type_name, airtime=round(airtime, 2))
+            self.tx_started = time.time()
             self.transmitting = True
             started = time.time()
             error = None
@@ -212,7 +220,7 @@ class Engine:
                 error = str(exc)
             finally:
                 self.transmitting = False
-                self.mute_until = time.time() + MUTE_AFTER_TX
+                self.tx_ended = time.time()
             if error:
                 self.emit("error", text=f"Transmission failed: {error}")
                 item["done"].set()
@@ -244,25 +252,29 @@ class Engine:
                 else:
                     time.sleep(0.03)
                 continue
-            half_duplex = self.channel.kind == "acoustic" and getattr(self.channel, "half_duplex", True)
-            if half_duplex and (self.transmitting or time.time() < self.mute_until):
-                # Half-duplex: we can't listen while our own speaker is talking.
-                self.receiver.reset()
-                continue_sleep = True
-            else:
-                continue_sleep = len(audio) == 0
-                if len(audio):
-                    self.carrier.add(calibration.band_energy(
-                        audio, (self.modem.freq0, self.modem.freq1, 1500, 3500)))
-                for result in self.receiver.feed(audio):
-                    try:
-                        self._handle(result)
-                    except Exception as exc:
-                        self.emit("error", text=f"Error handling frame: {exc}")
+            continue_sleep = len(audio) == 0
+            own_sound = self.transmitting or time.time() < self.tx_ended + OWN_ECHO_GUARD * self.time_scale
+            if len(audio) and not own_sound:
+                # carrier sense must measure OTHER nodes, not our own speaker
+                self.carrier.add(calibration.band_energy(
+                    audio, (self.modem.freq0, self.modem.freq1, 1500, 3500)))
+            for result in self.receiver.feed(audio):
+                try:
+                    self._handle(result)
+                except Exception as exc:
+                    self.emit("error", text=f"Error handling frame: {exc}")
             if continue_sleep:
                 time.sleep(0.03)
 
+    def _own_echo(self, result):
+        """True if this (corrupted) frame started while our own speaker was playing."""
+        half_duplex = self.channel.kind == "acoustic" and getattr(self.channel, "half_duplex", True)
+        t = result.get("detected_at", 0.0)
+        return half_duplex and (self.transmitting or self.tx_started <= t <= self.tx_ended + 0.05)
+
     def _handle(self, result):
+        if not result["ok"] and self._own_echo(result):
+            return                                    # our own transmission, heard by our mic
         if not result["ok"]:
             self.stats.add("crc_failures")
             self.emit("frame_rx", ok=False, error=result["error"], raw=result["raw"].hex(" "),
@@ -315,12 +327,58 @@ class Engine:
             self.emit("duplicate", seq=f.seq, src=f.src,
                       text=f"Duplicate seq {f.seq} from node {f.src}: ACKed again, not delivered twice")
             return
-        reasm = self.reassemblers.setdefault(f.origin, fr.Reassembler())
+        reasm = self.reassemblers.setdefault((f.origin, f.final), fr.Reassembler())
         message = reasm.add(f.payload, f.flags)
         if message is not None:
-            self._deliver(f.origin, message, f.flags)
+            self._message_complete(f, message)
 
-    def _deliver(self, origin, data, flags):
+    # ------------------------------------------------------------ network layer
+    def _message_complete(self, last_frame, data):
+        """
+        A whole message has arrived over one hop. NETWORK LAYER decision:
+          final destination == this node -> deliver it to the application
+          otherwise                      -> forward it (store-and-forward relay)
+        """
+        f = last_frame
+        if f.final in (self.node_id, fr.BROADCAST):
+            self._deliver(f.origin, data, f.flags, ttl=f.ttl)
+        else:
+            self._forward(f.origin, f.final, f.ttl, data, f.flags)
+
+    def _forward(self, origin, final, ttl, data, flags):
+        """
+        Relay a message towards `final`. TTL (time to live) is decremented at
+        every hop; at 0 the message is dropped, so a routing loop cannot make a
+        message circle forever (same idea as the IP TTL field).
+        Encrypted messages are forwarded untouched - the relay never decrypts.
+        """
+        if ttl <= 1:
+            self.stats.add("ttl_expired")
+            self.emit("ttl_expired", origin=origin, final=final,
+                      text=f"Message from node {origin} to node {final} DROPPED: TTL expired")
+            return
+        next_hop = self.routes.get(final, final)
+        self.stats.add("forwarded")
+        self.emit("forwarding", origin=origin, final=final, next_hop=next_hop, ttl=ttl - 1,
+                  text=f"Relaying message from node {origin} to node {final} via next hop "
+                       f"{next_hop} (TTL {ttl} -> {ttl - 1})")
+        self.outbox.put({"kind": "forward", "msg_id": next(self.msg_ids), "dst": final,
+                         "data": data, "origin": origin, "ttl": ttl - 1,
+                         "flags": flags & fr.F_ENC})
+
+    def set_route(self, dst, via):
+        """Static routing table entry: reach node `dst` through neighbour `via` (None = remove)."""
+        dst = int(dst)
+        if via in (None, "", dst):
+            self.routes.pop(dst, None)
+            self.emit("setting", name="route", value=[dst, None],
+                      text=f"Route to node {dst} removed (send directly)")
+        else:
+            self.routes[dst] = int(via)
+            self.emit("setting", name="route", value=[dst, int(via)],
+                      text=f"Route added: node {dst} via node {via}")
+
+    def _deliver(self, origin, data, flags, ttl=fr.DEFAULT_TTL):
         encrypted = bool(flags & fr.F_ENC)
         if encrypted:
             # The data link already verified every frame's CRC; now the security
@@ -341,7 +399,7 @@ class Engine:
         self.stats.add("messages_received")
         text = data.decode("utf-8", errors="replace")
         self.emit("message_rx", origin=origin, message=text, length=len(data),
-                  encrypted=encrypted,
+                  encrypted=encrypted, hops=fr.DEFAULT_TTL - ttl + 1,
                   text=f"Message from node {origin} delivered"
                        + (" (AES-GCM verified + decrypted)" if encrypted else "") + f": {text!r}")
 
@@ -357,10 +415,10 @@ class Engine:
             self.emit("sr_buffered", seq=f.seq, waiting_for=rcv.rcv_base,
                       text=f"Seq {f.seq} buffered out of order (waiting for seq {rcv.rcv_base})")
         for g in ready:
-            reasm = self.reassemblers.setdefault(g.origin, fr.Reassembler())
+            reasm = self.reassemblers.setdefault((g.origin, g.final), fr.Reassembler())
             message = reasm.add(g.payload, g.flags)
             if message is not None:
-                self._deliver(g.origin, message, g.flags)
+                self._message_complete(g, message)
         if f.flags & fr.F_POLL:
             ref, bitmap, cumulative = rcv.sack()
             if self._take_injection("drop_next_sack"):
@@ -479,6 +537,7 @@ class Engine:
         frames = len(fr.fragment(bytes(on_air)))
         self.emit("message_status", msg_id=msg_id, dst=dst, status="queued", frames=frames,
                   message=data.decode("utf-8", errors="replace"), encrypted=bool(encrypt),
+                  via=self.routes.get(dst, dst),
                   text=f"Message #{msg_id} to node {dst} queued ({len(data)} bytes"
                        + (f", {on_air} after encryption" if encrypt else "") + f", {frames} frame(s))")
         return msg_id
@@ -495,7 +554,7 @@ class Engine:
             if job is None:
                 break
             try:
-                if job["kind"] == "message":
+                if job["kind"] in ("message", "forward"):
                     self._send_message_job(job)
                 elif job["kind"] == "ping":
                     self._ping_job(job)
@@ -509,7 +568,11 @@ class Engine:
 
     def _send_message_job(self, job):
         msg_id, dst, data = job["msg_id"], job["dst"], job["data"]
-        base_flags = 0
+        relayed = job["kind"] == "forward"
+        origin = job.get("origin", self.node_id)
+        ttl = job.get("ttl", fr.DEFAULT_TTL)
+        base_flags = job.get("flags", 0)
+        link_dst = self.routes.get(dst, dst)      # next hop from the routing table
         if job.get("encrypt"):
             plain_len = len(data)
             data = self.security.encrypt(data, self.node_id, dst)
@@ -519,11 +582,20 @@ class Engine:
                            f"{len(data)} bytes (+{len(data) - plain_len} nonce+tag)")
         pieces = fr.fragment(data)
         arq.drain(self.ack_queue)
-        self.stats.add("messages_sent")
-        self.emit("message_status", msg_id=msg_id, dst=dst, status="sending", frames=len(pieces),
-                  text=f"Sending message #{msg_id} with {self._sender().name} + {mac.NAMES[self.mac_mode]}")
+        via = f" via node {link_dst}" if link_dst != dst else ""
+        if not relayed:
+            self.stats.add("messages_sent")
+            self.emit("message_status", msg_id=msg_id, dst=dst, status="sending", frames=len(pieces),
+                      via=link_dst, text=f"Sending message #{msg_id}{via} with {self._sender().name} "
+                                         f"+ {mac.NAMES[self.mac_mode]}")
         started = time.time()
-        ok = self._sender().send(msg_id, dst, pieces, base_flags=base_flags)
+        ok = self._sender().send(msg_id, link_dst, pieces, base_flags=base_flags, final=dst,
+                                 origin=origin, ttl=ttl)
+        if relayed:
+            self.emit("forwarded", ok=ok, final=dst, next_hop=link_dst,
+                      text=f"Relay to node {dst} via {link_dst}: "
+                           + ("next hop acknowledged every frame" if ok else "FAILED (no ACK)"))
+            return
         elapsed = time.time() - started
         self.stats.add_busy_time(elapsed)
         if ok:
@@ -531,8 +603,8 @@ class Engine:
             self.stats.add("payload_bytes_acked", len(data))
             self.emit("message_status", msg_id=msg_id, dst=dst, status="delivered",
                       seconds=round(elapsed, 1),
-                      text=f"Message #{msg_id} DELIVERED to node {dst} in {elapsed:.1f} s "
-                           f"(every frame acknowledged)")
+                      text=f"Message #{msg_id} DELIVERED to node {dst}{via} in {elapsed:.1f} s "
+                           + ("(next hop acknowledged every frame)" if via else "(every frame acknowledged)"))
         else:
             self.stats.add("messages_failed")
             self.emit("message_status", msg_id=msg_id, dst=dst, status="failed",
@@ -660,7 +732,8 @@ class Engine:
                 "mic_overflows": int(getattr(self.channel, "overflows", 0) or 0),
                 "noise_floor": getattr(self, "noise_floor", None),
                 "encryption_available": getattr(self, "security", None) is not None,
-                "speaker_mode": self._speaker_mode()}
+                "speaker_mode": self._speaker_mode(),
+                "routes": {str(k): v for k, v in self.routes.items()}}
 
     def _speaker_mode(self):
         spk = getattr(self.channel, "speaker", None) or getattr(getattr(self.channel, "hub", None), "speaker", None)

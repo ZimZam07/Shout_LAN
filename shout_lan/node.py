@@ -12,6 +12,7 @@ Commands (UI -> engine), one JSON object per line:
     {"cmd": "set_tones", "freq0": 2000, "freq1": 3000}
     {"cmd": "set_protocol", "value": "sr"}            sw = Stop-and-Wait, sr = Selective Repeat
     {"cmd": "set_mac", "value": "csma"}               csma / aloha / none
+    {"cmd": "set_route", "dst": 3, "via": 2}          reach node 3 through node 2 (via null = remove)
     {"cmd": "calibrate"}
     {"cmd": "reset_stats"}
     {"cmd": "shutdown"}
@@ -45,6 +46,8 @@ def make_command_handler(engine, on_shutdown):
             engine.set_protocol(cmd["value"])
         elif name == "set_mac":
             engine.set_mac(cmd["value"])
+        elif name == "set_route":
+            engine.set_route(cmd["dst"], cmd.get("via"))
         elif name == "set_volume":
             engine.set_volume(float(cmd["value"]))
         elif name == "set_tones":

@@ -37,6 +37,10 @@ def main():
     p.add_argument("--volume", type=float, default=config.TX_VOLUME)
     p.add_argument("--f0", type=int, default=config.FREQ_0)
     p.add_argument("--f1", type=int, default=config.FREQ_1)
+    p.add_argument("--route", action="append", default=[], metavar="DST:VIA",
+                   help="routing table entry, e.g. --route 3:2 (reach node 3 through node 2)")
+    p.add_argument("--hears", default="",
+                   help="SIMULATED mode only: comma list of nodes in range, e.g. --hears 2")
     p.add_argument("--key", default="secret.key",
                    help="AES-256 key file (made by tools/gen_key.py); encryption is off without it")
     args = p.parse_args()
@@ -44,7 +48,8 @@ def main():
     modem = Modem(freq0=args.f0, freq1=args.f1, volume=args.volume)
     try:
         if args.simulated:
-            channel = UdpSimulatedChannel(args.node)
+            hears = [int(x) for x in args.hears.split(",") if x.strip()]
+            channel = UdpSimulatedChannel(args.node, neighbours=hears or None)
         else:
             mic, spk = default_devices()
             channel = AcousticChannel(args.mic if args.mic is not None else mic,
@@ -61,6 +66,9 @@ def main():
             print(f"ERROR: {exc}", file=sys.stderr, flush=True)
             sys.exit(2)
     engine = Engine(args.node, channel, modem, security=security)
+    for entry in args.route:
+        dst, via = entry.split(":")
+        engine.routes[int(dst)] = int(via)
     stop = threading.Event()
 
     def print_event(e):

@@ -30,7 +30,6 @@ class Bubble(QWidget):
         self.text = QLabel()
         self.text.setWordWrap(True)
         self.text.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        self.text.setMaximumWidth(520)
         bl.addWidget(self.text)
         bg, fg = (style.ACCENT, "white") if outgoing else ("#EEF2F7", style.TEXT)
         self.box.setStyleSheet(f"QFrame{{background:{bg}; border-radius:14px;}}"
@@ -48,6 +47,12 @@ class Bubble(QWidget):
 
     def set(self, text, meta, meta_color):
         self.text.setText(text)
+        # Give the wrapped label an explicit width and the matching height, otherwise Qt
+        # may size it for one line and cut off the rest of a long message.
+        fm = self.text.fontMetrics()
+        width = min(fm.horizontalAdvance(text) + 8, 480)
+        self.text.setFixedWidth(max(width, 40))
+        self.text.setFixedHeight(self.text.heightForWidth(self.text.width()))
         self.meta.setText(meta)
         self.meta.setStyleSheet(f"font-size:8.5pt; color:{meta_color};")
         self.meta.setMinimumWidth(self.meta.fontMetrics().horizontalAdvance(meta) + 12)
@@ -158,6 +163,11 @@ class MessagesPage(QWidget):
             lock = "  🔒 encrypted" if it.get("encrypted") else ""
             if it["dir"] == "out":
                 label, color = STATUS_TEXT.get(it["status"], (it["status"], style.MUTED))
+                if it.get("via") not in (None, it["peer"]):
+                    if it["status"] == "delivered":
+                        label = f"✓ Handed to relay node {it['via']} (hop ACK; end-to-end not confirmed)"
+                    elif it["status"] == "sending":
+                        label = f"Sending via relay node {it['via']}…"
                 extra = (f" · frame {it['done']}/{it['frames']}"
                          if it["status"] == "sending" and it.get("frames") else "")
                 extra += f" · {it['seconds']} s" if it.get("seconds") is not None else ""
@@ -167,7 +177,8 @@ class MessagesPage(QWidget):
                 meta = f"from node {it['peer']} · {t} · {it['reason']}"
             else:
                 color = style.MUTED
-                meta = f"from node {it['peer']} · {t} · CRC verified{lock}"
+                hops = f" · {it['hops']} hops" if it.get("hops", 1) > 1 else ""
+                meta = f"from node {it['peer']} · {t} · CRC verified{hops}{lock}"
             it["widget"].set(it["text"], meta, color)
         if added:
             bar = self.scroll.verticalScrollBar()
@@ -181,7 +192,8 @@ class MessagesPage(QWidget):
             if e["status"] == "queued":
                 entry = {"dir": "out", "peer": e["dst"], "text": e.get("message", ""),
                          "status": "queued", "time": e["time"], "frames": e.get("frames"),
-                         "done": 0, "encrypted": e.get("encrypted", False)}
+                         "done": 0, "encrypted": e.get("encrypted", False),
+                         "via": e.get("via", e["dst"])}
                 self.by_id[mid] = entry
                 self.items.append(entry)
             elif mid in self.by_id:
@@ -201,7 +213,8 @@ class MessagesPage(QWidget):
             self.render()
         elif ev == "message_rx":
             self.items.append({"dir": "in", "peer": e["origin"], "text": e["message"],
-                               "time": e["time"], "encrypted": e.get("encrypted")})
+                               "time": e["time"], "encrypted": e.get("encrypted"),
+                               "hops": e.get("hops", 1)})
             self.render()
         elif ev == "security_reject":
             self.items.append({"dir": "in", "peer": e["origin"], "rejected": True,
