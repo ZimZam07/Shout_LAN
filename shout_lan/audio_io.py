@@ -139,22 +139,48 @@ class Microphone:
 
 # ---------------------------------------------------------------- speaker
 class Speaker:
-    """Plays audio through the real speaker. play() blocks until the sound is finished."""
+    """
+    Plays audio through the real speaker. play() blocks until the sound is finished.
+
+    The output stream is opened once and kept open: opening a new stream for
+    every frame (sd.play) added ~1.1 s of delay per transmission in our
+    measurements, which would slow down every ACK.
+    """
 
     def __init__(self, device=None):
         self.device = device
         self.lock = threading.Lock()     # only one transmission at a time (half-duplex)
+        self.stream = None
+        self.channels = 1
+
+    def _open(self):
+        self.channels = _channels(self.device, "output")
+        self.stream = sd.OutputStream(device=self.device, channels=self.channels,
+                                      samplerate=config.SAMPLE_RATE, dtype="float32")
+        self.stream.start()
+        self.stream.write(np.zeros((2400, self.channels), dtype=np.float32))   # warm-up silence
 
     def play(self, samples):
         with self.lock:
             try:
-                channels = _channels(self.device, "output")
+                if self.stream is None:
+                    self._open()
                 data = np.asarray(samples, dtype=np.float32)
-                if channels > 1:
-                    data = np.repeat(data[:, None], channels, axis=1)
-                sd.play(data, config.SAMPLE_RATE, device=self.device, blocking=True)
+                data = np.repeat(data[:, None], self.channels, axis=1)
+                self.stream.write(data)          # blocks until the data is in the output buffer
+                time.sleep(self.stream.latency)  # ...and until the buffer has actually played
             except Exception as exc:
+                self.close()
                 raise AudioError(f"Could not play on speaker {self.device}: {exc}") from exc
+
+    def close(self):
+        if self.stream is not None:
+            try:
+                self.stream.stop()
+                self.stream.close()
+            except Exception:
+                pass
+            self.stream = None
 
 
 def record_while_playing(signal, mic_device=None, speaker_device=None,
@@ -172,4 +198,5 @@ def record_while_playing(signal, mic_device=None, speaker_device=None,
         time.sleep(tail)
     finally:
         mic.stop()
+        spk.close()
     return mic.read_available(), mic
