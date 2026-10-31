@@ -188,7 +188,9 @@ def _frame_audio_with_slips(slips, seed=0):
                                    [(384, 100), (192, 200)],          # like the measured 378 -> 570
                                    [(384, 80), (384, 180)]])          # 16 ms in total
 def test_timing_recovery_survives_mid_frame_gaps(slips):
+    # experimental feature (off by default) - tested explicitly switched on
     modem, f, audio = _frame_audio_with_slips(slips)
+    modem.TRACKING_DEFAULT = True
     results = FrameReceiver(modem).feed(audio)
     assert len(results) == 1 and results[0]["ok"], results
     assert results[0]["frame"].payload == f.payload

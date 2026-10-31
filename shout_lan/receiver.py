@@ -75,7 +75,7 @@ class FrameReceiver:
             self.gains = m.estimate_gains(self.buffer, self.first_bit)
 
         # 2. Decode the header to learn the frame length
-        margin = m.TRACK_LIMIT_BITS * spb               # timing recovery may look a bit further
+        margin = m.TRACK_LIMIT_BITS * spb if m.TRACKING_DEFAULT else 0   # tracker looks further
         if self.total_bytes is None:
             if len(self.buffer) < self.first_bit + HEADER_BITS * spb + margin:
                 return None                         # wait for more audio

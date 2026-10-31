@@ -231,7 +231,12 @@ class Modem:
     TRACK_WIN_LO = 0.30      # alignment window = 30% .. 100% of the slot (skips most room echo;
                              # chosen by re-decoding 89 real recorded frames, TESTING.md M6)
 
-    def demodulate_bits(self, audio, first_bit, n_bits, gains=None, track=True, trace=None):
+    # Symbol-timing recovery is EXPERIMENTAL and OFF by default: it helped on two recorded
+    # runs (+10 / +2 frames) but failed badly on another (3/44 vs 25/44 valid frames,
+    # TESTING.md M6), so it is not reliable enough to enable.
+    TRACKING_DEFAULT = False
+
+    def demodulate_bits(self, audio, first_bit, n_bits, gains=None, track=None, trace=None):
         """
         Decide each bit by comparing tone strengths inside that bit's time slot.
 
@@ -253,6 +258,8 @@ class Modem:
         x[n]·e^(-jωn) (a "sliding DFT" - the same value Goertzel gives).
         Returns (bits, confidences); confidence 0..1 shows how clear the decision was.
         """
+        if track is None:
+            track = self.TRACKING_DEFAULT
         spb = self.samples_per_bit
         lo = int(spb * 0.40)
         hi = int(spb * 0.95)

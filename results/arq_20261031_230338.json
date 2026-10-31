@@ -1,0 +1,926 @@
+{
+ "kind": "Measured - acoustic (single-laptop loopback, 2 engines)",
+ "results": [
+  {
+   "scenario": "Normal transmission",
+   "passed": false,
+   "detail": "status=failed, delivered=[], retransmissions=5",
+   "seconds": 29.0,
+   "node1": {
+    "frames_tx": 0,
+    "data_frames_tx": 0,
+    "frames_rx_ok": 0,
+    "crc_failures": 0,
+    "acks_tx": 0,
+    "acks_rx": 0,
+    "retransmissions": 5,
+    "timeouts": 6,
+    "duplicates": 0,
+    "messages_sent": 1,
+    "messages_delivered": 0,
+    "messages_failed": 1,
+    "messages_received": 0,
+    "payload_bytes_acked": 0,
+    "pings_sent": 0,
+    "pongs_received": 0,
+    "injected_events": 0,
+    "channel_busy_deferrals": 0,
+    "backoffs": 0,
+    "forwarded": 0,
+    "ttl_expired": 0,
+    "security_rejects": 0
+   },
+   "node2": {
+    "frames_tx": 0,
+    "data_frames_tx": 0,
+    "frames_rx_ok": 0,
+    "crc_failures": 0,
+    "acks_tx": 0,
+    "acks_rx": 0,
+    "retransmissions": 0,
+    "timeouts": 0,
+    "duplicates": 0,
+    "messages_sent": 0,
+    "messages_delivered": 0,
+    "messages_failed": 0,
+    "messages_received": 0,
+    "payload_bytes_acked": 0,
+    "pings_sent": 0,
+    "pongs_received": 0,
+    "injected_events": 0,
+    "channel_busy_deferrals": 0,
+    "backoffs": 0,
+    "forwarded": 0,
+    "ttl_expired": 0,
+    "security_rejects": 0
+   }
+  },
+  {
+   "scenario": "Corrupted DATA frame",
+   "passed": false,
+   "detail": "receiver CRC failures=0, sender timeouts=6, retransmissions=5, delivered=[]",
+   "seconds": 29.2,
+   "node1": {
+    "frames_tx": 0,
+    "data_frames_tx": 0,
+    "frames_rx_ok": 0,
+    "crc_failures": 0,
+    "acks_tx": 0,
+    "acks_rx": 0,
+    "retransmissions": 5,
+    "timeouts": 6,
+    "duplicates": 0,
+    "messages_sent": 1,
+    "messages_delivered": 0,
+    "messages_failed": 1,
+    "messages_received": 0,
+    "payload_bytes_acked": 0,
+    "pings_sent": 0,
+    "pongs_received": 0,
+    "injected_events": 1,
+    "channel_busy_deferrals": 0,
+    "backoffs": 0,
+    "forwarded": 0,
+    "ttl_expired": 0,
+    "security_rejects": 0
+   },
+   "node2": {
+    "frames_tx": 0,
+    "data_frames_tx": 0,
+    "frames_rx_ok": 0,
+    "crc_failures": 0,
+    "acks_tx": 0,
+    "acks_rx": 0,
+    "retransmissions": 0,
+    "timeouts": 0,
+    "duplicates": 0,
+    "messages_sent": 0,
+    "messages_delivered": 0,
+    "messages_failed": 0,
+    "messages_received": 0,
+    "payload_bytes_acked": 0,
+    "pings_sent": 0,
+    "pongs_received": 0,
+    "injected_events": 0,
+    "channel_busy_deferrals": 0,
+    "backoffs": 0,
+    "forwarded": 0,
+    "ttl_expired": 0,
+    "security_rejects": 0
+   }
+  },
+  {
+   "scenario": "Lost ACK (exactly-once delivery)",
+   "passed": false,
+   "detail": "duplicates at receiver=0, delivered 0 time(s): []",
+   "seconds": 29.2,
+   "node1": {
+    "frames_tx": 0,
+    "data_frames_tx": 0,
+    "frames_rx_ok": 0,
+    "crc_failures": 0,
+    "acks_tx": 0,
+    "acks_rx": 0,
+    "retransmissions": 5,
+    "timeouts": 6,
+    "duplicates": 0,
+    "messages_sent": 1,
+    "messages_delivered": 0,
+    "messages_failed": 1,
+    "messages_received": 0,
+    "payload_bytes_acked": 0,
+    "pings_sent": 0,
+    "pongs_received": 0,
+    "injected_events": 0,
+    "channel_busy_deferrals": 0,
+    "backoffs": 0,
+    "forwarded": 0,
+    "ttl_expired": 0,
+    "security_rejects": 0
+   },
+   "node2": {
+    "frames_tx": 0,
+    "data_frames_tx": 0,
+    "frames_rx_ok": 0,
+    "crc_failures": 0,
+    "acks_tx": 0,
+    "acks_rx": 0,
+    "retransmissions": 0,
+    "timeouts": 0,
+    "duplicates": 0,
+    "messages_sent": 0,
+    "messages_delivered": 0,
+    "messages_failed": 0,
+    "messages_received": 0,
+    "payload_bytes_acked": 0,
+    "pings_sent": 0,
+    "pongs_received": 0,
+    "injected_events": 0,
+    "channel_busy_deferrals": 0,
+    "backoffs": 0,
+    "forwarded": 0,
+    "ttl_expired": 0,
+    "security_rejects": 0
+   }
+  }
+ ],
+ "stats_node1": {
+  "source": "Measured - acoustic",
+  "counters": {
+   "frames_tx": 0,
+   "data_frames_tx": 0,
+   "frames_rx_ok": 0,
+   "crc_failures": 0,
+   "acks_tx": 0,
+   "acks_rx": 0,
+   "retransmissions": 15,
+   "timeouts": 18,
+   "duplicates": 0,
+   "messages_sent": 3,
+   "messages_delivered": 0,
+   "messages_failed": 3,
+   "messages_received": 0,
+   "payload_bytes_acked": 0,
+   "pings_sent": 0,
+   "pongs_received": 0,
+   "injected_events": 1,
+   "channel_busy_deferrals": 0,
+   "backoffs": 0,
+   "forwarded": 0,
+   "ttl_expired": 0,
+   "security_rejects": 0
+  },
+  "delivery_ratio": 0.0,
+  "frame_loss": null,
+  "goodput_bps": 0.0,
+  "rtt": null,
+  "recent_rtts": [],
+  "ping_rtt": null,
+  "ping_loss": null
+ },
+ "stats_node2": {
+  "source": "Measured - acoustic",
+  "counters": {
+   "frames_tx": 0,
+   "data_frames_tx": 0,
+   "frames_rx_ok": 0,
+   "crc_failures": 0,
+   "acks_tx": 0,
+   "acks_rx": 0,
+   "retransmissions": 0,
+   "timeouts": 0,
+   "duplicates": 0,
+   "messages_sent": 0,
+   "messages_delivered": 0,
+   "messages_failed": 0,
+   "messages_received": 0,
+   "payload_bytes_acked": 0,
+   "pings_sent": 0,
+   "pongs_received": 0,
+   "injected_events": 0,
+   "channel_busy_deferrals": 0,
+   "backoffs": 0,
+   "forwarded": 0,
+   "ttl_expired": 0,
+   "security_rejects": 0
+  },
+  "delivery_ratio": null,
+  "frame_loss": null,
+  "goodput_bps": null,
+  "rtt": null,
+  "recent_rtts": [],
+  "ping_rtt": null,
+  "ping_loss": null
+ },
+ "events": [
+  {
+   "event": "engine_started",
+   "time": 1793467929.84,
+   "node": 1,
+   "channel": "acoustic",
+   "label": "Acoustic link (single-laptop loopback)",
+   "text": "Node 1 started on the Acoustic link (single-laptop loopback)"
+  },
+  {
+   "event": "engine_started",
+   "time": 1793467929.842,
+   "node": 2,
+   "channel": "acoustic",
+   "label": "Acoustic link (single-laptop loopback)",
+   "text": "Node 2 started on the Acoustic link (single-laptop loopback)"
+  },
+  {
+   "event": "message_status",
+   "time": 1793467930.843,
+   "node": 1,
+   "msg_id": 1,
+   "dst": 2,
+   "status": "queued",
+   "frames": 1,
+   "message": "HELLO WORLD",
+   "encrypted": false,
+   "text": "Message #1 to node 2 queued (11 bytes, 1 frame(s))"
+  },
+  {
+   "event": "message_status",
+   "time": 1793467930.843,
+   "node": 1,
+   "msg_id": 1,
+   "dst": 2,
+   "status": "sending",
+   "frames": 1,
+   "text": "Sending message #1 with Stop-and-Wait + CSMA (listen before talk)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793467930.853,
+   "node": 1,
+   "seq": 115,
+   "type": "DATA",
+   "airtime": 3.67
+  },
+  {
+   "event": "error",
+   "time": 1793467930.938,
+   "node": 1,
+   "text": "Transmission failed: Could not play on speaker 8: Error opening OutputStream: Invalid device [PaErrorCode -9996]"
+  },
+  {
+   "event": "timeout",
+   "time": 1793467935.309,
+   "node": 1,
+   "seq": 115,
+   "msg_id": 1,
+   "waited": 4.37,
+   "text": "No ACK for seq 115 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793467935.309,
+   "node": 1,
+   "seq": 115,
+   "attempt": 1,
+   "msg_id": 1,
+   "text": "Retransmitting frame seq 115 (attempt 2)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793467935.324,
+   "node": 1,
+   "seq": 115,
+   "type": "DATA",
+   "airtime": 3.67
+  },
+  {
+   "event": "error",
+   "time": 1793467935.35,
+   "node": 1,
+   "text": "Transmission failed: Could not play on speaker 8: Error opening OutputStream: Invalid device [PaErrorCode -9996]"
+  },
+  {
+   "event": "timeout",
+   "time": 1793467939.722,
+   "node": 1,
+   "seq": 115,
+   "msg_id": 1,
+   "waited": 4.37,
+   "text": "No ACK for seq 115 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793467939.722,
+   "node": 1,
+   "seq": 115,
+   "attempt": 2,
+   "msg_id": 1,
+   "text": "Retransmitting frame seq 115 (attempt 3)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793467939.738,
+   "node": 1,
+   "seq": 115,
+   "type": "DATA",
+   "airtime": 3.67
+  },
+  {
+   "event": "error",
+   "time": 1793467939.769,
+   "node": 1,
+   "text": "Transmission failed: Could not play on speaker 8: Error opening OutputStream: Invalid device [PaErrorCode -9996]"
+  },
+  {
+   "event": "timeout",
+   "time": 1793467944.14,
+   "node": 1,
+   "seq": 115,
+   "msg_id": 1,
+   "waited": 4.37,
+   "text": "No ACK for seq 115 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793467944.14,
+   "node": 1,
+   "seq": 115,
+   "attempt": 3,
+   "msg_id": 1,
+   "text": "Retransmitting frame seq 115 (attempt 4)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793467944.157,
+   "node": 1,
+   "seq": 115,
+   "type": "DATA",
+   "airtime": 3.67
+  },
+  {
+   "event": "error",
+   "time": 1793467944.185,
+   "node": 1,
+   "text": "Transmission failed: Could not play on speaker 8: Error opening OutputStream: Invalid device [PaErrorCode -9996]"
+  },
+  {
+   "event": "timeout",
+   "time": 1793467948.556,
+   "node": 1,
+   "seq": 115,
+   "msg_id": 1,
+   "waited": 4.37,
+   "text": "No ACK for seq 115 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793467948.556,
+   "node": 1,
+   "seq": 115,
+   "attempt": 4,
+   "msg_id": 1,
+   "text": "Retransmitting frame seq 115 (attempt 5)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793467948.571,
+   "node": 1,
+   "seq": 115,
+   "type": "DATA",
+   "airtime": 3.67
+  },
+  {
+   "event": "error",
+   "time": 1793467948.599,
+   "node": 1,
+   "text": "Transmission failed: Could not play on speaker 8: Error opening OutputStream: Invalid device [PaErrorCode -9996]"
+  },
+  {
+   "event": "timeout",
+   "time": 1793467952.97,
+   "node": 1,
+   "seq": 115,
+   "msg_id": 1,
+   "waited": 4.37,
+   "text": "No ACK for seq 115 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793467952.971,
+   "node": 1,
+   "seq": 115,
+   "attempt": 5,
+   "msg_id": 1,
+   "text": "Retransmitting frame seq 115 (attempt 6)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793467952.984,
+   "node": 1,
+   "seq": 115,
+   "type": "DATA",
+   "airtime": 3.67
+  },
+  {
+   "event": "error",
+   "time": 1793467953.011,
+   "node": 1,
+   "text": "Transmission failed: Could not play on speaker 8: Error opening OutputStream: Invalid device [PaErrorCode -9996]"
+  },
+  {
+   "event": "timeout",
+   "time": 1793467957.383,
+   "node": 1,
+   "seq": 115,
+   "msg_id": 1,
+   "waited": 4.37,
+   "text": "No ACK for seq 115 after 4.4 s - timeout"
+  },
+  {
+   "event": "message_status",
+   "time": 1793467957.383,
+   "node": 1,
+   "msg_id": 1,
+   "dst": 2,
+   "status": "failed",
+   "seconds": 26.5,
+   "text": "Message #1 FAILED: no ACK after 5 retries"
+  },
+  {
+   "event": "injection_set",
+   "time": 1793467959.885,
+   "node": 1,
+   "name": "corrupt_next_data",
+   "value": true,
+   "text": "Error injection 'corrupt_next_data' ARMED"
+  },
+  {
+   "event": "message_status",
+   "time": 1793467959.885,
+   "node": 1,
+   "msg_id": 2,
+   "dst": 2,
+   "status": "queued",
+   "frames": 1,
+   "message": "CRC TEST",
+   "encrypted": false,
+   "text": "Message #2 to node 2 queued (8 bytes, 1 frame(s))"
+  },
+  {
+   "event": "message_status",
+   "time": 1793467959.886,
+   "node": 1,
+   "msg_id": 2,
+   "dst": 2,
+   "status": "sending",
+   "frames": 1,
+   "text": "Sending message #2 with Stop-and-Wait + CSMA (listen before talk)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793467959.899,
+   "node": 1,
+   "seq": 116,
+   "type": "DATA",
+   "airtime": 3.19
+  },
+  {
+   "event": "error",
+   "time": 1793467960.197,
+   "node": 1,
+   "text": "Transmission failed: Could not play on speaker 8: Error opening OutputStream: Invalid device [PaErrorCode -9996]"
+  },
+  {
+   "event": "timeout",
+   "time": 1793467964.568,
+   "node": 1,
+   "seq": 116,
+   "msg_id": 2,
+   "waited": 4.37,
+   "text": "No ACK for seq 116 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793467964.568,
+   "node": 1,
+   "seq": 116,
+   "attempt": 1,
+   "msg_id": 2,
+   "text": "Retransmitting frame seq 116 (attempt 2)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793467964.582,
+   "node": 1,
+   "seq": 116,
+   "type": "DATA",
+   "airtime": 3.19
+  },
+  {
+   "event": "error",
+   "time": 1793467964.613,
+   "node": 1,
+   "text": "Transmission failed: Could not play on speaker 8: Error opening OutputStream: Invalid device [PaErrorCode -9996]"
+  },
+  {
+   "event": "timeout",
+   "time": 1793467968.985,
+   "node": 1,
+   "seq": 116,
+   "msg_id": 2,
+   "waited": 4.37,
+   "text": "No ACK for seq 116 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793467968.986,
+   "node": 1,
+   "seq": 116,
+   "attempt": 2,
+   "msg_id": 2,
+   "text": "Retransmitting frame seq 116 (attempt 3)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793467968.998,
+   "node": 1,
+   "seq": 116,
+   "type": "DATA",
+   "airtime": 3.19
+  },
+  {
+   "event": "error",
+   "time": 1793467969.025,
+   "node": 1,
+   "text": "Transmission failed: Could not play on speaker 8: Error opening OutputStream: Invalid device [PaErrorCode -9996]"
+  },
+  {
+   "event": "timeout",
+   "time": 1793467973.396,
+   "node": 1,
+   "seq": 116,
+   "msg_id": 2,
+   "waited": 4.37,
+   "text": "No ACK for seq 116 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793467973.397,
+   "node": 1,
+   "seq": 116,
+   "attempt": 3,
+   "msg_id": 2,
+   "text": "Retransmitting frame seq 116 (attempt 4)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793467973.406,
+   "node": 1,
+   "seq": 116,
+   "type": "DATA",
+   "airtime": 3.19
+  },
+  {
+   "event": "error",
+   "time": 1793467973.419,
+   "node": 1,
+   "text": "Transmission failed: Could not play on speaker 8: Error opening OutputStream: Invalid device [PaErrorCode -9996]"
+  },
+  {
+   "event": "timeout",
+   "time": 1793467977.79,
+   "node": 1,
+   "seq": 116,
+   "msg_id": 2,
+   "waited": 4.37,
+   "text": "No ACK for seq 116 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793467977.79,
+   "node": 1,
+   "seq": 116,
+   "attempt": 4,
+   "msg_id": 2,
+   "text": "Retransmitting frame seq 116 (attempt 5)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793467977.801,
+   "node": 1,
+   "seq": 116,
+   "type": "DATA",
+   "airtime": 3.19
+  },
+  {
+   "event": "error",
+   "time": 1793467977.83,
+   "node": 1,
+   "text": "Transmission failed: Could not play on speaker 8: Error opening OutputStream: Invalid device [PaErrorCode -9996]"
+  },
+  {
+   "event": "timeout",
+   "time": 1793467982.2,
+   "node": 1,
+   "seq": 116,
+   "msg_id": 2,
+   "waited": 4.37,
+   "text": "No ACK for seq 116 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793467982.201,
+   "node": 1,
+   "seq": 116,
+   "attempt": 5,
+   "msg_id": 2,
+   "text": "Retransmitting frame seq 116 (attempt 6)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793467982.214,
+   "node": 1,
+   "seq": 116,
+   "type": "DATA",
+   "airtime": 3.19
+  },
+  {
+   "event": "error",
+   "time": 1793467982.24,
+   "node": 1,
+   "text": "Transmission failed: Could not play on speaker 8: Error opening OutputStream: Invalid device [PaErrorCode -9996]"
+  },
+  {
+   "event": "timeout",
+   "time": 1793467986.612,
+   "node": 1,
+   "seq": 116,
+   "msg_id": 2,
+   "waited": 4.37,
+   "text": "No ACK for seq 116 after 4.4 s - timeout"
+  },
+  {
+   "event": "message_status",
+   "time": 1793467986.612,
+   "node": 1,
+   "msg_id": 2,
+   "dst": 2,
+   "status": "failed",
+   "seconds": 26.7,
+   "text": "Message #2 FAILED: no ACK after 5 retries"
+  },
+  {
+   "event": "injection_set",
+   "time": 1793467989.113,
+   "node": 2,
+   "name": "drop_next_ack",
+   "value": true,
+   "text": "Error injection 'drop_next_ack' ARMED"
+  },
+  {
+   "event": "message_status",
+   "time": 1793467989.113,
+   "node": 1,
+   "msg_id": 3,
+   "dst": 2,
+   "status": "queued",
+   "frames": 1,
+   "message": "ACK LOSS TEST",
+   "encrypted": false,
+   "text": "Message #3 to node 2 queued (13 bytes, 1 frame(s))"
+  },
+  {
+   "event": "message_status",
+   "time": 1793467989.113,
+   "node": 1,
+   "msg_id": 3,
+   "dst": 2,
+   "status": "sending",
+   "frames": 1,
+   "text": "Sending message #3 with Stop-and-Wait + CSMA (listen before talk)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793467989.125,
+   "node": 1,
+   "seq": 117,
+   "type": "DATA",
+   "airtime": 3.99
+  },
+  {
+   "event": "error",
+   "time": 1793467989.405,
+   "node": 1,
+   "text": "Transmission failed: Could not play on speaker 8: Error opening OutputStream: Invalid device [PaErrorCode -9996]"
+  },
+  {
+   "event": "timeout",
+   "time": 1793467993.775,
+   "node": 1,
+   "seq": 117,
+   "msg_id": 3,
+   "waited": 4.37,
+   "text": "No ACK for seq 117 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793467993.775,
+   "node": 1,
+   "seq": 117,
+   "attempt": 1,
+   "msg_id": 3,
+   "text": "Retransmitting frame seq 117 (attempt 2)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793467993.791,
+   "node": 1,
+   "seq": 117,
+   "type": "DATA",
+   "airtime": 3.99
+  },
+  {
+   "event": "error",
+   "time": 1793467993.819,
+   "node": 1,
+   "text": "Transmission failed: Could not play on speaker 8: Error opening OutputStream: Invalid device [PaErrorCode -9996]"
+  },
+  {
+   "event": "timeout",
+   "time": 1793467998.19,
+   "node": 1,
+   "seq": 117,
+   "msg_id": 3,
+   "waited": 4.37,
+   "text": "No ACK for seq 117 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793467998.19,
+   "node": 1,
+   "seq": 117,
+   "attempt": 2,
+   "msg_id": 3,
+   "text": "Retransmitting frame seq 117 (attempt 3)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793467998.2,
+   "node": 1,
+   "seq": 117,
+   "type": "DATA",
+   "airtime": 3.99
+  },
+  {
+   "event": "error",
+   "time": 1793467998.216,
+   "node": 1,
+   "text": "Transmission failed: Could not play on speaker 8: Error opening OutputStream: Invalid device [PaErrorCode -9996]"
+  },
+  {
+   "event": "timeout",
+   "time": 1793468002.586,
+   "node": 1,
+   "seq": 117,
+   "msg_id": 3,
+   "waited": 4.37,
+   "text": "No ACK for seq 117 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793468002.586,
+   "node": 1,
+   "seq": 117,
+   "attempt": 3,
+   "msg_id": 3,
+   "text": "Retransmitting frame seq 117 (attempt 4)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793468002.597,
+   "node": 1,
+   "seq": 117,
+   "type": "DATA",
+   "airtime": 3.99
+  },
+  {
+   "event": "error",
+   "time": 1793468002.618,
+   "node": 1,
+   "text": "Transmission failed: Could not play on speaker 8: Error opening OutputStream: Invalid device [PaErrorCode -9996]"
+  },
+  {
+   "event": "timeout",
+   "time": 1793468006.989,
+   "node": 1,
+   "seq": 117,
+   "msg_id": 3,
+   "waited": 4.37,
+   "text": "No ACK for seq 117 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793468006.989,
+   "node": 1,
+   "seq": 117,
+   "attempt": 4,
+   "msg_id": 3,
+   "text": "Retransmitting frame seq 117 (attempt 5)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793468007.004,
+   "node": 1,
+   "seq": 117,
+   "type": "DATA",
+   "airtime": 3.99
+  },
+  {
+   "event": "error",
+   "time": 1793468007.019,
+   "node": 1,
+   "text": "Transmission failed: Could not play on speaker 8: Error opening OutputStream: Invalid device [PaErrorCode -9996]"
+  },
+  {
+   "event": "timeout",
+   "time": 1793468011.389,
+   "node": 1,
+   "seq": 117,
+   "msg_id": 3,
+   "waited": 4.37,
+   "text": "No ACK for seq 117 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793468011.389,
+   "node": 1,
+   "seq": 117,
+   "attempt": 5,
+   "msg_id": 3,
+   "text": "Retransmitting frame seq 117 (attempt 6)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793468011.396,
+   "node": 1,
+   "seq": 117,
+   "type": "DATA",
+   "airtime": 3.99
+  },
+  {
+   "event": "error",
+   "time": 1793468011.413,
+   "node": 1,
+   "text": "Transmission failed: Could not play on speaker 8: Error opening OutputStream: Invalid device [PaErrorCode -9996]"
+  },
+  {
+   "event": "timeout",
+   "time": 1793468015.784,
+   "node": 1,
+   "seq": 117,
+   "msg_id": 3,
+   "waited": 4.37,
+   "text": "No ACK for seq 117 after 4.4 s - timeout"
+  },
+  {
+   "event": "message_status",
+   "time": 1793468015.784,
+   "node": 1,
+   "msg_id": 3,
+   "dst": 2,
+   "status": "failed",
+   "seconds": 26.7,
+   "text": "Message #3 FAILED: no ACK after 5 retries"
+  },
+  {
+   "event": "engine_stopped",
+   "time": 1793468018.307,
+   "node": 1,
+   "text": "Node 1 stopped"
+  },
+  {
+   "event": "engine_stopped",
+   "time": 1793468018.332,
+   "node": 2,
+   "text": "Node 2 stopped"
+  }
+ ]
+}

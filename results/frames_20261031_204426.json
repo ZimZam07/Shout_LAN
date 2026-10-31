@@ -1,0 +1,17 @@
+{
+  "kind": "Measured - acoustic (single-laptop loopback)",
+  "hello_frames_sent": 10,
+  "hello_frames_valid": 6,
+  "valid_frames": 7,
+  "crc_or_format_failures": 6,
+  "errors": [
+    "bad sync byte 0xE5",
+    "CRC mismatch (received 0x5B3F, calculated 0xB22A)",
+    "CRC mismatch (received 0x347A, calculated 0xED18)",
+    "impossible length 253",
+    "CRC mismatch (received 0x6711, calculated 0xBEED)",
+    "CRC mismatch (received 0x49E9, calculated 0x2775)"
+  ],
+  "long_message_reassembled": false,
+  "volume": 0.5
+}

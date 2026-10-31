@@ -1,0 +1,58 @@
+{
+  "kind": "Measured - acoustic (single-laptop loopback)",
+  "mic": 9,
+  "speaker": 8,
+  "exclusive": true,
+  "freq0": 2500,
+  "freq1": 3500,
+  "bit_time": 0.02,
+  "volume": 0.5,
+  "bits_per_trial": 256,
+  "trials": 5,
+  "preambles_detected": 5,
+  "total_bits": 1280,
+  "bit_errors": 38,
+  "ber": 0.0296875,
+  "details": [
+    {
+      "trial": 0,
+      "preamble": true,
+      "score": 0.67,
+      "errors": 38,
+      "min_confidence": 0.018,
+      "overflows": 0
+    },
+    {
+      "trial": 1,
+      "preamble": true,
+      "score": 0.674,
+      "errors": 0,
+      "min_confidence": 0.614,
+      "overflows": 0
+    },
+    {
+      "trial": 2,
+      "preamble": true,
+      "score": 0.67,
+      "errors": 0,
+      "min_confidence": 0.62,
+      "overflows": 0
+    },
+    {
+      "trial": 3,
+      "preamble": true,
+      "score": 0.673,
+      "errors": 0,
+      "min_confidence": 0.646,
+      "overflows": 0
+    },
+    {
+      "trial": 4,
+      "preamble": true,
+      "score": 0.675,
+      "errors": 0,
+      "min_confidence": 0.639,
+      "overflows": 0
+    }
+  ]
+}

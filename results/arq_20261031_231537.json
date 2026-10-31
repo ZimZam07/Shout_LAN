@@ -1,0 +1,1995 @@
+{
+ "kind": "Measured - acoustic (single-laptop loopback, 2 engines)",
+ "results": [
+  {
+   "scenario": "Normal transmission",
+   "passed": false,
+   "detail": "status=failed, delivered=['HELLO WORLD'], retransmissions=5",
+   "seconds": 52.3,
+   "node1": {
+    "frames_tx": 6,
+    "data_frames_tx": 6,
+    "frames_rx_ok": 0,
+    "crc_failures": 6,
+    "acks_tx": 0,
+    "acks_rx": 0,
+    "retransmissions": 5,
+    "timeouts": 6,
+    "duplicates": 0,
+    "messages_sent": 1,
+    "messages_delivered": 0,
+    "messages_failed": 1,
+    "messages_received": 0,
+    "payload_bytes_acked": 0,
+    "pings_sent": 0,
+    "pongs_received": 0,
+    "injected_events": 0,
+    "channel_busy_deferrals": 2,
+    "backoffs": 0,
+    "forwarded": 0,
+    "ttl_expired": 0,
+    "security_rejects": 0
+   },
+   "node2": {
+    "frames_tx": 2,
+    "data_frames_tx": 0,
+    "frames_rx_ok": 2,
+    "crc_failures": 6,
+    "acks_tx": 2,
+    "acks_rx": 0,
+    "retransmissions": 0,
+    "timeouts": 0,
+    "duplicates": 1,
+    "messages_sent": 0,
+    "messages_delivered": 0,
+    "messages_failed": 0,
+    "messages_received": 1,
+    "payload_bytes_acked": 0,
+    "pings_sent": 0,
+    "pongs_received": 0,
+    "injected_events": 0,
+    "channel_busy_deferrals": 0,
+    "backoffs": 0,
+    "forwarded": 0,
+    "ttl_expired": 0,
+    "security_rejects": 0
+   }
+  },
+  {
+   "scenario": "Corrupted DATA frame",
+   "passed": false,
+   "detail": "receiver CRC failures=6, sender timeouts=6, retransmissions=5, delivered=['CRC TEST']",
+   "seconds": 48.0,
+   "node1": {
+    "frames_tx": 6,
+    "data_frames_tx": 6,
+    "frames_rx_ok": 0,
+    "crc_failures": 6,
+    "acks_tx": 0,
+    "acks_rx": 0,
+    "retransmissions": 5,
+    "timeouts": 6,
+    "duplicates": 0,
+    "messages_sent": 1,
+    "messages_delivered": 0,
+    "messages_failed": 1,
+    "messages_received": 0,
+    "payload_bytes_acked": 0,
+    "pings_sent": 0,
+    "pongs_received": 0,
+    "injected_events": 1,
+    "channel_busy_deferrals": 0,
+    "backoffs": 0,
+    "forwarded": 0,
+    "ttl_expired": 0,
+    "security_rejects": 0
+   },
+   "node2": {
+    "frames_tx": 1,
+    "data_frames_tx": 0,
+    "frames_rx_ok": 1,
+    "crc_failures": 6,
+    "acks_tx": 1,
+    "acks_rx": 0,
+    "retransmissions": 0,
+    "timeouts": 0,
+    "duplicates": 0,
+    "messages_sent": 0,
+    "messages_delivered": 0,
+    "messages_failed": 0,
+    "messages_received": 1,
+    "payload_bytes_acked": 0,
+    "pings_sent": 0,
+    "pongs_received": 0,
+    "injected_events": 0,
+    "channel_busy_deferrals": 0,
+    "backoffs": 0,
+    "forwarded": 0,
+    "ttl_expired": 0,
+    "security_rejects": 0
+   }
+  },
+  {
+   "scenario": "Lost ACK (exactly-once delivery)",
+   "passed": false,
+   "detail": "duplicates at receiver=0, delivered 1 time(s): ['ACK LOSS TEST']",
+   "seconds": 52.9,
+   "node1": {
+    "frames_tx": 6,
+    "data_frames_tx": 6,
+    "frames_rx_ok": 0,
+    "crc_failures": 5,
+    "acks_tx": 0,
+    "acks_rx": 0,
+    "retransmissions": 5,
+    "timeouts": 6,
+    "duplicates": 0,
+    "messages_sent": 1,
+    "messages_delivered": 0,
+    "messages_failed": 1,
+    "messages_received": 0,
+    "payload_bytes_acked": 0,
+    "pings_sent": 0,
+    "pongs_received": 0,
+    "injected_events": 0,
+    "channel_busy_deferrals": 0,
+    "backoffs": 0,
+    "forwarded": 0,
+    "ttl_expired": 0,
+    "security_rejects": 0
+   },
+   "node2": {
+    "frames_tx": 0,
+    "data_frames_tx": 0,
+    "frames_rx_ok": 1,
+    "crc_failures": 5,
+    "acks_tx": 0,
+    "acks_rx": 0,
+    "retransmissions": 0,
+    "timeouts": 0,
+    "duplicates": 0,
+    "messages_sent": 0,
+    "messages_delivered": 0,
+    "messages_failed": 0,
+    "messages_received": 1,
+    "payload_bytes_acked": 0,
+    "pings_sent": 0,
+    "pongs_received": 0,
+    "injected_events": 1,
+    "channel_busy_deferrals": 0,
+    "backoffs": 0,
+    "forwarded": 0,
+    "ttl_expired": 0,
+    "security_rejects": 0
+   }
+  }
+ ],
+ "stats_node1": {
+  "source": "Measured - acoustic",
+  "counters": {
+   "frames_tx": 18,
+   "data_frames_tx": 18,
+   "frames_rx_ok": 0,
+   "crc_failures": 17,
+   "acks_tx": 0,
+   "acks_rx": 0,
+   "retransmissions": 15,
+   "timeouts": 18,
+   "duplicates": 0,
+   "messages_sent": 3,
+   "messages_delivered": 0,
+   "messages_failed": 3,
+   "messages_received": 0,
+   "payload_bytes_acked": 0,
+   "pings_sent": 0,
+   "pongs_received": 0,
+   "injected_events": 1,
+   "channel_busy_deferrals": 2,
+   "backoffs": 0,
+   "forwarded": 0,
+   "ttl_expired": 0,
+   "security_rejects": 0
+  },
+  "delivery_ratio": 0.0,
+  "frame_loss": 0.833,
+  "goodput_bps": 0.0,
+  "rtt": null,
+  "recent_rtts": [],
+  "ping_rtt": null,
+  "ping_loss": null
+ },
+ "stats_node2": {
+  "source": "Measured - acoustic",
+  "counters": {
+   "frames_tx": 3,
+   "data_frames_tx": 0,
+   "frames_rx_ok": 4,
+   "crc_failures": 17,
+   "acks_tx": 3,
+   "acks_rx": 0,
+   "retransmissions": 0,
+   "timeouts": 0,
+   "duplicates": 1,
+   "messages_sent": 0,
+   "messages_delivered": 0,
+   "messages_failed": 0,
+   "messages_received": 3,
+   "payload_bytes_acked": 0,
+   "pings_sent": 0,
+   "pongs_received": 0,
+   "injected_events": 1,
+   "channel_busy_deferrals": 0,
+   "backoffs": 0,
+   "forwarded": 0,
+   "ttl_expired": 0,
+   "security_rejects": 0
+  },
+  "delivery_ratio": null,
+  "frame_loss": null,
+  "goodput_bps": null,
+  "rtt": null,
+  "recent_rtts": [],
+  "ping_rtt": null,
+  "ping_loss": null
+ },
+ "events": [
+  {
+   "event": "engine_started",
+   "time": 1793468582.835,
+   "node": 1,
+   "channel": "acoustic",
+   "label": "Acoustic link (single-laptop loopback)",
+   "text": "Node 1 started on the Acoustic link (single-laptop loopback)"
+  },
+  {
+   "event": "engine_started",
+   "time": 1793468582.839,
+   "node": 2,
+   "channel": "acoustic",
+   "label": "Acoustic link (single-laptop loopback)",
+   "text": "Node 2 started on the Acoustic link (single-laptop loopback)"
+  },
+  {
+   "event": "message_status",
+   "time": 1793468583.84,
+   "node": 1,
+   "msg_id": 1,
+   "dst": 2,
+   "status": "queued",
+   "frames": 1,
+   "message": "HELLO WORLD",
+   "encrypted": false,
+   "text": "Message #1 to node 2 queued (11 bytes, 1 frame(s))"
+  },
+  {
+   "event": "message_status",
+   "time": 1793468583.84,
+   "node": 1,
+   "msg_id": 1,
+   "dst": 2,
+   "status": "sending",
+   "frames": 1,
+   "text": "Sending message #1 with Stop-and-Wait + CSMA (listen before talk)"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793468583.841,
+   "node": 1,
+   "reason": "sound in our band 37 dB above the noise floor",
+   "wait": 1.03,
+   "text": "CSMA: channel BUSY (sound in our band 37 dB above the noise floor) - deferring DATA seq 8 for 1.0 s"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793468584.875,
+   "node": 1,
+   "reason": "sound in our band 30 dB above the noise floor",
+   "wait": 0.39,
+   "text": "CSMA: channel BUSY (sound in our band 30 dB above the noise floor) - deferring DATA seq 8 for 0.4 s"
+  },
+  {
+   "event": "channel_idle",
+   "time": 1793468585.265,
+   "node": 1,
+   "text": "Channel idle - transmitting now"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793468585.277,
+   "node": 1,
+   "seq": 8,
+   "type": "DATA",
+   "airtime": 3.67
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793468588.961,
+   "node": 1,
+   "frame": {
+    "type": "DATA",
+    "flags": [
+     "FIRST",
+     "LAST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 8,
+    "len": 11,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "48 45 4c 4c 4f 20 57 4f 52 4c 44"
+   },
+   "raw": "7e 19 01 02 08 0b 01 02 04 48 45 4c 4c 4f 20 57 4f 52 4c 44 b4 37",
+   "bytes": 22,
+   "airtime": 3.67,
+   "duration": 3.68,
+   "retry": 0,
+   "msg_id": 1,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA seq 8 to node 2"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468589.153,
+   "node": 2,
+   "ok": true,
+   "frame": {
+    "type": "DATA",
+    "flags": [
+     "FIRST",
+     "LAST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 8,
+    "len": 11,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "48 45 4c 4c 4f 20 57 4f 52 4c 44"
+   },
+   "raw": "7e 19 01 02 08 0b 01 02 04 48 45 4c 4c 4f 20 57 4f 52 4c 44 b4 37",
+   "score": 0.67,
+   "confidence": 0.87,
+   "for_me": true,
+   "text": "Received DATA seq 8 from node 1 - CRC OK"
+  },
+  {
+   "event": "message_rx",
+   "time": 1793468589.154,
+   "node": 2,
+   "origin": 1,
+   "message": "HELLO WORLD",
+   "length": 11,
+   "encrypted": false,
+   "text": "Message from node 1 delivered: 'HELLO WORLD'"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793468589.165,
+   "node": 2,
+   "seq": 8,
+   "type": "ACK",
+   "airtime": 1.91
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468590.455,
+   "node": 2,
+   "ok": false,
+   "error": "impossible length 106",
+   "raw": "7e 20 02 01 08 6a",
+   "score": 0.67,
+   "text": "Frame rejected: impossible length 106"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468590.457,
+   "node": 1,
+   "ok": false,
+   "error": "impossible length 106",
+   "raw": "7e 20 02 01 08 6a",
+   "score": 0.67,
+   "text": "Frame rejected: impossible length 106"
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793468591.096,
+   "node": 2,
+   "frame": {
+    "type": "ACK",
+    "flags": [],
+    "src": 2,
+    "dst": 1,
+    "seq": 8,
+    "len": 0,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": ""
+   },
+   "raw": "7e 20 02 01 08 00 02 01 04 70 ed",
+   "bytes": 11,
+   "airtime": 1.91,
+   "duration": 1.93,
+   "retry": 0,
+   "msg_id": null,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent ACK seq 8 to node 1"
+  },
+  {
+   "event": "timeout",
+   "time": 1793468593.333,
+   "node": 1,
+   "seq": 8,
+   "msg_id": 1,
+   "waited": 4.37,
+   "text": "No ACK for seq 8 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793468593.333,
+   "node": 1,
+   "seq": 8,
+   "attempt": 1,
+   "msg_id": 1,
+   "text": "Retransmitting frame seq 8 (attempt 2)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793468593.349,
+   "node": 1,
+   "seq": 8,
+   "type": "DATA",
+   "airtime": 3.67
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468594.693,
+   "node": 2,
+   "ok": false,
+   "error": "bad sync byte 0xB3",
+   "raw": "b3 f9 56 30 96 2a",
+   "score": 0.67,
+   "text": "Frame rejected: bad sync byte 0xB3"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468594.695,
+   "node": 1,
+   "ok": false,
+   "error": "bad sync byte 0xB3",
+   "raw": "b3 f9 56 30 96 2a",
+   "score": 0.67,
+   "text": "Frame rejected: bad sync byte 0xB3"
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793468597.042,
+   "node": 1,
+   "frame": {
+    "type": "DATA",
+    "flags": [
+     "FIRST",
+     "LAST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 8,
+    "len": 11,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "48 45 4c 4c 4f 20 57 4f 52 4c 44"
+   },
+   "raw": "7e 19 01 02 08 0b 01 02 04 48 45 4c 4c 4f 20 57 4f 52 4c 44 b4 37",
+   "bytes": 22,
+   "airtime": 3.67,
+   "duration": 3.69,
+   "retry": 1,
+   "msg_id": 1,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA seq 8 to node 2 (retry 1)"
+  },
+  {
+   "event": "timeout",
+   "time": 1793468601.413,
+   "node": 1,
+   "seq": 8,
+   "msg_id": 1,
+   "waited": 4.37,
+   "text": "No ACK for seq 8 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793468601.413,
+   "node": 1,
+   "seq": 8,
+   "attempt": 2,
+   "msg_id": 1,
+   "text": "Retransmitting frame seq 8 (attempt 3)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793468601.428,
+   "node": 1,
+   "seq": 8,
+   "type": "DATA",
+   "airtime": 3.67
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793468605.117,
+   "node": 1,
+   "frame": {
+    "type": "DATA",
+    "flags": [
+     "FIRST",
+     "LAST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 8,
+    "len": 11,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "48 45 4c 4c 4f 20 57 4f 52 4c 44"
+   },
+   "raw": "7e 19 01 02 08 0b 01 02 04 48 45 4c 4c 4f 20 57 4f 52 4c 44 b4 37",
+   "bytes": 22,
+   "airtime": 3.67,
+   "duration": 3.69,
+   "retry": 2,
+   "msg_id": 1,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA seq 8 to node 2 (retry 2)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468605.309,
+   "node": 1,
+   "ok": false,
+   "error": "CRC mismatch (received 0xA675, calculated 0xE99C)",
+   "raw": "7e 19 01 42 08 0b 00 22 04 40 44 0d f8 6f 64 45 07 c2 cc 61 a6 75",
+   "score": 0.67,
+   "text": "Frame rejected: CRC mismatch (received 0xA675, calculated 0xE99C)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468605.318,
+   "node": 2,
+   "ok": false,
+   "error": "CRC mismatch (received 0xA675, calculated 0xE99C)",
+   "raw": "7e 19 01 42 08 0b 00 22 04 40 44 0d f8 6f 64 45 07 c2 cc 61 a6 75",
+   "score": 0.67,
+   "text": "Frame rejected: CRC mismatch (received 0xA675, calculated 0xE99C)"
+  },
+  {
+   "event": "timeout",
+   "time": 1793468609.488,
+   "node": 1,
+   "seq": 8,
+   "msg_id": 1,
+   "waited": 4.37,
+   "text": "No ACK for seq 8 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793468609.488,
+   "node": 1,
+   "seq": 8,
+   "attempt": 3,
+   "msg_id": 1,
+   "text": "Retransmitting frame seq 8 (attempt 4)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793468609.497,
+   "node": 1,
+   "seq": 8,
+   "type": "DATA",
+   "airtime": 3.67
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468610.766,
+   "node": 1,
+   "ok": false,
+   "error": "impossible length 27",
+   "raw": "7e 19 a9 02 48 1b",
+   "score": 0.65,
+   "text": "Frame rejected: impossible length 27"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468610.769,
+   "node": 2,
+   "ok": false,
+   "error": "impossible length 27",
+   "raw": "7e 19 a9 02 48 1b",
+   "score": 0.65,
+   "text": "Frame rejected: impossible length 27"
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793468613.17,
+   "node": 1,
+   "frame": {
+    "type": "DATA",
+    "flags": [
+     "FIRST",
+     "LAST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 8,
+    "len": 11,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "48 45 4c 4c 4f 20 57 4f 52 4c 44"
+   },
+   "raw": "7e 19 01 02 08 0b 01 02 04 48 45 4c 4c 4f 20 57 4f 52 4c 44 b4 37",
+   "bytes": 22,
+   "airtime": 3.67,
+   "duration": 3.67,
+   "retry": 3,
+   "msg_id": 1,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA seq 8 to node 2 (retry 3)"
+  },
+  {
+   "event": "timeout",
+   "time": 1793468617.54,
+   "node": 1,
+   "seq": 8,
+   "msg_id": 1,
+   "waited": 4.37,
+   "text": "No ACK for seq 8 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793468617.54,
+   "node": 1,
+   "seq": 8,
+   "attempt": 4,
+   "msg_id": 1,
+   "text": "Retransmitting frame seq 8 (attempt 5)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793468617.547,
+   "node": 1,
+   "seq": 8,
+   "type": "DATA",
+   "airtime": 3.67
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468618.814,
+   "node": 2,
+   "ok": false,
+   "error": "impossible length 42",
+   "raw": "7e 19 45 20 90 2a",
+   "score": 0.65,
+   "text": "Frame rejected: impossible length 42"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468618.818,
+   "node": 1,
+   "ok": false,
+   "error": "impossible length 42",
+   "raw": "7e 19 45 20 90 2a",
+   "score": 0.65,
+   "text": "Frame rejected: impossible length 42"
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793468621.228,
+   "node": 1,
+   "frame": {
+    "type": "DATA",
+    "flags": [
+     "FIRST",
+     "LAST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 8,
+    "len": 11,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "48 45 4c 4c 4f 20 57 4f 52 4c 44"
+   },
+   "raw": "7e 19 01 02 08 0b 01 02 04 48 45 4c 4c 4f 20 57 4f 52 4c 44 b4 37",
+   "bytes": 22,
+   "airtime": 3.67,
+   "duration": 3.68,
+   "retry": 4,
+   "msg_id": 1,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA seq 8 to node 2 (retry 4)"
+  },
+  {
+   "event": "timeout",
+   "time": 1793468625.598,
+   "node": 1,
+   "seq": 8,
+   "msg_id": 1,
+   "waited": 4.37,
+   "text": "No ACK for seq 8 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793468625.598,
+   "node": 1,
+   "seq": 8,
+   "attempt": 5,
+   "msg_id": 1,
+   "text": "Retransmitting frame seq 8 (attempt 6)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793468625.613,
+   "node": 1,
+   "seq": 8,
+   "type": "DATA",
+   "airtime": 3.67
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793468629.294,
+   "node": 1,
+   "frame": {
+    "type": "DATA",
+    "flags": [
+     "FIRST",
+     "LAST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 8,
+    "len": 11,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "48 45 4c 4c 4f 20 57 4f 52 4c 44"
+   },
+   "raw": "7e 19 01 02 08 0b 01 02 04 48 45 4c 4c 4f 20 57 4f 52 4c 44 b4 37",
+   "bytes": 22,
+   "airtime": 3.67,
+   "duration": 3.68,
+   "retry": 5,
+   "msg_id": 1,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA seq 8 to node 2 (retry 5)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468629.484,
+   "node": 2,
+   "ok": true,
+   "frame": {
+    "type": "DATA",
+    "flags": [
+     "FIRST",
+     "LAST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 8,
+    "len": 11,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "48 45 4c 4c 4f 20 57 4f 52 4c 44"
+   },
+   "raw": "7e 19 01 02 08 0b 01 02 04 48 45 4c 4c 4f 20 57 4f 52 4c 44 b4 37",
+   "score": 0.81,
+   "confidence": 0.89,
+   "for_me": true,
+   "text": "Received DATA seq 8 from node 1 - CRC OK"
+  },
+  {
+   "event": "duplicate",
+   "time": 1793468629.484,
+   "node": 2,
+   "seq": 8,
+   "src": 1,
+   "text": "Duplicate seq 8 from node 1: ACKed again, not delivered twice"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793468629.487,
+   "node": 2,
+   "seq": 8,
+   "type": "ACK",
+   "airtime": 1.91
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793468631.413,
+   "node": 2,
+   "frame": {
+    "type": "ACK",
+    "flags": [],
+    "src": 2,
+    "dst": 1,
+    "seq": 8,
+    "len": 0,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": ""
+   },
+   "raw": "7e 20 02 01 08 00 02 01 04 70 ed",
+   "bytes": 11,
+   "airtime": 1.91,
+   "duration": 1.93,
+   "retry": 0,
+   "msg_id": null,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent ACK seq 8 to node 1"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468631.61,
+   "node": 2,
+   "ok": false,
+   "error": "CRC mismatch (received 0x7879, calculated 0x8F13)",
+   "raw": "7e 21 32 01 08 00 07 01 51 78 79",
+   "score": 0.83,
+   "text": "Frame rejected: CRC mismatch (received 0x7879, calculated 0x8F13)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468631.617,
+   "node": 1,
+   "ok": false,
+   "error": "CRC mismatch (received 0x7879, calculated 0x8F13)",
+   "raw": "7e 21 32 01 08 00 07 01 51 78 79",
+   "score": 0.83,
+   "text": "Frame rejected: CRC mismatch (received 0x7879, calculated 0x8F13)"
+  },
+  {
+   "event": "timeout",
+   "time": 1793468633.666,
+   "node": 1,
+   "seq": 8,
+   "msg_id": 1,
+   "waited": 4.37,
+   "text": "No ACK for seq 8 after 4.4 s - timeout"
+  },
+  {
+   "event": "message_status",
+   "time": 1793468633.666,
+   "node": 1,
+   "msg_id": 1,
+   "dst": 2,
+   "status": "failed",
+   "seconds": 49.8,
+   "text": "Message #1 FAILED: no ACK after 5 retries"
+  },
+  {
+   "event": "injection_set",
+   "time": 1793468636.167,
+   "node": 1,
+   "name": "corrupt_next_data",
+   "value": true,
+   "text": "Error injection 'corrupt_next_data' ARMED"
+  },
+  {
+   "event": "message_status",
+   "time": 1793468636.167,
+   "node": 1,
+   "msg_id": 2,
+   "dst": 2,
+   "status": "queued",
+   "frames": 1,
+   "message": "CRC TEST",
+   "encrypted": false,
+   "text": "Message #2 to node 2 queued (8 bytes, 1 frame(s))"
+  },
+  {
+   "event": "message_status",
+   "time": 1793468636.168,
+   "node": 1,
+   "msg_id": 2,
+   "dst": 2,
+   "status": "sending",
+   "frames": 1,
+   "text": "Sending message #2 with Stop-and-Wait + CSMA (listen before talk)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793468636.179,
+   "node": 1,
+   "seq": 9,
+   "type": "DATA",
+   "airtime": 3.19
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793468639.373,
+   "node": 1,
+   "frame": {
+    "type": "DATA",
+    "flags": [
+     "FIRST",
+     "LAST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 9,
+    "len": 8,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "43 52 43 20 54 45 53 54"
+   },
+   "raw": "7e 19 01 02 09 08 01 02 04 43 52 43 20 54 45 73 54 77 bd",
+   "bytes": 19,
+   "airtime": 3.19,
+   "duration": 3.19,
+   "retry": 0,
+   "msg_id": 2,
+   "injected": "corrupted (injected bit error)",
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA seq 9 to node 2 - corrupted (injected bit error)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468639.599,
+   "node": 2,
+   "ok": false,
+   "error": "CRC mismatch (received 0x77BD, calculated 0x715B)",
+   "raw": "7e 19 01 02 09 08 01 02 04 43 52 43 20 54 45 73 54 77 bd",
+   "score": 0.8,
+   "text": "Frame rejected: CRC mismatch (received 0x77BD, calculated 0x715B)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468639.606,
+   "node": 1,
+   "ok": false,
+   "error": "CRC mismatch (received 0x77BD, calculated 0x715B)",
+   "raw": "7e 19 01 02 09 08 01 02 04 43 52 43 20 54 45 73 54 77 bd",
+   "score": 0.8,
+   "text": "Frame rejected: CRC mismatch (received 0x77BD, calculated 0x715B)"
+  },
+  {
+   "event": "timeout",
+   "time": 1793468643.743,
+   "node": 1,
+   "seq": 9,
+   "msg_id": 2,
+   "waited": 4.37,
+   "text": "No ACK for seq 9 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793468643.743,
+   "node": 1,
+   "seq": 9,
+   "attempt": 1,
+   "msg_id": 2,
+   "text": "Retransmitting frame seq 9 (attempt 2)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793468643.756,
+   "node": 1,
+   "seq": 9,
+   "type": "DATA",
+   "airtime": 3.19
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793468646.953,
+   "node": 1,
+   "frame": {
+    "type": "DATA",
+    "flags": [
+     "FIRST",
+     "LAST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 9,
+    "len": 8,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "43 52 43 20 54 45 53 54"
+   },
+   "raw": "7e 19 01 02 09 08 01 02 04 43 52 43 20 54 45 53 54 77 bd",
+   "bytes": 19,
+   "airtime": 3.19,
+   "duration": 3.2,
+   "retry": 1,
+   "msg_id": 2,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA seq 9 to node 2 (retry 1)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468647.136,
+   "node": 2,
+   "ok": true,
+   "frame": {
+    "type": "DATA",
+    "flags": [
+     "FIRST",
+     "LAST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 9,
+    "len": 8,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "43 52 43 20 54 45 53 54"
+   },
+   "raw": "7e 19 01 02 09 08 01 02 04 43 52 43 20 54 45 53 54 77 bd",
+   "score": 0.81,
+   "confidence": 0.9,
+   "for_me": true,
+   "text": "Received DATA seq 9 from node 1 - CRC OK"
+  },
+  {
+   "event": "message_rx",
+   "time": 1793468647.136,
+   "node": 2,
+   "origin": 1,
+   "message": "CRC TEST",
+   "length": 8,
+   "encrypted": false,
+   "text": "Message from node 1 delivered: 'CRC TEST'"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793468647.142,
+   "node": 2,
+   "seq": 9,
+   "type": "ACK",
+   "airtime": 1.91
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468648.45,
+   "node": 1,
+   "ok": false,
+   "error": "impossible length 148",
+   "raw": "7e 20 7a 28 58 94",
+   "score": 0.82,
+   "text": "Frame rejected: impossible length 148"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468648.452,
+   "node": 2,
+   "ok": false,
+   "error": "impossible length 148",
+   "raw": "7e 20 7a 28 58 94",
+   "score": 0.82,
+   "text": "Frame rejected: impossible length 148"
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793468649.077,
+   "node": 2,
+   "frame": {
+    "type": "ACK",
+    "flags": [],
+    "src": 2,
+    "dst": 1,
+    "seq": 9,
+    "len": 0,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": ""
+   },
+   "raw": "7e 20 02 01 09 00 02 01 04 da bc",
+   "bytes": 11,
+   "airtime": 1.91,
+   "duration": 1.93,
+   "retry": 0,
+   "msg_id": null,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent ACK seq 9 to node 1"
+  },
+  {
+   "event": "timeout",
+   "time": 1793468651.328,
+   "node": 1,
+   "seq": 9,
+   "msg_id": 2,
+   "waited": 4.37,
+   "text": "No ACK for seq 9 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793468651.328,
+   "node": 1,
+   "seq": 9,
+   "attempt": 2,
+   "msg_id": 2,
+   "text": "Retransmitting frame seq 9 (attempt 3)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793468651.334,
+   "node": 1,
+   "seq": 9,
+   "type": "DATA",
+   "airtime": 3.19
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468652.665,
+   "node": 1,
+   "ok": false,
+   "error": "bad sync byte 0x7C",
+   "raw": "7c 19 81 02 09 08",
+   "score": 0.76,
+   "text": "Frame rejected: bad sync byte 0x7C"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468652.668,
+   "node": 2,
+   "ok": false,
+   "error": "bad sync byte 0x7C",
+   "raw": "7c 19 81 02 09 08",
+   "score": 0.76,
+   "text": "Frame rejected: bad sync byte 0x7C"
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793468654.531,
+   "node": 1,
+   "frame": {
+    "type": "DATA",
+    "flags": [
+     "FIRST",
+     "LAST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 9,
+    "len": 8,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "43 52 43 20 54 45 53 54"
+   },
+   "raw": "7e 19 01 02 09 08 01 02 04 43 52 43 20 54 45 53 54 77 bd",
+   "bytes": 19,
+   "airtime": 3.19,
+   "duration": 3.2,
+   "retry": 2,
+   "msg_id": 2,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA seq 9 to node 2 (retry 2)"
+  },
+  {
+   "event": "timeout",
+   "time": 1793468658.901,
+   "node": 1,
+   "seq": 9,
+   "msg_id": 2,
+   "waited": 4.37,
+   "text": "No ACK for seq 9 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793468658.902,
+   "node": 1,
+   "seq": 9,
+   "attempt": 3,
+   "msg_id": 2,
+   "text": "Retransmitting frame seq 9 (attempt 4)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793468658.917,
+   "node": 1,
+   "seq": 9,
+   "type": "DATA",
+   "airtime": 3.19
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793468662.12,
+   "node": 1,
+   "frame": {
+    "type": "DATA",
+    "flags": [
+     "FIRST",
+     "LAST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 9,
+    "len": 8,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "43 52 43 20 54 45 53 54"
+   },
+   "raw": "7e 19 01 02 09 08 01 02 04 43 52 43 20 54 45 53 54 77 bd",
+   "bytes": 19,
+   "airtime": 3.19,
+   "duration": 3.2,
+   "retry": 3,
+   "msg_id": 2,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA seq 9 to node 2 (retry 3)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468662.322,
+   "node": 1,
+   "ok": false,
+   "error": "CRC mismatch (received 0x77B5, calculated 0x77BD)",
+   "raw": "7e 19 01 02 09 08 01 02 04 43 52 43 20 54 45 53 54 77 b5",
+   "score": 0.66,
+   "text": "Frame rejected: CRC mismatch (received 0x77B5, calculated 0x77BD)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468662.328,
+   "node": 2,
+   "ok": false,
+   "error": "CRC mismatch (received 0x77B5, calculated 0x77BD)",
+   "raw": "7e 19 01 02 09 08 01 02 04 43 52 43 20 54 45 53 54 77 b5",
+   "score": 0.66,
+   "text": "Frame rejected: CRC mismatch (received 0x77B5, calculated 0x77BD)"
+  },
+  {
+   "event": "timeout",
+   "time": 1793468666.491,
+   "node": 1,
+   "seq": 9,
+   "msg_id": 2,
+   "waited": 4.37,
+   "text": "No ACK for seq 9 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793468666.491,
+   "node": 1,
+   "seq": 9,
+   "attempt": 4,
+   "msg_id": 2,
+   "text": "Retransmitting frame seq 9 (attempt 5)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793468666.501,
+   "node": 1,
+   "seq": 9,
+   "type": "DATA",
+   "airtime": 3.19
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793468669.703,
+   "node": 1,
+   "frame": {
+    "type": "DATA",
+    "flags": [
+     "FIRST",
+     "LAST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 9,
+    "len": 8,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "43 52 43 20 54 45 53 54"
+   },
+   "raw": "7e 19 01 02 09 08 01 02 04 43 52 43 20 54 45 53 54 77 bd",
+   "bytes": 19,
+   "airtime": 3.19,
+   "duration": 3.2,
+   "retry": 4,
+   "msg_id": 2,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA seq 9 to node 2 (retry 4)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468669.892,
+   "node": 2,
+   "ok": false,
+   "error": "CRC mismatch (received 0x77BD, calculated 0xF34F)",
+   "raw": "7e 19 01 02 09 08 01 02 00 63 12 43 20 54 44 5b 54 77 bd",
+   "score": 0.73,
+   "text": "Frame rejected: CRC mismatch (received 0x77BD, calculated 0xF34F)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468669.907,
+   "node": 1,
+   "ok": false,
+   "error": "CRC mismatch (received 0x77BD, calculated 0xF34F)",
+   "raw": "7e 19 01 02 09 08 01 02 00 63 12 43 20 54 44 5b 54 77 bd",
+   "score": 0.73,
+   "text": "Frame rejected: CRC mismatch (received 0x77BD, calculated 0xF34F)"
+  },
+  {
+   "event": "timeout",
+   "time": 1793468674.076,
+   "node": 1,
+   "seq": 9,
+   "msg_id": 2,
+   "waited": 4.37,
+   "text": "No ACK for seq 9 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793468674.076,
+   "node": 1,
+   "seq": 9,
+   "attempt": 5,
+   "msg_id": 2,
+   "text": "Retransmitting frame seq 9 (attempt 6)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793468674.09,
+   "node": 1,
+   "seq": 9,
+   "type": "DATA",
+   "airtime": 3.19
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468675.347,
+   "node": 2,
+   "ok": false,
+   "error": "bad sync byte 0x7C",
+   "raw": "7c 19 81 8b 49 5d",
+   "score": 0.69,
+   "text": "Frame rejected: bad sync byte 0x7C"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468675.354,
+   "node": 1,
+   "ok": false,
+   "error": "bad sync byte 0x7C",
+   "raw": "7c 19 81 8b 49 5d",
+   "score": 0.69,
+   "text": "Frame rejected: bad sync byte 0x7C"
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793468677.313,
+   "node": 1,
+   "frame": {
+    "type": "DATA",
+    "flags": [
+     "FIRST",
+     "LAST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 9,
+    "len": 8,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "43 52 43 20 54 45 53 54"
+   },
+   "raw": "7e 19 01 02 09 08 01 02 04 43 52 43 20 54 45 53 54 77 bd",
+   "bytes": 19,
+   "airtime": 3.19,
+   "duration": 3.22,
+   "retry": 5,
+   "msg_id": 2,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA seq 9 to node 2 (retry 5)"
+  },
+  {
+   "event": "timeout",
+   "time": 1793468681.685,
+   "node": 1,
+   "seq": 9,
+   "msg_id": 2,
+   "waited": 4.37,
+   "text": "No ACK for seq 9 after 4.4 s - timeout"
+  },
+  {
+   "event": "message_status",
+   "time": 1793468681.685,
+   "node": 1,
+   "msg_id": 2,
+   "dst": 2,
+   "status": "failed",
+   "seconds": 45.5,
+   "text": "Message #2 FAILED: no ACK after 5 retries"
+  },
+  {
+   "event": "injection_set",
+   "time": 1793468684.186,
+   "node": 2,
+   "name": "drop_next_ack",
+   "value": true,
+   "text": "Error injection 'drop_next_ack' ARMED"
+  },
+  {
+   "event": "message_status",
+   "time": 1793468684.186,
+   "node": 1,
+   "msg_id": 3,
+   "dst": 2,
+   "status": "queued",
+   "frames": 1,
+   "message": "ACK LOSS TEST",
+   "encrypted": false,
+   "text": "Message #3 to node 2 queued (13 bytes, 1 frame(s))"
+  },
+  {
+   "event": "message_status",
+   "time": 1793468684.187,
+   "node": 1,
+   "msg_id": 3,
+   "dst": 2,
+   "status": "sending",
+   "frames": 1,
+   "text": "Sending message #3 with Stop-and-Wait + CSMA (listen before talk)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793468684.201,
+   "node": 1,
+   "seq": 10,
+   "type": "DATA",
+   "airtime": 3.99
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468685.462,
+   "node": 2,
+   "ok": false,
+   "error": "impossible length 93",
+   "raw": "7e 19 01 02 0a 5d",
+   "score": 0.75,
+   "text": "Frame rejected: impossible length 93"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468685.465,
+   "node": 1,
+   "ok": false,
+   "error": "impossible length 93",
+   "raw": "7e 19 01 02 0a 5d",
+   "score": 0.75,
+   "text": "Frame rejected: impossible length 93"
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793468688.208,
+   "node": 1,
+   "frame": {
+    "type": "DATA",
+    "flags": [
+     "FIRST",
+     "LAST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 10,
+    "len": 13,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "41 43 4b 20 4c 4f 53 53 20 54 45 53 54"
+   },
+   "raw": "7e 19 01 02 0a 0d 01 02 04 41 43 4b 20 4c 4f 53 53 20 54 45 53 54 de f2",
+   "bytes": 24,
+   "airtime": 3.99,
+   "duration": 4.01,
+   "retry": 0,
+   "msg_id": 3,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA seq 10 to node 2"
+  },
+  {
+   "event": "timeout",
+   "time": 1793468692.58,
+   "node": 1,
+   "seq": 10,
+   "msg_id": 3,
+   "waited": 4.37,
+   "text": "No ACK for seq 10 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793468692.581,
+   "node": 1,
+   "seq": 10,
+   "attempt": 1,
+   "msg_id": 3,
+   "text": "Retransmitting frame seq 10 (attempt 2)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793468692.604,
+   "node": 1,
+   "seq": 10,
+   "type": "DATA",
+   "airtime": 3.99
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793468696.607,
+   "node": 1,
+   "frame": {
+    "type": "DATA",
+    "flags": [
+     "FIRST",
+     "LAST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 10,
+    "len": 13,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "41 43 4b 20 4c 4f 53 53 20 54 45 53 54"
+   },
+   "raw": "7e 19 01 02 0a 0d 01 02 04 41 43 4b 20 4c 4f 53 53 20 54 45 53 54 de f2",
+   "bytes": 24,
+   "airtime": 3.99,
+   "duration": 4.0,
+   "retry": 1,
+   "msg_id": 3,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA seq 10 to node 2 (retry 1)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468696.813,
+   "node": 2,
+   "ok": true,
+   "frame": {
+    "type": "DATA",
+    "flags": [
+     "FIRST",
+     "LAST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 10,
+    "len": 13,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "41 43 4b 20 4c 4f 53 53 20 54 45 53 54"
+   },
+   "raw": "7e 19 01 02 0a 0d 01 02 04 41 43 4b 20 4c 4f 53 53 20 54 45 53 54 de f2",
+   "score": 0.74,
+   "confidence": 0.88,
+   "for_me": true,
+   "text": "Received DATA seq 10 from node 1 - CRC OK"
+  },
+  {
+   "event": "ack_dropped",
+   "time": 1793468696.813,
+   "node": 2,
+   "seq": 10,
+   "text": "ACK for seq 10 NOT sent (injected ACK loss)"
+  },
+  {
+   "event": "message_rx",
+   "time": 1793468696.814,
+   "node": 2,
+   "origin": 1,
+   "message": "ACK LOSS TEST",
+   "length": 13,
+   "encrypted": false,
+   "text": "Message from node 1 delivered: 'ACK LOSS TEST'"
+  },
+  {
+   "event": "timeout",
+   "time": 1793468700.979,
+   "node": 1,
+   "seq": 10,
+   "msg_id": 3,
+   "waited": 4.37,
+   "text": "No ACK for seq 10 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793468700.979,
+   "node": 1,
+   "seq": 10,
+   "attempt": 2,
+   "msg_id": 3,
+   "text": "Retransmitting frame seq 10 (attempt 3)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793468700.995,
+   "node": 1,
+   "seq": 10,
+   "type": "DATA",
+   "airtime": 3.99
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468702.319,
+   "node": 1,
+   "ok": false,
+   "error": "impossible length 29",
+   "raw": "7e 19 01 03 0a 1d",
+   "score": 0.75,
+   "text": "Frame rejected: impossible length 29"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468702.339,
+   "node": 2,
+   "ok": false,
+   "error": "impossible length 29",
+   "raw": "7e 19 01 03 0a 1d",
+   "score": 0.75,
+   "text": "Frame rejected: impossible length 29"
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793468705.015,
+   "node": 1,
+   "frame": {
+    "type": "DATA",
+    "flags": [
+     "FIRST",
+     "LAST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 10,
+    "len": 13,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "41 43 4b 20 4c 4f 53 53 20 54 45 53 54"
+   },
+   "raw": "7e 19 01 02 0a 0d 01 02 04 41 43 4b 20 4c 4f 53 53 20 54 45 53 54 de f2",
+   "bytes": 24,
+   "airtime": 3.99,
+   "duration": 4.02,
+   "retry": 2,
+   "msg_id": 3,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA seq 10 to node 2 (retry 2)"
+  },
+  {
+   "event": "timeout",
+   "time": 1793468709.388,
+   "node": 1,
+   "seq": 10,
+   "msg_id": 3,
+   "waited": 4.37,
+   "text": "No ACK for seq 10 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793468709.388,
+   "node": 1,
+   "seq": 10,
+   "attempt": 3,
+   "msg_id": 3,
+   "text": "Retransmitting frame seq 10 (attempt 4)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793468709.404,
+   "node": 1,
+   "seq": 10,
+   "type": "DATA",
+   "airtime": 3.99
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468710.713,
+   "node": 2,
+   "ok": false,
+   "error": "bad sync byte 0x73",
+   "raw": "73 99 47 30 03 2f",
+   "score": 0.74,
+   "text": "Frame rejected: bad sync byte 0x73"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468710.714,
+   "node": 1,
+   "ok": false,
+   "error": "bad sync byte 0x73",
+   "raw": "73 99 47 30 03 2f",
+   "score": 0.74,
+   "text": "Frame rejected: bad sync byte 0x73"
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793468713.408,
+   "node": 1,
+   "frame": {
+    "type": "DATA",
+    "flags": [
+     "FIRST",
+     "LAST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 10,
+    "len": 13,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "41 43 4b 20 4c 4f 53 53 20 54 45 53 54"
+   },
+   "raw": "7e 19 01 02 0a 0d 01 02 04 41 43 4b 20 4c 4f 53 53 20 54 45 53 54 de f2",
+   "bytes": 24,
+   "airtime": 3.99,
+   "duration": 4.0,
+   "retry": 3,
+   "msg_id": 3,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA seq 10 to node 2 (retry 3)"
+  },
+  {
+   "event": "timeout",
+   "time": 1793468717.781,
+   "node": 1,
+   "seq": 10,
+   "msg_id": 3,
+   "waited": 4.37,
+   "text": "No ACK for seq 10 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793468717.781,
+   "node": 1,
+   "seq": 10,
+   "attempt": 4,
+   "msg_id": 3,
+   "text": "Retransmitting frame seq 10 (attempt 5)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793468717.795,
+   "node": 1,
+   "seq": 10,
+   "type": "DATA",
+   "airtime": 3.99
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793468721.795,
+   "node": 1,
+   "frame": {
+    "type": "DATA",
+    "flags": [
+     "FIRST",
+     "LAST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 10,
+    "len": 13,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "41 43 4b 20 4c 4f 53 53 20 54 45 53 54"
+   },
+   "raw": "7e 19 01 02 0a 0d 01 02 04 41 43 4b 20 4c 4f 53 53 20 54 45 53 54 de f2",
+   "bytes": 24,
+   "airtime": 3.99,
+   "duration": 4.0,
+   "retry": 4,
+   "msg_id": 3,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA seq 10 to node 2 (retry 4)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468722.011,
+   "node": 2,
+   "ok": false,
+   "error": "CRC mismatch (received 0xDAF2, calculated 0xDEF2)",
+   "raw": "7e 19 01 02 0a 0d 01 02 04 41 43 4b 20 4c 4f 53 53 20 54 45 53 54 da f2",
+   "score": 0.75,
+   "text": "Frame rejected: CRC mismatch (received 0xDAF2, calculated 0xDEF2)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468722.013,
+   "node": 1,
+   "ok": false,
+   "error": "CRC mismatch (received 0xDAF2, calculated 0xDEF2)",
+   "raw": "7e 19 01 02 0a 0d 01 02 04 41 43 4b 20 4c 4f 53 53 20 54 45 53 54 da f2",
+   "score": 0.75,
+   "text": "Frame rejected: CRC mismatch (received 0xDAF2, calculated 0xDEF2)"
+  },
+  {
+   "event": "timeout",
+   "time": 1793468726.168,
+   "node": 1,
+   "seq": 10,
+   "msg_id": 3,
+   "waited": 4.37,
+   "text": "No ACK for seq 10 after 4.4 s - timeout"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793468726.168,
+   "node": 1,
+   "seq": 10,
+   "attempt": 5,
+   "msg_id": 3,
+   "text": "Retransmitting frame seq 10 (attempt 6)"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793468726.183,
+   "node": 1,
+   "seq": 10,
+   "type": "DATA",
+   "airtime": 3.99
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793468730.198,
+   "node": 1,
+   "frame": {
+    "type": "DATA",
+    "flags": [
+     "FIRST",
+     "LAST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 10,
+    "len": 13,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "41 43 4b 20 4c 4f 53 53 20 54 45 53 54"
+   },
+   "raw": "7e 19 01 02 0a 0d 01 02 04 41 43 4b 20 4c 4f 53 53 20 54 45 53 54 de f2",
+   "bytes": 24,
+   "airtime": 3.99,
+   "duration": 4.02,
+   "retry": 5,
+   "msg_id": 3,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA seq 10 to node 2 (retry 5)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468730.483,
+   "node": 2,
+   "ok": false,
+   "error": "CRC mismatch (received 0x7298, calculated 0xD961)",
+   "raw": "7e 19 01 02 0a 0d 01 02 04 41 43 4b 20 4c cf 4e 17 ba d0 63 23 54 72 98",
+   "score": 0.78,
+   "text": "Frame rejected: CRC mismatch (received 0x7298, calculated 0xD961)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793468730.489,
+   "node": 1,
+   "ok": false,
+   "error": "CRC mismatch (received 0x7298, calculated 0xD961)",
+   "raw": "7e 19 01 02 0a 0d 01 02 04 41 43 4b 20 4c cf 4e 17 ba d0 63 23 54 72 98",
+   "score": 0.78,
+   "text": "Frame rejected: CRC mismatch (received 0x7298, calculated 0xD961)"
+  },
+  {
+   "event": "timeout",
+   "time": 1793468734.571,
+   "node": 1,
+   "seq": 10,
+   "msg_id": 3,
+   "waited": 4.37,
+   "text": "No ACK for seq 10 after 4.4 s - timeout"
+  },
+  {
+   "event": "message_status",
+   "time": 1793468734.571,
+   "node": 1,
+   "msg_id": 3,
+   "dst": 2,
+   "status": "failed",
+   "seconds": 50.4,
+   "text": "Message #3 FAILED: no ACK after 5 retries"
+  },
+  {
+   "event": "engine_stopped",
+   "time": 1793468737.095,
+   "node": 1,
+   "text": "Node 1 stopped"
+  },
+  {
+   "event": "engine_stopped",
+   "time": 1793468737.252,
+   "node": 2,
+   "text": "Node 2 stopped"
+  }
+ ]
+}

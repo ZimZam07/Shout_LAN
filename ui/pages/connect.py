@@ -289,7 +289,8 @@ class ConnectPage(QWidget):
         acoustic = s["channel"] == "acoustic"
         if acoustic:
             self.meter.set_level(s.get("mic_level", 0), s.get("noise_floor"))
-            self.meter_note.setText(f"overflows {s.get('mic_overflows', 0)}")
+            self.meter_note.setText(f"overflows {s.get('mic_overflows', 0)} · speaker "
+                                    f"{s.get('speaker_mode', '?')}")
         else:
             self.meter.set_level(0)
             self.meter_note.setText("no microphone (SIMULATED)")
@@ -301,7 +302,10 @@ class ConnectPage(QWidget):
             self.volume.setValue(int(round(s["volume"] * 100)))
             self.volume.blockSignals(False)
             self.volume_label.setText(f"{s['volume']:.2f}")
-        if s["channel"] == "acoustic":
+        if s["channel"] == "acoustic" and s.get("speaker_mode") == "shared":
+            self.engine_chip.set("Speaker in SHARED mode - close other audio apps and restart "
+                                 "the engine for reliable sound", "warn")
+        elif s["channel"] == "acoustic":
             self.engine_chip.set(f"Engine running - node {s['node_id']} on the acoustic link", "good")
         else:
             self.engine_chip.set(f"Engine running - node {s['node_id']} on the SIMULATED channel", "warn")

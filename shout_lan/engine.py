@@ -93,6 +93,9 @@ class Engine:
             self.threads.append(t)
         self.emit("engine_started", channel=self.channel.kind, label=self.channel.label,
                   text=f"Node {self.node_id} started on the {self.channel.label}")
+        spk = getattr(self.channel, "speaker", None) or getattr(getattr(self.channel, "hub", None), "speaker", None)
+        if spk is not None and spk.warning:
+            self.emit("error", text=spk.warning)
 
     def stop(self):
         if not self.running:
@@ -656,4 +659,9 @@ class Engine:
                 "mic_level": round(float(self.channel.level()), 4),
                 "mic_overflows": int(getattr(self.channel, "overflows", 0) or 0),
                 "noise_floor": getattr(self, "noise_floor", None),
-                "encryption_available": getattr(self, "security", None) is not None}
+                "encryption_available": getattr(self, "security", None) is not None,
+                "speaker_mode": self._speaker_mode()}
+
+    def _speaker_mode(self):
+        spk = getattr(self.channel, "speaker", None) or getattr(getattr(self.channel, "hub", None), "speaker", None)
+        return spk.mode if spk is not None else "simulated"

@@ -16,6 +16,12 @@ import sounddevice as sd
 
 from shout_lan import config
 
+# Audio path settings (chosen by measurements, docs/TESTING.md M6)
+OUT_LATENCY = "high"      # speaker buffer: "low" (PortAudio default) or "high"
+IN_LATENCY = "high"       # microphone buffer
+OUT_EXCLUSIVE = True      # WASAPI exclusive mode for the speaker: Windows shared-mode playback
+                          # dropped whole buffers mid-frame (18.6% BER vs 0% exclusive, TESTING.md M6)
+
 
 class AudioError(Exception):
     """Raised with a human-readable message when an audio device can't be used."""
@@ -123,7 +129,7 @@ class Microphone:
             self.stream = sd.InputStream(device=self.device, channels=channels,
                                          samplerate=config.SAMPLE_RATE, dtype="float32",
                                          blocksize=self.block_size, callback=self._callback,
-                                         extra_settings=extra, latency="high")
+                                         extra_settings=extra, latency=IN_LATENCY)
             self.stream.start()
         except Exception as exc:          # PortAudioError, ValueError, ...
             self.stream = None
@@ -167,23 +173,45 @@ class Speaker:
         self.stream = None
         self.channels = 1
         self.underflows = 0              # times the output ran dry while playing (= a gap in the sound)
+        self.mode = "closed"             # "exclusive" / "shared" once open
+        self.warning = None              # set if we had to fall back to shared mode
 
-    def _open(self):
+    def _open_stream(self, exclusive):
+        extra = sd.WasapiSettings(exclusive=True) if exclusive else None
+        stream = sd.OutputStream(device=self.device, channels=self.channels,
+                                 samplerate=config.SAMPLE_RATE, dtype="float32",
+                                 latency=OUT_LATENCY, extra_settings=extra)
+        stream.start()
+        stream.write(np.zeros((2400, self.channels), dtype=np.float32))   # warm-up silence
+        return stream
+
+    def open(self):
+        """
+        Reserve the speaker. Exclusive mode is preferred: Windows' shared-mode
+        playback dropped whole buffers mid-frame (TESTING.md M6). If another
+        program is using the speaker, exclusive mode is refused - then we fall
+        back to shared mode and say so (reliability is lower in that mode).
+        """
+        if self.stream is not None:
+            return
         self.channels = _channels(self.device, "output")
-        # latency="high" = a bigger output buffer (~0.1-0.2 s). With the default low-latency
-        # buffer, Windows occasionally ran dry for one 8 ms period while both engines were busy
-        # decoding, which inserted a gap mid-frame and shifted every later bit (TESTING.md M6).
-        self.stream = sd.OutputStream(device=self.device, channels=self.channels,
-                                      samplerate=config.SAMPLE_RATE, dtype="float32",
-                                      latency="high")
-        self.stream.start()
-        self.stream.write(np.zeros((2400, self.channels), dtype=np.float32))   # warm-up silence
+        if OUT_EXCLUSIVE and _is_wasapi(self.device):
+            try:
+                self.stream = self._open_stream(True)
+                self.mode, self.warning = "exclusive", None
+                return
+            except Exception as exc:
+                self.warning = (f"Speaker exclusive mode refused ({exc}) - another program is "
+                                f"probably playing audio. Using shared mode: expect more errors. "
+                                f"Close other audio apps and restart the engine.")
+        self.stream = self._open_stream(False)
+        self.mode = "shared"
 
     def play(self, samples):
         with self.lock:
             try:
                 if self.stream is None:
-                    self._open()
+                    self.open()
                 data = np.asarray(samples, dtype=np.float32)
                 data = np.repeat(data[:, None], self.channels, axis=1)
                 if self.stream.write(data):      # blocks until the data is in the output buffer
@@ -201,6 +229,7 @@ class Speaker:
             except Exception:
                 pass
             self.stream = None
+            self.mode = "closed"
 
 
 def record_while_playing(signal, mic_device=None, speaker_device=None,

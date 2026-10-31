@@ -404,3 +404,23 @@ Across these hardware runs, **no Selective Repeat retransmission was ever of an 
   - Offline analysis of that run: **the received signal level dropped about 4× from trial 4 onwards** (≈0.025 → ≈0.006 RMS), while the mic noise level is unchanged when measured separately. Most likely the playback volume changed externally during the run.
   - Errors occurred with tracking OFF too (9 bad trials) and ON (10 bad trials); tracking fixed 2 trials and broke 2.
   - **This run cannot judge the tracker.** A controlled A/B under stable volume is pending.
+
+### M6 hardware session 2 (2026-10-31, Windows volume fixed at 70 % by the user)
+*Measured – acoustic, single-laptop loopback.* Context: during the earlier `loopback_20261031_194808` run the user had lowered the Windows volume to 30 % mid-run, which explains that run's 4× level drop.
+
+| Run | Result | Finding |
+|---|---|---|
+| `arq_20261031_203726` (+ raw audio) | **0/4**; even headers corrupted | Levels normal (RMS ≈ 0.027, no clipping) |
+| Offline A/B on that audio: timing recovery OFF vs ON | **25/44 vs 3/44** valid frames | On the two older recordings: 28/36 vs 30/36 and 32/53 vs 42/53. **Decision: timing recovery is unreliable → OFF by default** (`Modem.TRACKING_DEFAULT = False`); the code is kept as experimental, with its unit tests run with it explicitly enabled |
+| `loopback_20261031_2039xx` at transmit volume 0.5 / 0.3 / 0.15 | BER 10.9 % / 8.6 % / 5.9 % | Much worse than in M1 |
+| `calibration_20261031_204155` (shared playback) | 2000/3000 Hz 73/384 errors; 2500/3500 Hz **0/384** | Default tones changed to 2500/3500 Hz (`config.py`) |
+| Mic-only room check (15 s, nothing played) | no loud moments; steady hum only below 2.2 kHz | Room interference ruled out |
+| Re-analysis of the `bits_20261031_194808` failures | timing jumps of **800–1200 samples** inside trials (earlier runs with small buffers: 192–384) | **The size of the jump scales with the audio buffer size → whole playback buffers are being lost** |
+| **Interleaved A/B, 16 trials:** speaker shared/exclusive × buffers low/high | shared+low **18.6 %**, shared+high **4.4 %**, **exclusive+low 0 %, exclusive+high 0 %** (8 exclusive trials, 0/2048 bit errors) | **Root cause: Windows shared-mode playback drops buffers.** Fix: speaker opened in WASAPI exclusive mode (`audio_io.OUT_EXCLUSIVE = True`) |
+| `calibration_20261031_205649` (exclusive playback) | all 4 candidate tone pairs 0/384 | Channel clean again with exclusive playback (this tool's printed SNR values are inflated: its noise sample catches post-open silence) |
+| `arq_20261031_230338` | 0/3 — `Error opening OutputStream: Invalid device` | Exclusive mode was **refused** at that moment (another app was most likely using the speaker; a silent open test minutes later succeeded in both modes). **Fix:** the engine reserves the speaker at start-up and, if exclusive mode is refused, falls back to shared mode with a visible warning (`speaker_mode` in status and the Connect page) |
+| `frame_test` (twice) | printed nothing | **Unexplained**; run with filtered output, so any error text may have been hidden. Investigate silently / in the next hardware session |
+| `arq_20261031_231537` (persistent exclusive speaker, engine path) | **0/3** strict; many corrupted frames, including ACKs. Every message was still delivered exactly once (`HELLO WORLD`, `CRC TEST`, `ACK LOSS TEST`), but the senders reported FAILED after 5 retries in 2 of 3 cases | **OPEN:** the per-trial exclusive A/B was error-free, but the continuous engine path is not. Not resolved |
+| `arq_20261031_231645` `--security` | 2/2 pass (plain 7.6 s; encrypted needed 5 data-frame transmissions, 52.4 s) | Same degraded channel |
+
+**Status at the end of this session (the user then paused all audio work):** the acoustic link on this laptop is **not currently verified reliable** in the continuous engine path. One clear root cause was found and fixed (shared-mode playback dropping buffers), but a remaining cause in the persistent-stream engine path is unidentified. Next steps are in the hardware-test checklist (`docs/HARDWARE_TEST_PLAN.md`).

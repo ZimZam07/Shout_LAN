@@ -20,7 +20,7 @@ import time
 import numpy as np
 
 from shout_lan import config
-from shout_lan.audio_io import Microphone, Speaker
+from shout_lan.audio_io import AudioError, Microphone, Speaker
 
 
 class AcousticChannel:
@@ -35,6 +35,11 @@ class AcousticChannel:
 
     def start(self):
         self.mic.start()
+        try:
+            self.speaker.open()             # reserve the speaker now, not at the first frame
+        except Exception as exc:
+            self.mic.stop()
+            raise AudioError(f"Could not open speaker {self.speaker_device}: {exc}") from exc
 
     def stop(self):
         self.mic.stop()
@@ -81,6 +86,7 @@ class AcousticLoopbackHub:
             first = len(self.members) == 1
         if first:
             self.mic.start()
+            self.speaker.open()
             self.running = True
             self.thread = threading.Thread(target=self._fanout, daemon=True)
             self.thread.start()
