@@ -157,3 +157,62 @@ def test_messages_to_other_nodes_are_ignored():
     finally:
         for e in (a, b, c):
             e.stop()
+
+
+# ---------------------------------------------------------------- M5 security
+from shout_lan.security import Security   # noqa: E402
+
+KEY = bytes(range(32))
+
+
+def test_encrypted_message_ciphertext_on_air_plaintext_after_verify():
+    air = SimulatedAir(time_scale=SCALE, seed=5)
+    a = Engine(1, SimulatedChannel(air), time_scale=SCALE, security=Security(KEY))
+    b = Engine(2, SimulatedChannel(air), time_scale=SCALE, security=Security(KEY))
+    ra, rb = Recorder(a), Recorder(b)
+    a.start()
+    b.start()
+    try:
+        mid = a.send_message(2, "SECRET HELLO", encrypt=True)
+        ra.wait_for("message_status", msg_id=mid, status="delivered")
+        msg = rb.wait_for("message_rx")
+        assert msg["message"] == "SECRET HELLO" and msg["encrypted"] is True
+        enc = ra.of("encrypted")[0]
+        assert enc["sealed"] == enc["plain"] + 28
+        # what travelled over the channel was ciphertext only
+        on_air = "".join(e["frame"]["payload_hex"] for e in rb.of("frame_rx", ok=True)
+                         if e["frame"]["type"] == "DATA").replace(" ", "")
+        assert b"SECRET HELLO".hex() not in on_air
+        assert all("ENC" in e["frame"]["flags"] for e in rb.of("frame_rx", ok=True)
+                   if e["frame"]["type"] == "DATA")
+    finally:
+        a.stop()
+        b.stop()
+
+
+def test_wrong_key_or_no_key_is_rejected_not_shown():
+    air = SimulatedAir(time_scale=SCALE, seed=6)
+    a = Engine(1, SimulatedChannel(air), time_scale=SCALE, security=Security(KEY))
+    b = Engine(2, SimulatedChannel(air), time_scale=SCALE, security=Security(bytes(32)))
+    c = Engine(3, SimulatedChannel(air), time_scale=SCALE)                # no key at all
+    ra, rb, rc = Recorder(a), Recorder(b), Recorder(c)
+    for e in (a, b, c):
+        e.start()
+    try:
+        m1 = a.send_message(2, "FOR B", encrypt=True)
+        ra.wait_for("message_status", msg_id=m1, status="delivered")      # link layer ACKed
+        assert "authentication failed" in rb.wait_for("security_reject")["reason"]
+        m2 = a.send_message(3, "FOR C", encrypt=True)
+        ra.wait_for("message_status", msg_id=m2, status="delivered")
+        assert rc.wait_for("security_reject")["reason"] == "no key"
+        assert not rb.of("message_rx") and not rc.of("message_rx")       # nothing shown
+    finally:
+        for e in (a, b, c):
+            e.stop()
+
+
+def test_encrypt_without_key_is_refused_at_sender():
+    air = SimulatedAir(time_scale=SCALE)
+    a = Engine(1, SimulatedChannel(air), time_scale=SCALE)
+    with pytest.raises(ValueError, match="encryption is not available"):
+        a.send_message(2, "x", encrypt=True)

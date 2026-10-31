@@ -96,7 +96,8 @@ class MonitorPage(QWidget):
         if text and ev not in ("tx_start", "status"):
             color = {"timeout": style.BAD, "retransmit": style.WARN, "ack_dropped": style.WARN,
                      "injection_set": style.WARN, "error": style.BAD, "duplicate": style.WARN,
-                     "message_rx": style.GOOD}.get(ev, style.TEXT)
+                     "message_rx": style.GOOD, "security_reject": style.BAD,
+                     "encrypted": style.ACCENT}.get(ev, style.TEXT)
             if ev == "frame_rx" and not e.get("ok"):
                 color = style.BAD
             if ev == "message_status" and e.get("status") == "delivered":
@@ -126,6 +127,8 @@ class MonitorPage(QWidget):
         else:
             crc = "✗ FAIL"
             notes = [e.get("error", "")]
+        if "ENC" in f.get("flags", []):
+            notes.insert(0, "🔒 ENC: payload is AES-GCM ciphertext")
         values = [time.strftime("%H:%M:%S", time.localtime(e["time"])), "TX →" if tx else "← RX",
                   f.get("type", "?"), f.get("src", "?"), f.get("dst", "?"), f.get("seq", "?"),
                   f.get("len", "?"), crc, " · ".join(notes)]

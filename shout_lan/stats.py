@@ -12,7 +12,8 @@ class Stats:
                 "acks_rx", "retransmissions", "timeouts", "duplicates", "messages_sent",
                 "messages_delivered", "messages_failed", "messages_received",
                 "payload_bytes_acked", "pings_sent", "pongs_received", "injected_events",
-                "channel_busy_deferrals", "backoffs", "forwarded", "ttl_expired")
+                "channel_busy_deferrals", "backoffs", "forwarded", "ttl_expired",
+                "security_rejects")
 
     def __init__(self, source_label):
         self.lock = threading.Lock()        # several threads update the counters

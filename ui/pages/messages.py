@@ -103,7 +103,7 @@ class MessagesPage(QWidget):
         row.addWidget(self.input, 1)
         self.encrypt = QCheckBox("Encrypt (AES-GCM)")
         self.encrypt.setEnabled(False)
-        self.encrypt.setToolTip("Needs secret.key on both laptops (Milestone 5)")
+        self.encrypt.setToolTip("Needs secret.key on both laptops (tools/gen_key.py)")
         row.addWidget(self.encrypt)
         self.send_btn = QPushButton("Send")
         self.send_btn.setObjectName("primary")
@@ -162,6 +162,9 @@ class MessagesPage(QWidget):
                          if it["status"] == "sending" and it.get("frames") else "")
                 extra += f" · {it['seconds']} s" if it.get("seconds") is not None else ""
                 meta = f"to node {it['peer']} · {t} · {label}{extra}{lock}"
+            elif it.get("rejected"):
+                color = style.BAD
+                meta = f"from node {it['peer']} · {t} · {it['reason']}"
             else:
                 color = style.MUTED
                 meta = f"from node {it['peer']} · {t} · CRC verified{lock}"
@@ -199,6 +202,11 @@ class MessagesPage(QWidget):
         elif ev == "message_rx":
             self.items.append({"dir": "in", "peer": e["origin"], "text": e["message"],
                                "time": e["time"], "encrypted": e.get("encrypted")})
+            self.render()
+        elif ev == "security_reject":
+            self.items.append({"dir": "in", "peer": e["origin"], "rejected": True,
+                               "text": "⚠ Encrypted message rejected - not shown",
+                               "reason": e.get("reason", ""), "time": e["time"]})
             self.render()
         elif ev in ("retransmit", "timeout"):
             self.progress_label.setText(e["text"])

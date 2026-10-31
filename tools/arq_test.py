@@ -8,6 +8,7 @@ speaker -> air -> microphone.
     python tools/arq_test.py              # all scenarios
     python tools/arq_test.py --quick      # only normal + corrupted + lost ACK
     python tools/arq_test.py --rest       # only 3-frame message + ping + max retries
+    python tools/arq_test.py --security   # same text plain vs AES-GCM encrypted (overhead)
 
 Results are saved in results/arq_*.json (all engine events included).
 """
@@ -86,18 +87,36 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--quick", action="store_true")
     p.add_argument("--rest", action="store_true")
+    p.add_argument("--security", action="store_true")
     args = p.parse_args()
 
     mic, spk = default_devices()
     hub = AcousticLoopbackHub(mic, spk)
-    a = Engine(1, LoopbackAcousticChannel(hub))
-    b = Engine(2, LoopbackAcousticChannel(hub))
+    from shout_lan.security import Security
+    import os as _os
+    key = _os.urandom(32)                       # a fresh shared key just for this test
+    a = Engine(1, LoopbackAcousticChannel(hub), security=Security(key))
+    b = Engine(2, LoopbackAcousticChannel(hub), security=Security(key))
     log = Log(a, b)
     a.start()
     b.start()
     time.sleep(1)
     results = []
     try:
+        if args.security:
+            text = "SECRET HELLO"
+            for enc in (False, True):
+                def run(enc=enc):
+                    return wait_message(log, a.send_message(2, text, encrypt=enc))
+                results.append(scenario(f"'{text}' {'ENCRYPTED (AES-GCM)' if enc else 'plain'}",
+                    log, a, b, run,
+                    lambda o, ev, da, db, enc=enc: (
+                        o and o["status"] == "delivered" and delivered_texts(ev) == [text]
+                        and all(e.get("encrypted") == enc for e in ev if e["event"] == "message_rx"),
+                        f"status={o and o['status']}, delivered={delivered_texts(ev)}, "
+                        f"data frames sent={da['data_frames_tx']}, seconds={o and o.get('seconds')}")))
+            args.quick = True
+            args.rest = True                       # skip the other scenarios
         if args.rest:
             args.quick = False
         # 1. normal
@@ -135,7 +154,7 @@ def main():
                                    f"duplicates at receiver={db['duplicates']}, delivered "
                                    f"{len(delivered_texts(ev))} time(s): {delivered_texts(ev)}")))
 
-        if not args.quick:
+        if not args.quick and not args.security:
             # 4. multi-frame message
             text = "HELLO FROM COMPUTER A - THIS MESSAGE NEEDS THREE FRAMES!"
 

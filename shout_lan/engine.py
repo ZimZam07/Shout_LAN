@@ -25,19 +25,21 @@ from shout_lan import arq, calibration, config, frame as fr
 from shout_lan.crc import flip_bits
 from shout_lan.modem import Modem
 from shout_lan.receiver import FrameReceiver
+from shout_lan.security import SecurityError
 from shout_lan.stats import Stats
 
 MUTE_AFTER_TX = 0.15       # seconds the acoustic receiver stays deaf after we stop talking
 
 
 class Engine:
-    def __init__(self, node_id, channel, modem=None, time_scale=1.0):
+    def __init__(self, node_id, channel, modem=None, time_scale=1.0, security=None):
         if not 1 <= node_id <= 254:
             raise ValueError("node id must be 1..254")
         self.node_id = node_id
         self.channel = channel
         self.modem = modem or Modem()
         self.time_scale = time_scale            # < 1 only for fast automated tests
+        self.security = security                # shout_lan.security.Security, or None
         self.receiver = FrameReceiver(self.modem)
         self.stats = Stats("Measured - acoustic" if channel.kind == "acoustic"
                            else "Measured - SIMULATED channel")
@@ -301,11 +303,29 @@ class Engine:
             self._deliver(f.origin, message, f.flags)
 
     def _deliver(self, origin, data, flags):
+        encrypted = bool(flags & fr.F_ENC)
+        if encrypted:
+            # The data link already verified every frame's CRC; now the security
+            # layer verifies the AES-GCM tag. Only verified plaintext is shown.
+            if self.security is None:
+                self.stats.add("security_rejects")
+                self.emit("security_reject", origin=origin, reason="no key",
+                          text=f"Encrypted message from node {origin} discarded: "
+                               f"this node has no secret.key")
+                return
+            try:
+                data = self.security.decrypt(data, origin, self.node_id)
+            except SecurityError as exc:
+                self.stats.add("security_rejects")
+                self.emit("security_reject", origin=origin, reason=str(exc),
+                          text=f"Encrypted message from node {origin} REJECTED: {exc}")
+                return
         self.stats.add("messages_received")
         text = data.decode("utf-8", errors="replace")
         self.emit("message_rx", origin=origin, message=text, length=len(data),
-                  encrypted=bool(flags & fr.F_ENC),
-                  text=f"Message from node {origin} delivered: {text!r}")
+                  encrypted=encrypted,
+                  text=f"Message from node {origin} delivered"
+                       + (" (AES-GCM verified + decrypted)" if encrypted else "") + f": {text!r}")
 
     def wait_for_ack(self, peer, seq, timeout):
         """Wait up to `timeout` seconds for ACK `seq` from `peer`. Stale ACKs are ignored."""
@@ -333,10 +353,12 @@ class Engine:
         msg_id = next(self.msg_ids)
         self.outbox.put({"kind": "message", "msg_id": msg_id, "dst": dst, "data": data,
                          "encrypt": encrypt})
-        frames = len(fr.fragment(data))
+        on_air = len(data) + (28 if encrypt else 0)          # AES-GCM adds nonce + tag
+        frames = len(fr.fragment(bytes(on_air)))
         self.emit("message_status", msg_id=msg_id, dst=dst, status="queued", frames=frames,
                   message=data.decode("utf-8", errors="replace"), encrypted=bool(encrypt),
-                  text=f"Message #{msg_id} to node {dst} queued ({len(data)} bytes, {frames} frame(s))")
+                  text=f"Message #{msg_id} to node {dst} queued ({len(data)} bytes"
+                       + (f", {on_air} after encryption" if encrypt else "") + f", {frames} frame(s))")
         return msg_id
 
     def ping(self, dst, count=4):
@@ -365,13 +387,21 @@ class Engine:
 
     def _send_message_job(self, job):
         msg_id, dst, data = job["msg_id"], job["dst"], job["data"]
+        base_flags = 0
+        if job.get("encrypt"):
+            plain_len = len(data)
+            data = self.security.encrypt(data, self.node_id, dst)
+            base_flags = fr.F_ENC
+            self.emit("encrypted", msg_id=msg_id, plain=plain_len, sealed=len(data),
+                      text=f"Message #{msg_id} encrypted with AES-256-GCM: {plain_len} -> "
+                           f"{len(data)} bytes (+{len(data) - plain_len} nonce+tag)")
         pieces = fr.fragment(data)
         arq.drain(self.ack_queue)
         self.stats.add("messages_sent")
         self.emit("message_status", msg_id=msg_id, dst=dst, status="sending", frames=len(pieces),
                   text=f"Sending message #{msg_id} with {self.sw_sender.name}")
         started = time.time()
-        ok = self.sw_sender.send(msg_id, dst, pieces)
+        ok = self.sw_sender.send(msg_id, dst, pieces, base_flags=base_flags)
         elapsed = time.time() - started
         self.stats.add_busy_time(elapsed)
         if ok:

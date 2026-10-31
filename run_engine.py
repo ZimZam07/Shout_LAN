@@ -10,6 +10,7 @@ The terminal shows every engine event as it happens. Stop with Ctrl+C.
 """
 
 import argparse
+import os
 import sys
 import threading
 import time
@@ -21,6 +22,7 @@ from shout_lan.control_server import ControlServer
 from shout_lan.engine import Engine
 from shout_lan.modem import Modem
 from shout_lan.node import make_command_handler
+from shout_lan.security import Security, SecurityError, load_key
 
 
 def main():
@@ -35,6 +37,8 @@ def main():
     p.add_argument("--volume", type=float, default=config.TX_VOLUME)
     p.add_argument("--f0", type=int, default=config.FREQ_0)
     p.add_argument("--f1", type=int, default=config.FREQ_1)
+    p.add_argument("--key", default="secret.key",
+                   help="AES-256 key file (made by tools/gen_key.py); encryption is off without it")
     args = p.parse_args()
 
     modem = Modem(freq0=args.f0, freq1=args.f1, volume=args.volume)
@@ -49,7 +53,14 @@ def main():
     except (AudioError, OSError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr, flush=True)
         sys.exit(2)
-    engine = Engine(args.node, channel, modem)
+    security = None
+    if os.path.exists(args.key):
+        try:
+            security = Security(load_key(args.key))
+        except SecurityError as exc:
+            print(f"ERROR: {exc}", file=sys.stderr, flush=True)
+            sys.exit(2)
+    engine = Engine(args.node, channel, modem, security=security)
     stop = threading.Event()
 
     def print_event(e):
@@ -70,6 +81,8 @@ def main():
         print(f"ERROR: {exc}", file=sys.stderr, flush=True)
         server.stop()
         sys.exit(2)
+    print("Encryption: AES-256-GCM key loaded from " + args.key if security
+          else f"Encryption: OFF (no {args.key}; create one with tools/gen_key.py)", flush=True)
     print(f"READY node={args.node} channel={channel.label} "
           f"control=127.0.0.1:{server.port}", flush=True)
     try:

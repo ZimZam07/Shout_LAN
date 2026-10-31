@@ -279,3 +279,77 @@ A full **two-process acoustic** run (UI on node 1 ↔ engine on node 2) cannot b
 | D2 capture keeps running | **Verified (acoustic)**: 0 overflows in every acoustic run |
 | D3 stress | **Verified (SIMULATED)** |
 | D4 clean shutdown | **Verified** |
+
+---
+
+## M5 — Security: AES-256-GCM (2026-10-31)
+
+### Unit tests — `tests/test_security.py` → 11 passed
+| DoD | Check | Result |
+|---|---|---|
+| E1 | Round trip; 12-byte text → 40 bytes (+28); plaintext not visible in the blob | pass |
+| E1 | One flipped bit in the **nonce**, **ciphertext** or **tag** → `authentication failed` | pass (3 cases) |
+| E1 | Same blob claimed from another **origin** or for another **destination** → rejected (associated data) | pass |
+| E1 | Wrong key → rejected | pass |
+| E1a | 10 000 encryptions of the same text → 10 000 distinct nonces and ciphertexts; exactly one `os.urandom(NONCE_LEN)` in the module; `encrypt()` does not use `seq` | pass |
+| E1b | The same blob decrypted twice → second attempt `replay detected` | pass |
+| E1b limit | After 1000 newer messages the oldest nonce is forgotten and would be accepted again. This is the documented replay-cache limitation, and the test *asserts* it, so the docs can't silently drift | pass |
+| E4 | Key file: 32-byte round trip; a wrong-length file → clear error; `secret.key` listed in `.gitignore` | pass |
+
+### Engine tests on the SIMULATED channel — `tests/test_engine.py` (3 new, 11 total pass)
+- Encrypted message delivered: `message_rx.encrypted == True`.
+- The payload hex in **every** received DATA frame does *not* contain the plaintext, and every DATA frame carries the `ENC` flag.
+- Wrong key at the receiver → the link layer still ACKs, but the security layer rejects (`security_reject: authentication failed`) and **no message is shown**.
+- Receiver with no key → `security_reject: no key`.
+- The sender refuses `encrypt=True` when it has no key.
+
+### Real acoustic measurement — `tools/arq_test.py --security` (*Measured – acoustic, single-laptop loopback*) → 2/2, `arq_20261031_183229.json`
+| "SECRET HELLO" (12 B) | Payload on air | Data frames | Delivered in |
+|---|---|---|---|
+| plain | 12 B | 1 | **6.8 s** |
+| AES-256-GCM | 40 B | 2 | **14.5 s** |
+
+The receiver logged "delivered (AES-GCM verified + decrypted): 'SECRET HELLO'". Overhead: 28 B = 4.48 s of pure airtime; here it also crossed the 24-byte frame limit, giving **+7.7 s (2.1×)** in total (E3).
+
+**Bug found in that run:** the "queued" event said "1 frame(s)" for the encrypted message, because frames were counted before encryption. **Fixed:** it now counts the encrypted size ("12 bytes, 40 after encryption, 2 frame(s)").
+
+### Key generation
+`tools/gen_key.py` created `secret.key` (32 bytes) in the project folder. `git check-ignore` confirms it is ignored (`.gitignore:5`), and `git log --all -- secret.key` shows it has never been committed. It refuses to overwrite an existing key without `--force`.
+
+### UI — `tools/ui_smoke_test.py` → **24/24** (`ui_smoke_20261031_184*.json`, *SIMULATED*)
+New checks:
+- the Encrypt checkbox is enabled when a key is loaded;
+- the encrypted message is delivered and marked 🔒;
+- every `ENC` frame in the monitor carries no plaintext;
+- the Notes column labels them "🔒 ENC: payload is AES-GCM ciphertext" (screenshot `6_monitor_encrypted.png`).
+- Rejected encrypted messages appear in the chat as "⚠ Encrypted message rejected - not shown", with the reason.
+
+**Intermittent UI stall (open):**
+- One run (`ui_smoke_20261031_184653.json`) failed the responsiveness check: the longest Qt event-loop stall was **1363 ms**.
+- Timing instrumentation was then added around every UI event/status handler (logs any handler > 50 ms).
+- Three reruns: longest stall 24–26 ms, **no** slow handler, 24/24 each.
+- The cause of the one 1.36 s stall is **not identified and not reproduced**. Because no handler was slow afterwards, the likeliest (unconfirmed) explanation is OS scheduling while two engine processes were decoding audio. The instrumentation stays in the test so any repeat is pinpointed.
+
+### Threat model
+`docs/THREAT_MODEL.md` covers:
+- eavesdropping (metadata stays visible);
+- tampering (CRC is not security; the GCM tag is);
+- replay (cache limits);
+- outsider vs **insider** spoofing (the shared-key limitation);
+- unencrypted frames;
+- jamming;
+- forged ACKs;
+- key theft;
+- nonce reuse;
+- remote control access;
+
+plus the measured cost.
+
+### DoD status after M5
+| DoD | Status |
+|---|---|
+| E1, E1a, E1b | **Verified** (unit tests) |
+| E2 ciphertext on air, plaintext only after verification | **Verified** (acoustic loopback + simulated + UI) |
+| E3 overhead measured | **Verified** (acoustic loopback: +7.7 s, 2.1× for 12 B) |
+| E4 key ignored by git, missing/wrong key errors | **Verified** |
+| E5 threat model | **Done** |

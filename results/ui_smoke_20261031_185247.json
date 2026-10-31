@@ -1,0 +1,103 @@
+{
+ "kind": "UI automation on the SIMULATED channel (offscreen Qt)",
+ "checks": [
+  {
+   "name": "engine starts and UI connects over TCP",
+   "passed": true
+  },
+  {
+   "name": "top bar shows SIMULATED label",
+   "passed": true
+  },
+  {
+   "name": "HELLO discovery finds node 2",
+   "passed": true
+  },
+  {
+   "name": "message shows Delivered only after ACK",
+   "passed": true
+  },
+  {
+   "name": "3-frame message delivered while UI stays responsive (stall < 200 ms)",
+   "passed": true
+  },
+  {
+   "name": "injected corruption causes retransmission and delivery",
+   "passed": true
+  },
+  {
+   "name": "monitor table has rows",
+   "passed": true
+  },
+  {
+   "name": "performance shows measured retransmission",
+   "passed": true
+  },
+  {
+   "name": "metrics labelled SIMULATED",
+   "passed": true
+  },
+  {
+   "name": "encryption checkbox enabled when secret.key is loaded",
+   "passed": true
+  },
+  {
+   "name": "encrypted message delivered and marked encrypted",
+   "passed": true
+  },
+  {
+   "name": "monitor shows ENC frames carrying ciphertext (not the plaintext)",
+   "passed": true
+  },
+  {
+   "name": "encrypted frames clearly labelled in the monitor",
+   "passed": true
+  },
+  {
+   "name": "volume slider changes the engine's volume",
+   "passed": true
+  },
+  {
+   "name": "Apply tones reaches the engine",
+   "passed": true
+  },
+  {
+   "name": "calibration disabled on SIMULATED channel",
+   "passed": true
+  },
+  {
+   "name": "Refresh devices re-lists real devices",
+   "passed": true
+  },
+  {
+   "name": "Ping button runs an acoustic-style ping (summary event)",
+   "passed": true
+  },
+  {
+   "name": "Drop next ACK button arms the injection",
+   "passed": true
+  },
+  {
+   "name": "Clear table empties the monitor",
+   "passed": true
+  },
+  {
+   "name": "Reset sets measured counters to zero",
+   "passed": true
+  },
+  {
+   "name": "Disconnect closes the control link",
+   "passed": true
+  },
+  {
+   "name": "Connect re-opens the control link",
+   "passed": true
+  },
+  {
+   "name": "engine stops and UI shows disconnected",
+   "passed": true
+  }
+ ],
+ "max_ui_stall_ms": 25.2,
+ "slow_handlers": []
+}

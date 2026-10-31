@@ -25,7 +25,8 @@ from ui.app import MainWindow                 # noqa: E402
 SHOTS = os.path.join(ROOT, "results", "screenshots")
 
 
-MAX_STALL = [0.0]          # longest single processEvents() call = how long the UI was frozen
+MAX_STALL = [0.0]
+SLOW = []                  # (milliseconds, handler) for UI handlers slower than 50 ms          # longest single processEvents() call = how long the UI was frozen
 
 
 def pump(app, seconds, until=None):
@@ -45,6 +46,28 @@ def main():
     app = QApplication(sys.argv)
     app.setStyleSheet(style.QSS)
     w = MainWindow()
+    # --- timing instrumentation: which UI handler is slow?
+    SLOW.clear()
+    orig_event, orig_status = w.on_event, w.broadcast_status
+
+    def timed_event(e):
+        t0 = time.perf_counter()
+        orig_event(e)
+        dt = time.perf_counter() - t0
+        if dt > 0.05:
+            SLOW.append((round(dt * 1000), "event:" + str(e.get("event"))))
+
+    def timed_status(st):
+        t0 = time.perf_counter()
+        orig_status(st)
+        dt = time.perf_counter() - t0
+        if dt > 0.05:
+            SLOW.append((round(dt * 1000), "status"))
+
+    w.client.event.disconnect(w.on_event)
+    w.client.event.connect(timed_event)
+    w.on_event = timed_event
+    w.broadcast_status = timed_status
     w.resize(1400, 900)
     w.show()
     checks = []
@@ -95,6 +118,7 @@ def main():
         msgs.send_btn.click()
         done = pump(app, 120, lambda: sum(i.get("status") == "delivered" for i in msgs.items) >= 2)
         print(f"     longest UI stall during transmission: {MAX_STALL[0] * 1000:.0f} ms", flush=True)
+        print(f"     slow UI handlers so far: {SLOW}", flush=True)
         check("3-frame message delivered while UI stays responsive (stall < 200 ms)",
               done and MAX_STALL[0] < 0.2)
 
@@ -122,6 +146,28 @@ def main():
         check("performance shows measured retransmission", st["counters"]["retransmissions"] >= 1)
         check("metrics labelled SIMULATED", "SIMULATED" in w.pages[4].source_chip.text())
         w.grab().save(os.path.join(SHOTS, "5_performance.png"))
+
+        # ---- encrypted message (needs secret.key, shared by both simulated engines)
+        w.nav.button(2).click()
+        check("encryption checkbox enabled when secret.key is loaded", msgs.encrypt.isEnabled())
+        msgs.encrypt.setChecked(True)
+        msgs.input.setText("ENCRYPTED HELLO")
+        msgs.send_btn.click()
+        check("encrypted message delivered and marked encrypted",
+              pump(app, 90, lambda: any(i.get("status") == "delivered" and i.get("encrypted")
+                                        for i in msgs.items)))
+        msgs.encrypt.setChecked(False)
+        w.nav.button(3).click()
+        enc_rows = [r for r in w.pages[3].rows if r.get("frame") and "ENC" in r["frame"]["flags"]]
+        check("monitor shows ENC frames carrying ciphertext (not the plaintext)",
+              enc_rows and all(b"ENCRYPTED HELLO".hex() not in r["frame"]["payload_hex"].replace(" ", "")
+                               for r in enc_rows))
+        notes = [w.pages[3].table.item(r, 8).text() for r in range(w.pages[3].table.rowCount())]
+        check("encrypted frames clearly labelled in the monitor",
+              sum("ENC: payload is AES-GCM ciphertext" in n for n in notes) >= 2)
+        w.pages[3].table.selectRow(len(notes) - 1)
+        pump(app, 0.3)
+        w.grab().save(os.path.join(SHOTS, "6_monitor_encrypted.png"))
 
         # ---- every remaining control does something real (DoD A4)
         w.nav.button(1).click()
@@ -174,7 +220,8 @@ def main():
     with open(path, "w") as f:
         json.dump({"kind": "UI automation on the SIMULATED channel (offscreen Qt)",
                    "checks": [{"name": n, "passed": ok} for n, ok in checks],
-                   "max_ui_stall_ms": round(MAX_STALL[0] * 1000, 1)}, f, indent=1)
+                   "max_ui_stall_ms": round(MAX_STALL[0] * 1000, 1),
+                   "slow_handlers": SLOW}, f, indent=1)
     print("saved:", path)
     sys.exit(0 if passed == len(checks) else 1)
 
