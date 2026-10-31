@@ -7,6 +7,7 @@ speaker -> air -> microphone.
 
     python tools/arq_test.py              # all scenarios
     python tools/arq_test.py --quick      # only normal + corrupted + lost ACK
+    python tools/arq_test.py --rest       # only 3-frame message + ping + max retries
 
 Results are saved in results/arq_*.json (all engine events included).
 """
@@ -84,6 +85,7 @@ def delivered_texts(events):
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--quick", action="store_true")
+    p.add_argument("--rest", action="store_true")
     args = p.parse_args()
 
     mic, spk = default_devices()
@@ -96,10 +98,13 @@ def main():
     time.sleep(1)
     results = []
     try:
+        if args.rest:
+            args.quick = False
         # 1. normal
         def normal():
             return wait_message(log, a.send_message(2, "HELLO WORLD"))
-        results.append(scenario("Normal transmission", log, a, b, normal,
+        if not args.rest:
+            results.append(scenario("Normal transmission", log, a, b, normal,
             lambda o, ev, da, db: (o and o["status"] == "delivered"
                                    and delivered_texts(ev) == ["HELLO WORLD"]
                                    and da["retransmissions"] == 0,
@@ -110,7 +115,8 @@ def main():
         def corrupted():
             a.set_injection("corrupt_next_data")
             return wait_message(log, a.send_message(2, "CRC TEST"))
-        results.append(scenario("Corrupted DATA frame", log, a, b, corrupted,
+        if not args.rest:
+            results.append(scenario("Corrupted DATA frame", log, a, b, corrupted,
             lambda o, ev, da, db: (o and o["status"] == "delivered" and db["crc_failures"] >= 1
                                    and da["timeouts"] >= 1 and da["retransmissions"] >= 1
                                    and delivered_texts(ev) == ["CRC TEST"],
@@ -122,7 +128,8 @@ def main():
         def lost_ack():
             b.set_injection("drop_next_ack")
             return wait_message(log, a.send_message(2, "ACK LOSS TEST"))
-        results.append(scenario("Lost ACK (exactly-once delivery)", log, a, b, lost_ack,
+        if not args.rest:
+            results.append(scenario("Lost ACK (exactly-once delivery)", log, a, b, lost_ack,
             lambda o, ev, da, db: (o and o["status"] == "delivered" and db["duplicates"] >= 1
                                    and delivered_texts(ev) == ["ACK LOSS TEST"],
                                    f"duplicates at receiver={db['duplicates']}, delivered "

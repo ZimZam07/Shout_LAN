@@ -152,3 +152,47 @@ On the saved bad recording, (2)+(3) alone raised valid frames from 4/13 to 10/13
 | C2 CRC check value + error detection | **Verified** (unit tests) |
 | C3 parity vs CRC | **Verified** (unit test); UI demo pending M4 |
 | C4 3-frame reassembly | **Verified** (unit test + acoustic loopback) |
+
+---
+
+## M3 — ACK, timeout, retransmission, Stop-and-Wait (2026-10-31)
+
+### Code review before testing
+- **Speaker:** a single persistent `sd.OutputStream`. No `sd.play()` calls remain anywhere (`grep`). Per-frame overhead fell from ~1.1 s to ~0.47 s (`frames_20261031_173830.json`, 7/7 valid).
+- **Engine threads:**
+  - rx: channel → `FrameReceiver` → handler;
+  - tx: `PriorityQueue`, so ACKs go before data;
+  - sender: outbox → ARQ.
+- The ARQ timer starts only after a frame has finished playing. ACKs reach the waiting sender through `ack_queue`; stale ACKs are ignored.
+- **Initial sequence number** is random, so a restarted sender isn't mistaken for a duplicate.
+- **Timer:** TCP-style RTO = SRTT + 4·RTTVAR, using Karn's rule.
+
+### Simulated-channel tests — `tests/test_engine.py` → 8 passed (*Measured – SIMULATED channel*; protocol logic only)
+Covers normal delivery, a 3-fragment message, a corrupted frame, a lost ACK delivered exactly once, max retries (5 retransmissions, 6 timeouts, FAILED), ping, HELLO discovery (lists only nodes that answered), and frames for other nodes being ignored. Full suite: **39 passed**.
+
+### Real acoustic tests — `tools/arq_test.py` (*Measured – acoustic, single-laptop loopback*)
+Two engines (nodes 1 and 2) share this laptop's speaker and microphone through `AcousticLoopbackHub`. Every DATA, ACK, PING and PONG frame travelled speaker → air → microphone.
+
+| # | Scenario | Result | Key evidence | File |
+|---|---|---|---|---|
+| 1 | Normal transmission | **PASS** | delivered "HELLO WORLD", 0 retransmissions, 6.6 s | `arq_20261031_180122.json` |
+| 2 | Corrupted DATA frame (injected) | **PASS** | receiver: `CRC mismatch (received 0x9570, calculated 0x9396)`; sender: timeout after 6.3 s, 1 retransmission; delivered once | same |
+| 3 | Lost ACK (injected at receiver) | **PASS** | sender timed out and resent; receiver: "Duplicate seq 43 … ACKed again, not delivered twice"; message delivered **exactly once** | same |
+| 4 | 3-frame message (56 B) | **PASS** | 3/3 frames ACKed, reassembled exactly, 21.8 s | `arq_20261031_180312.json` |
+| 5 | Acoustic ping ×3 | **PASS** | 3 sent, 3 received, 0 % loss, RTT 4.68/4.70/4.71 s | same |
+| 6 | Max retries (node 9 absent) | **PASS** | 6 attempts, 6 timeouts, 5 retransmissions → "Message #2 FAILED"; no false success | same |
+
+Measured data-frame RTT (start of DATA → ACK received): 5.29–8.64 s; RTO converged to 4.46 s.
+
+**Loopback-only artefact:** in scenario 2, node 1 also logged a CRC failure for its own corrupted frame, because both nodes share one microphone. On two laptops the half-duplex mute stops a node decoding its own transmissions.
+
+**Interrupted run:** the first attempt (17:42) was stopped by the user before it finished and saved no results. It was rerun from the beginning as above.
+
+### DoD status after M3
+| DoD | Status |
+|---|---|
+| C5 lost ACK → resent, re-ACKed, delivered exactly once | **Verified (acoustic loopback + simulated)** |
+| C6 corrupted frame → CRC failure shown, timeout, retransmit, delivered | **Verified (acoustic loopback + simulated)** |
+| C7 max retries → "delivery failed" | **Verified (acoustic loopback + simulated)** |
+| C8 20-char message ≥ 9/10 between **two laptops** | **Pending second laptop** |
+| C13 ping RTT min/avg/max/loss | **Engine verified (acoustic loopback)**; UI display pending M4 |
