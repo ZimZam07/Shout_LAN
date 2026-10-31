@@ -1,0 +1,8 @@
+{
+  "kind": "Measured - acoustic",
+  "seconds": 60.0,
+  "mic": 9,
+  "false_detections": 0,
+  "best_score": 0.04341661323314589,
+  "threshold": 0.35
+}

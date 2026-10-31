@@ -1,0 +1,98 @@
+{
+  "kind": "Measured - acoustic (single-laptop loopback)",
+  "mic": 9,
+  "speaker": 8,
+  "exclusive": true,
+  "freq0": 2000,
+  "freq1": 3000,
+  "bit_time": 0.02,
+  "volume": 0.5,
+  "bits_per_trial": 256,
+  "trials": 10,
+  "preambles_detected": 10,
+  "total_bits": 2560,
+  "bit_errors": 0,
+  "ber": 0.0,
+  "details": [
+    {
+      "trial": 0,
+      "preamble": true,
+      "score": 0.717,
+      "errors": 0,
+      "min_confidence": 0.881,
+      "overflows": 0
+    },
+    {
+      "trial": 1,
+      "preamble": true,
+      "score": 0.701,
+      "errors": 0,
+      "min_confidence": 0.868,
+      "overflows": 0
+    },
+    {
+      "trial": 2,
+      "preamble": true,
+      "score": 0.739,
+      "errors": 0,
+      "min_confidence": 0.866,
+      "overflows": 0
+    },
+    {
+      "trial": 3,
+      "preamble": true,
+      "score": 0.737,
+      "errors": 0,
+      "min_confidence": 0.857,
+      "overflows": 0
+    },
+    {
+      "trial": 4,
+      "preamble": true,
+      "score": 0.744,
+      "errors": 0,
+      "min_confidence": 0.851,
+      "overflows": 0
+    },
+    {
+      "trial": 5,
+      "preamble": true,
+      "score": 0.73,
+      "errors": 0,
+      "min_confidence": 0.832,
+      "overflows": 0
+    },
+    {
+      "trial": 6,
+      "preamble": true,
+      "score": 0.739,
+      "errors": 0,
+      "min_confidence": 0.839,
+      "overflows": 0
+    },
+    {
+      "trial": 7,
+      "preamble": true,
+      "score": 0.737,
+      "errors": 0,
+      "min_confidence": 0.854,
+      "overflows": 0
+    },
+    {
+      "trial": 8,
+      "preamble": true,
+      "score": 0.728,
+      "errors": 0,
+      "min_confidence": 0.869,
+      "overflows": 0
+    },
+    {
+      "trial": 9,
+      "preamble": true,
+      "score": 0.737,
+      "errors": 0,
+      "min_confidence": 0.83,
+      "overflows": 0
+    }
+  ]
+}
