@@ -37,6 +37,38 @@ def bits_to_bytes(bits):
     return bytes(out)
 
 
+# ---------------------------------------------------------------- scrambler
+def _scrambler_sequence(n_bytes, seed=0x5D):
+    """
+    Pseudo-random bytes from a 7-bit LFSR with polynomial x^7 + x^4 + 1
+    (the same scrambler polynomial as IEEE 802.11 Wi-Fi).
+    """
+    state = seed & 0x7F
+    out = bytearray()
+    for _ in range(n_bytes):
+        byte = 0
+        for _ in range(8):
+            bit = ((state >> 6) ^ (state >> 3)) & 1      # taps for x^7 and x^4
+            state = ((state << 1) | bit) & 0x7F
+            byte = (byte << 1) | bit
+        out.append(byte)
+    return bytes(out)
+
+
+def whiten(data):
+    """
+    Scramble (or unscramble - XOR is its own inverse) bytes before sending.
+
+    Why: frames contain many 0x00/0x01 bytes, i.e. long runs of the same bit
+    = the same tone for hundreds of milliseconds. In a real room a long tone
+    builds up echo that spills into the following bits (inter-symbol
+    interference). XOR-ing with a pseudo-random sequence breaks those runs.
+    It does not hide anything - it is not encryption.
+    """
+    seq = _scrambler_sequence(len(data))
+    return bytes(a ^ b for a, b in zip(data, seq))
+
+
 # ---------------------------------------------------------------- Goertzel
 def goertzel_power(block, freq, sample_rate):
     """
@@ -120,6 +152,10 @@ class Modem:
         signal = np.concatenate([self.preamble_wave, gap, tones, tail])
         return (signal * self.volume).astype(np.float32)
 
+    def modulate_bytes(self, data):
+        """Frame bytes -> scrambled -> bits -> sound. Used for every transmission."""
+        return self.modulate(bytes_to_bits(whiten(data)))
+
     def airtime(self, n_bits):
         """Seconds of sound needed to send n_bits (preamble + gap + bits)."""
         return config.PREAMBLE_TIME + config.GAP_TIME + n_bits * self.bit_time
@@ -157,30 +193,57 @@ class Modem:
         # The first crossing tells us roughly where; the best peak just after it
         # tells us exactly where (within one preamble length).
         first = above[0]
+        if first + len(self.preamble_wave) > len(scores):
+            # The preamble is only partly recorded so far. Picking a peak now
+            # would give the wrong start time, so wait for more audio.
+            return None
         region = scores[first:first + len(self.preamble_wave)]
         peak = first + int(np.argmax(region))
         first_bit = start + peak + len(self.preamble_wave) + self.gap_samples
         return first_bit, float(scores[peak])
 
-    def demodulate_bits(self, audio, first_bit, n_bits):
+    def estimate_gains(self, audio, first_bit):
+        """
+        Channel estimation: the preamble chirp contains both tone frequencies
+        at a known level. Comparing how strongly each one ARRIVED tells us how
+        much the speaker/room/microphone weakens each tone (attenuation).
+        Returns (gain0, gain1) used to equalise the two tones.
+        """
+        end = first_bit - self.gap_samples
+        start = end - len(self.preamble_wave)
+        received = np.asarray(audio[max(start, 0):end], dtype=np.float64)
+        sent = self.preamble_wave.astype(np.float64) * self.volume
+        if len(received) < len(sent) // 2:
+            return 1.0, 1.0
+        gains = []
+        for f in (self.freq0, self.freq1):
+            ref = goertzel_power(sent, f, self.sample_rate)
+            got = goertzel_power(received, f, self.sample_rate)
+            gains.append(max(got / ref, 1e-12) if ref > 0 else 1.0)
+        return gains[0], gains[1]
+
+    def demodulate_bits(self, audio, first_bit, n_bits, gains=None):
         """
         Decide each bit by comparing tone strengths inside that bit's time slot.
 
-        Only the middle part of each slot is measured (skipping the edges),
-        because echoes of the previous bit and small timing errors live there.
+        - Only the LATER part of each slot is measured (40% .. 95%): the start
+          of a slot still contains the echo of the previous bit.
+        - Each tone's power is divided by its channel gain (from the preamble),
+          so a tone that the speaker plays weakly is not always out-voted.
         Returns (bits, confidences); confidence 0..1 shows how clear the decision was.
         """
         spb = self.samples_per_bit
-        lo = int(spb * 0.15)
+        lo = int(spb * 0.40)
         hi = int(spb * 0.95)
+        g0, g1 = gains if gains else (1.0, 1.0)
         bits, conf = [], []
         for i in range(n_bits):
             begin = first_bit + i * spb
             block = np.asarray(audio[begin + lo: begin + hi], dtype=np.float64)
             if len(block) < (hi - lo):
                 break                                   # not enough audio yet
-            p0 = goertzel_power(block, self.freq0, self.sample_rate)
-            p1 = goertzel_power(block, self.freq1, self.sample_rate)
+            p0 = goertzel_power(block, self.freq0, self.sample_rate) / g0
+            p1 = goertzel_power(block, self.freq1, self.sample_rate) / g1
             bits.append(1 if p1 > p0 else 0)
             conf.append(abs(p1 - p0) / (p1 + p0 + 1e-20))
         return bits, conf

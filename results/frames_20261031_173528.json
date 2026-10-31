@@ -1,0 +1,10 @@
+{
+  "kind": "Measured - acoustic (single-laptop loopback)",
+  "hello_frames_sent": 10,
+  "hello_frames_valid": 10,
+  "valid_frames": 13,
+  "crc_or_format_failures": 0,
+  "errors": [],
+  "long_message_reassembled": true,
+  "volume": 0.3
+}

@@ -80,3 +80,75 @@ In shared mode, received tone power fell 20–40 dB during runs of identical bit
 | B2 | ≥ 19/20 preambles detected, 0 false detections in 60 s | **Verified (loopback)**: 20/20 and 0 |
 | B3 | 256-bit pattern BER ≤ 1 % at calibrated setting | **Verified (loopback)**: 0.00 %, 0.00 %, 0.14 % |
 | — | Two-laptop acoustic verification | **Pending second laptop** (instructions in README) |
+
+---
+
+## M2 — Framing, addressing, CRC-16, parity, fragmentation (2026-10-31)
+
+### Unit tests — `tests/test_frame.py`, `tests/test_modem.py` → **31 passed** (Python 3.13.4)
+
+**CRC (DoD C2):**
+
+- `crc16(b"123456789") == 0x29B1` ✔
+- **Every** single-bit error in a 26-byte frame is rejected.
+- **Every** double-bit error is rejected (exhaustive, about 41 000 combinations).
+- Every burst of length 1–16 bits at every position is rejected.
+
+**Parity vs CRC (DoD C3):** a 2-bit error passes the parity check but fails the CRC; a 1-bit error fails parity. ✔
+
+**Frames (DoD C1):**
+
+- All fields round-trip.
+- A full frame is **35 bytes** (11 B overhead + 24 B payload); an ACK is 11 bytes.
+- Malformed input (empty, too short, wrong sync, impossible length, truncated) raises `FrameError`, never a crash.
+- An oversized payload is refused when building.
+
+**Fragmentation (DoD C4):** a 50-byte message → 3 fragments (FIRST … LAST) → reassembled exactly. An empty message → 1 fragment. FIRST discards an abandoned partial message.
+
+**Streaming receiver:**
+
+- Decodes 3 frames from 2048-sample chunks.
+- A corrupted frame is reported as `CRC mismatch`, not delivered.
+- Chunk sizes 256/333/1000/2048/4799 all work.
+
+**Modem:**
+
+- The scrambler is reversible and limits runs of 192 zero bits to ≤ 8.
+- The equaliser decodes correctly when tone 1 is ~15 dB weaker, including a lone 1 between two runs of 40 zeros.
+
+### Hardware — `tools/frame_test.py` (single-laptop loopback, mic continuously open as in the real engine)
+
+| Run | Change | HELLO frames valid | All frames | 3-fragment message | File |
+|---|---|---|---|---|---|
+| 1 | first version | 3/10 | 4/13 (9 CRC failures) | ✗ | `frames_20261031_172750.json` |
+| 2 | same, raw audio saved | 3/10 | 4/13 | ✗ | `frames_20261031_173036.json` |
+| 3 | **scrambler + equaliser + late window** | **10/10** | **13/13** | ✔ | `frames_20261031_173425.json` |
+| 4 | same, volume 0.3 | **10/10** | **13/13** | ✔ | `frames_20261031_173528.json` |
+
+**Root cause of runs 1–2** (from analysing the saved recording):
+
+- In that session the 3000 Hz tone arrived about 12 dB weaker than 2000 Hz.
+- Headers contain many 0x00/0x01 bytes, i.e. long 2000 Hz runs whose room echo spilled into the next 20 ms bit (inter-symbol interference).
+- A lone 1-bit after a run of 0s therefore lost to the echo. CRC correctly rejected every damaged frame; nothing corrupted was delivered.
+- The receiver code was ruled out: offline decoding of a clean continuous recording in chunk sizes 2048 to 400000 gave 3/3 valid frames.
+
+**Fixes (all standard techniques):**
+
+1. **Scrambler:** frame bytes are XOR-ed with the IEEE 802.11 LFSR sequence (x⁷+x⁴+1), so no long single-tone runs remain.
+2. **Channel equalisation:** each tone's power is divided by its gain, measured from the known preamble.
+3. **Later sampling window:** each bit is measured from 40–95 % of its slot instead of 15–95 %, skipping the previous bit's echo.
+
+On the saved bad recording, (2)+(3) alone raised valid frames from 4/13 to 10/13. Adding (1) on live hardware gave 13/13.
+
+**Also fixed:** `find_preamble` now waits until the whole peak-search region has been received. This prevents a too-early peak when a chunk ends inside a preamble. The synthetic regression test did not reproduce the original failure, so this fix is **preventive**, not proven necessary.
+
+**Re-check of M1 after changing the bit window:** `loopback_20261031_173638.json` gave 0/2560 bit errors, 10/10 preambles.
+
+### DoD status after M2
+| DoD | Status |
+|---|---|
+| B4 "HELLO" frame valid ≥ 9/10 | **Verified (loopback)** 10/10 twice; two-laptop pending |
+| C1 build/parse, malformed rejected | **Verified** (unit tests) |
+| C2 CRC check value + error detection | **Verified** (unit tests) |
+| C3 parity vs CRC | **Verified** (unit test); UI demo pending M4 |
+| C4 3-frame reassembly | **Verified** (unit test + acoustic loopback) |

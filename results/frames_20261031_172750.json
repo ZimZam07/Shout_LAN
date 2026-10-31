@@ -1,0 +1,20 @@
+{
+  "kind": "Measured - acoustic (single-laptop loopback)",
+  "hello_frames_sent": 10,
+  "hello_frames_valid": 3,
+  "valid_frames": 4,
+  "crc_or_format_failures": 9,
+  "errors": [
+    "CRC mismatch (received 0x0000, calculated 0x66A2)",
+    "CRC mismatch (received 0x4845, calculated 0x6F60)",
+    "CRC mismatch (received 0x4000, calculated 0x3E32)",
+    "CRC mismatch (received 0x2407, calculated 0x398E)",
+    "CRC mismatch (received 0x0000, calculated 0x1CC5)",
+    "CRC mismatch (received 0x0FB0, calculated 0x4B4C)",
+    "bad sync byte 0x3E",
+    "CRC mismatch (received 0x65CB, calculated 0x3F1B)",
+    "CRC mismatch (received 0x0000, calculated 0x043E)"
+  ],
+  "long_message_reassembled": false,
+  "volume": 0.5
+}

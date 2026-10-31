@@ -19,7 +19,7 @@ Legend:
 ## Application milestones
 
 - [x] **M1 Acoustic link** – tone TX, calibration, preamble detection, BFSK bit recovery (DoD B1–B3). Verified on single-laptop loopback (TESTING.md §M1); two-laptop check pending second laptop
-- [ ] **M2 Framing + CRC** – frame format (11 B overhead), addressing, CRC-16, parity, fragmentation (B4, C1–C4)
+- [x] **M2 Framing + CRC** – frame format (11 B overhead), addressing, CRC-16, parity, fragmentation, scrambler + equaliser (B4, C1–C4). Verified: unit tests + loopback 13/13 frames (TESTING.md §M2); two-laptop pending
 - [ ] **M3 Stop-and-Wait** – ACK, timeout, retransmit, duplicates, error injection (C5–C8)
 - [ ] **M4 App** – engine threads, TCP control server (per-client writer queue), line-buffered client, PySide6 UI (5 screens), monitor, stats, ping, HELLO (A1–A7, A3a–A3d, C13, C14, D1–D4)
 - [ ] **M5 Security** – AES-GCM, random nonces, replay check, overhead measurement, threat model (E1–E5)

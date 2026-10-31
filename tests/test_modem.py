@@ -63,3 +63,31 @@ def test_no_false_preamble_in_plain_bfsk_tones():
     sig = modem.modulate(list(rng.integers(0, 2, 400)))
     body = sig[len(modem.preamble_wave) + modem.gap_samples:]
     assert modem.find_preamble(body) is None
+
+
+def test_whitening_is_reversible_and_breaks_runs():
+    from shout_lan.modem import whiten
+    data = bytes(24)                                   # 192 zero bits in a row
+    w = whiten(data)
+    assert whiten(w) == data
+    bits = bytes_to_bits(w)
+    longest = max(len(r) for r in "".join(map(str, bits)).replace("1", " 1 ").split())
+    assert longest <= 8                                 # no long single-tone runs
+
+
+def test_equaliser_handles_a_weak_tone():
+    # Tone 1 arrives 15 dB weaker than tone 0 (like the real laptop speaker).
+    from scipy.signal import filtfilt, firwin
+    modem = Modem()
+    rng = np.random.default_rng(9)
+    bits = [0] * 40 + [1] + [0] * 40 + [int(b) for b in rng.integers(0, 2, 100)]
+    sig = modem.modulate(bits).astype(np.float64)
+    band = firwin(301, [2600, 3400], fs=48000, pass_zero=False)
+    weak = sig - (1 - 10 ** (-15 / 20)) * filtfilt(band, [1.0], sig)   # attenuate ~3 kHz (zero phase)
+    audio = np.concatenate([np.zeros(3000), weak * 0.3, np.zeros(3000)])
+    audio += rng.normal(0, 0.002, len(audio))
+    found = modem.find_preamble(audio)
+    gains = modem.estimate_gains(audio, found[0])
+    assert gains[1] < gains[0]                          # it noticed tone 1 is weaker
+    got, _ = modem.demodulate_bits(audio, found[0], len(bits), gains)
+    assert got == bits
