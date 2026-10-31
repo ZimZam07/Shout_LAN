@@ -1,0 +1,183 @@
+"""
+ui_smoke_test.py - drives the REAL desktop window without a screen (Qt offscreen):
+clicks "Start engine", sends a message, discovers nodes, pings, injects an
+error, and saves a screenshot of every page in results/screenshots/.
+
+Uses the SIMULATED channel only (no sound), so it is safe to run anywhere:
+    python tools/ui_smoke_test.py
+"""
+
+import os
+import subprocess
+import sys
+import time
+
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+os.environ.setdefault("QT_QPA_FONTDIR", os.path.join(os.environ.get("WINDIR", r"C:\Windows"), "Fonts"))
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)
+
+from PySide6.QtWidgets import QApplication   # noqa: E402
+
+from ui import style                          # noqa: E402
+from ui.app import MainWindow                 # noqa: E402
+
+SHOTS = os.path.join(ROOT, "results", "screenshots")
+
+
+MAX_STALL = [0.0]          # longest single processEvents() call = how long the UI was frozen
+
+
+def pump(app, seconds, until=None):
+    end = time.time() + seconds
+    while time.time() < end:
+        t0 = time.perf_counter()
+        app.processEvents()
+        MAX_STALL[0] = max(MAX_STALL[0], time.perf_counter() - t0)
+        if until and until():
+            return True
+        time.sleep(0.02)
+    return until() if until else True
+
+
+def main():
+    os.makedirs(SHOTS, exist_ok=True)
+    app = QApplication(sys.argv)
+    app.setStyleSheet(style.QSS)
+    w = MainWindow()
+    w.resize(1400, 900)
+    w.show()
+    checks = []
+
+    def check(name, ok):
+        checks.append((name, bool(ok)))
+        print(("PASS " if ok else "FAIL ") + name, flush=True)
+
+    pump(app, 0.5)
+    w.grab().save(os.path.join(SHOTS, "0_connect_not_running.png"))
+
+    # second node, started from the command line (like the other laptop)
+    other = subprocess.Popen([sys.executable, "-u", os.path.join(ROOT, "run_engine.py"),
+                              "--node", "2", "--simulated", "--port", "5202"], cwd=ROOT,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        page = w.pages[1]
+        page.node_spin.setValue(1)
+        page.sim_radio.setChecked(True)
+        page.port_spin.setValue(5201)
+        page.start_btn.click()
+        check("engine starts and UI connects over TCP",
+              pump(app, 20, lambda: w.status is not None))
+        check("top bar shows SIMULATED label", "SIMULATED" in w.channel_chip.text())
+        w.grab().save(os.path.join(SHOTS, "1_connect_running.png"))
+
+        # discovery
+        w.nav.button(0).click()
+        w.pages[0].discover_btn.click()
+        check("HELLO discovery finds node 2",
+              pump(app, 30, lambda: w.status and "2" in w.status["nodes"]))
+        pump(app, 1.5)
+        w.grab().save(os.path.join(SHOTS, "2_overview.png"))
+
+        # message
+        w.nav.button(2).click()
+        msgs = w.pages[2]
+        msgs.dst.setValue(2)
+        msgs.input.setText("HELLO FROM THE SHOUT LAN APP")
+        msgs.send_btn.click()
+        check("message shows Delivered only after ACK",
+              pump(app, 60, lambda: any(i.get("status") == "delivered" for i in msgs.items)))
+        w.grab().save(os.path.join(SHOTS, "3_messages.png"))
+
+        # responsiveness during a long (3-frame) transmission
+        MAX_STALL[0] = 0.0
+        msgs.input.setText("A LONGER MESSAGE THAT NEEDS THREE FRAMES TO SHOW THE UI KEEPS RUNNING")
+        msgs.send_btn.click()
+        done = pump(app, 120, lambda: sum(i.get("status") == "delivered" for i in msgs.items) >= 2)
+        print(f"     longest UI stall during transmission: {MAX_STALL[0] * 1000:.0f} ms", flush=True)
+        check("3-frame message delivered while UI stays responsive (stall < 200 ms)",
+              done and MAX_STALL[0] < 0.2)
+
+        # error injection + retransmission
+        w.nav.button(3).click()
+        w.pages[3].corrupt_btn.click()
+        pump(app, 0.5)
+        msgs.input.setText("CRC DEMO")
+        msgs.send_btn.click()
+        check("injected corruption causes retransmission and delivery",
+              pump(app, 90, lambda: sum(i.get("status") == "delivered" for i in msgs.items) >= 3))
+        check("monitor table has rows", w.pages[3].table.rowCount() >= 4)
+        w.pages[3].table.selectRow(0)
+        pump(app, 0.5)
+        w.grab().save(os.path.join(SHOTS, "4_monitor.png"))
+
+        # ping + performance
+        w.command({"cmd": "ping", "dst": 2, "count": 2})
+        pump(app, 40, lambda: w.status and w.status["stats"]["ping_rtt"]
+             and w.status["stats"]["ping_rtt"]["count"] >= 2)
+        pump(app, 1.5)
+        w.nav.button(4).click()
+        pump(app, 1.5)
+        st = w.status["stats"]
+        check("performance shows measured retransmission", st["counters"]["retransmissions"] >= 1)
+        check("metrics labelled SIMULATED", "SIMULATED" in w.pages[4].source_chip.text())
+        w.grab().save(os.path.join(SHOTS, "5_performance.png"))
+
+        # ---- every remaining control does something real (DoD A4)
+        w.nav.button(1).click()
+        page.volume.setValue(30)
+        page.volume.sliderReleased.emit()
+        check("volume slider changes the engine's volume",
+              pump(app, 5, lambda: w.status and abs(w.status["volume"] - 0.30) < 1e-6))
+        page.f0.setValue(2000)
+        page.f1.setValue(3000)
+        page.tones_btn.click()
+        check("Apply tones reaches the engine",
+              pump(app, 5, lambda: any("BFSK tones set" in it.text()
+                                       for it in [w.pages[0].activity.item(i)
+                                                  for i in range(w.pages[0].activity.count())])))
+        check("calibration disabled on SIMULATED channel", not page.cal_btn.isEnabled())
+        n_before = page.mic_combo.count()
+        page.refresh_btn.click()
+        check("Refresh devices re-lists real devices", page.mic_combo.count() == n_before > 0)
+        w.nav.button(2).click()
+        msgs.ping_btn.click()
+        check("Ping button runs an acoustic-style ping (summary event)",
+              pump(app, 40, lambda: "Ping statistics" in msgs.progress_label.text()))
+        w.nav.button(3).click()
+        w.pages[3].dropack_btn.click()
+        check("Drop next ACK button arms the injection",
+              pump(app, 5, lambda: w.status and w.status["inject"]["drop_next_ack"]))
+        w.pages[3].clear_btn.click()
+        check("Clear table empties the monitor", w.pages[3].table.rowCount() == 0)
+        w.nav.button(4).click()
+        w.pages[4].reset_btn.click()
+        check("Reset sets measured counters to zero",
+              pump(app, 5, lambda: w.status and w.status["stats"]["counters"]["frames_tx"] == 0))
+        w.nav.button(1).click()
+        page.disconnect_btn.click()
+        check("Disconnect closes the control link", pump(app, 5, lambda: w.status is None))
+        page.connect_btn.click()
+        check("Connect re-opens the control link", pump(app, 10, lambda: w.status is not None))
+
+        page.stop_engine()
+        check("engine stops and UI shows disconnected",
+              pump(app, 15, lambda: w.status is None))
+    finally:
+        other.terminate()
+        other.wait(timeout=10)
+        w.close()
+    passed = sum(ok for _, ok in checks)
+    print(f"\n{passed}/{len(checks)} UI checks passed; screenshots in {SHOTS}")
+    import json
+    path = os.path.join(ROOT, "results", f"ui_smoke_{time.strftime('%Y%m%d_%H%M%S')}.json")
+    with open(path, "w") as f:
+        json.dump({"kind": "UI automation on the SIMULATED channel (offscreen Qt)",
+                   "checks": [{"name": n, "passed": ok} for n, ok in checks],
+                   "max_ui_stall_ms": round(MAX_STALL[0] * 1000, 1)}, f, indent=1)
+    print("saved:", path)
+    sys.exit(0 if passed == len(checks) else 1)
+
+
+if __name__ == "__main__":
+    main()

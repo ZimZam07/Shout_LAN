@@ -19,7 +19,9 @@ import random
 import threading
 import time
 
-from shout_lan import arq, config, frame as fr
+import numpy as np
+
+from shout_lan import arq, calibration, config, frame as fr
 from shout_lan.crc import flip_bits
 from shout_lan.modem import Modem
 from shout_lan.receiver import FrameReceiver
@@ -70,6 +72,7 @@ class Engine:
         self.mute_until = 0.0
         self.running = False
         self.threads = []
+        self.capture = None                     # list while calibration records raw audio
 
     # ------------------------------------------------------------ lifecycle
     def start(self):
@@ -172,6 +175,17 @@ class Engine:
             _, _, item = self.tx_queue.get()
             if item is None:
                 break
+            if "samples" in item:                      # calibration sweep (not a frame)
+                self.transmitting = True
+                try:
+                    self.channel.transmit(item["samples"])
+                except Exception as exc:
+                    self.emit("error", text=f"Transmission failed: {exc}")
+                finally:
+                    self.transmitting = False
+                    self.mute_until = time.time() + MUTE_AFTER_TX
+                item["done"].set()
+                continue
             frame, raw = item["frame"], item["raw"]
             samples = self.modem.modulate_bytes(raw)
             airtime = len(samples) / config.SAMPLE_RATE
@@ -209,6 +223,12 @@ class Engine:
     def _rx_loop(self):
         while self.running:
             audio = self.channel.read()
+            if self.capture is not None:               # calibration is recording raw audio
+                if len(audio):
+                    self.capture.append(audio)
+                else:
+                    time.sleep(0.03)
+                continue
             half_duplex = self.channel.kind == "acoustic" and getattr(self.channel, "half_duplex", True)
             if half_duplex and (self.transmitting or time.time() < self.mute_until):
                 # Half-duplex: we can't listen while our own speaker is talking.
@@ -303,13 +323,19 @@ class Engine:
             self.emit("stale_ack", seq=f.seq, text=f"Ignored old/unexpected ACK seq {f.seq}")
 
     # ------------------------------------------------------------ application requests
-    def send_message(self, dst, text):
+    def send_message(self, dst, text, encrypt=False):
         """Queue a text message. Returns its message id (progress is reported by events)."""
+        if not 1 <= int(dst) <= 254:
+            raise ValueError("destination must be a node id 1..254")
+        if encrypt and getattr(self, "security", None) is None:
+            raise ValueError("encryption is not available (no secret.key loaded)")
         data = text.encode("utf-8") if isinstance(text, str) else bytes(text)
         msg_id = next(self.msg_ids)
-        self.outbox.put({"kind": "message", "msg_id": msg_id, "dst": dst, "data": data})
+        self.outbox.put({"kind": "message", "msg_id": msg_id, "dst": dst, "data": data,
+                         "encrypt": encrypt})
         frames = len(fr.fragment(data))
         self.emit("message_status", msg_id=msg_id, dst=dst, status="queued", frames=frames,
+                  message=data.decode("utf-8", errors="replace"), encrypted=bool(encrypt),
                   text=f"Message #{msg_id} to node {dst} queued ({len(data)} bytes, {frames} frame(s))")
         return msg_id
 
@@ -329,6 +355,8 @@ class Engine:
                     self._send_message_job(job)
                 elif job["kind"] == "ping":
                     self._ping_job(job)
+                elif job["kind"] == "calibrate":
+                    self._calibrate_job()
                 elif job["kind"] == "hello":
                     self.transmit(fr.Frame(fr.HELLO, self.node_id, fr.BROADCAST,
                                            seq=self.next_seq(), flags=fr.F_POLL))
@@ -406,6 +434,65 @@ class Engine:
                                              f"{summary['avg']:.2f}/{summary['max']:.2f} s"
                                              if rtts else ""))
 
+    def calibrate(self):
+        self.outbox.put({"kind": "calibrate"})
+
+    def _calibrate_job(self):
+        """
+        Measure the real channel through this engine's own microphone stream:
+        1 s of room noise, then a tone sweep through the speaker.
+        Reports the noise floor and the SNR of every test frequency.
+        """
+        if self.channel.kind != "acoustic":
+            self.emit("calibration", ok=False,
+                      text="Calibration needs the acoustic channel (it measures real sound)")
+            return
+        self.emit("calibration_start", text="Calibrating: measuring room noise for 1 s, then playing a tone sweep")
+        self.capture = []
+        time.sleep(1.0)
+        noise = np.concatenate(self.capture) if self.capture else np.zeros(0)
+        self.capture = []
+        done = threading.Event()
+        self.tx_queue.put((1, next(self._order),
+                           {"samples": calibration.make_sweep(self.modem.volume), "done": done}))
+        done.wait(timeout=30)
+        time.sleep(0.4)
+        heard = np.concatenate(self.capture) if self.capture else np.zeros(0)
+        self.capture = None
+        self.receiver.reset()
+        if len(noise) == 0 or len(heard) == 0:
+            self.emit("calibration", ok=False, text="Calibration failed: no audio from the microphone")
+            return
+        noise_rms = float(np.sqrt(np.mean(noise * noise)))
+        noise_p = calibration.noise_powers(noise)
+        snr = calibration.snr_table(calibration.analyse_sweep(heard), noise_p)
+        self.noise_floor = noise_rms
+        current = [round(snr.get(self.modem.freq0, 0), 1), round(snr.get(self.modem.freq1, 0), 1)]
+        self.emit("calibration", ok=True, noise_rms=round(noise_rms, 5),
+                  snr_db={str(k): round(v, 1) for k, v in snr.items()},
+                  freq0=self.modem.freq0, freq1=self.modem.freq1, current_snr=current,
+                  source=self.stats.source,
+                  text=f"Calibration done: noise floor RMS {noise_rms:.4f}; detector-bin SNR at "
+                       f"{self.modem.freq0} Hz = {current[0]} dB, {self.modem.freq1} Hz = {current[1]} dB")
+
+    def set_volume(self, volume):
+        self.modem.volume = max(0.02, min(1.0, float(volume)))
+        self.emit("setting", name="volume", value=self.modem.volume,
+                  text=f"Transmit volume set to {self.modem.volume:.2f}")
+
+    def set_tones(self, freq0, freq1):
+        """Both laptops MUST use the same tones, otherwise they cannot understand each other."""
+        freq0, freq1 = int(freq0), int(freq1)
+        if not (300 <= freq0 < freq1 <= 8000) or freq1 - freq0 < 300:
+            raise ValueError("tones must be 300..8000 Hz, freq0 < freq1, at least 300 Hz apart")
+        self.modem.freq0, self.modem.freq1 = freq0, freq1
+        self.emit("setting", name="tones", value=[freq0, freq1],
+                  text=f"BFSK tones set to {freq0}/{freq1} Hz (set the SAME values on every laptop)")
+
+    def reset_stats(self):
+        self.stats.reset()
+        self.emit("setting", name="stats", value="reset", text="Statistics reset")
+
     # ------------------------------------------------------------ status for the UI
     def status(self):
         return {"node_id": self.node_id, "channel": self.channel.kind,
@@ -414,4 +501,8 @@ class Engine:
                 "rto": round(self.timer.timeout(), 2), "inject": dict(self.inject),
                 "nodes": self.node_table(), "stats": self.stats.snapshot(),
                 "freq0": self.modem.freq0, "freq1": self.modem.freq1,
-                "bit_time": self.modem.bit_time, "volume": self.modem.volume}
+                "bit_time": self.modem.bit_time, "volume": self.modem.volume,
+                "mic_level": round(float(self.channel.level()), 4),
+                "mic_overflows": int(getattr(self.channel, "overflows", 0) or 0),
+                "noise_floor": getattr(self, "noise_floor", None),
+                "encryption_available": getattr(self, "security", None) is not None}

@@ -214,10 +214,115 @@ class SimulatedChannel:
         return audio
 
     def transmit(self, samples):
-        self.last_lost = self.air.broadcast(self, samples)
+        # Like real sound, the receivers have the complete frame only once it has
+        # finished "playing", so wait for the airtime first, then deliver it.
         time.sleep(len(samples) / config.SAMPLE_RATE * self.air.time_scale)
+        self.last_lost = self.air.broadcast(self, samples)
 
     def level(self):
         return 0.1 if time.time() < self.air.busy_until else self.air.noise
+
+    overflows = 0
+
+
+class UdpSimulatedChannel:
+    """
+    SIMULATED channel between engine PROCESSES on the same laptop (backup demo
+    mode, e.g. when the room is too noisy). The "air" is local UDP: the
+    modulated audio samples of each transmission are sent in chunks to the
+    other simulated nodes on 127.0.0.1. Receivers add background noise and
+    feed the samples into the normal receiver, so modem, framing, CRC and
+    ARQ all run exactly as with sound.
+
+    This is NOT acoustic communication and is labelled SIMULATED everywhere.
+    """
+
+    kind = "simulated"
+    label = "SIMULATED channel (software, not sound)"
+    BASE_PORT = 47100            # node N listens on 47100 + N
+    MAX_NODES = 20
+    CHUNK = 16000                # samples per datagram (int16 -> 32 kB)
+
+    def __init__(self, node_id, gain=0.3, noise=0.002, loss=0.0):
+        import socket
+        self.node_id = node_id
+        self.gain = gain
+        self.noise = noise
+        self.loss = loss
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 8 * 1024 * 1024)
+        if hasattr(socket, "SIO_UDP_CONNRESET"):
+            # Windows: don't report "port unreachable" from nodes that aren't running
+            self.sock.ioctl(socket.SIO_UDP_CONNRESET, False)
+        try:
+            self.sock.bind(("127.0.0.1", self.BASE_PORT + node_id))
+        except OSError as exc:
+            raise OSError(f"Simulated node {node_id} is already running ({exc})") from exc
+        self.sock.settimeout(0.2)
+        self.lock = threading.Lock()
+        self.pending = []
+        self.partial = {}            # (sender, tx_id) -> list of chunks
+        self.tx_id = 0
+        self.running = False
+        self.busy_until = 0.0
+        self.np_rng = np.random.default_rng()
+        self.last_lost = False
+
+    def start(self):
+        self.running = True
+        threading.Thread(target=self._listen, daemon=True, name="sim-udp").start()
+
+    def stop(self):
+        self.running = False
+        try:
+            self.sock.close()
+        except OSError:
+            pass
+
+    def _listen(self):
+        import struct
+        while self.running:
+            try:
+                packet, _ = self.sock.recvfrom(65535)
+            except OSError:
+                continue
+            sender, tx_id, index, total = struct.unpack("!BHHH", packet[:7])
+            samples = np.frombuffer(packet[7:], dtype=np.int16).astype(np.float32) / 32767
+            key = (sender, tx_id)
+            parts = self.partial.setdefault(key, [None] * total)
+            parts[index] = samples
+            self.busy_until = time.time() + 0.3
+            if all(p is not None for p in parts):
+                del self.partial[key]
+                audio = np.concatenate(parts + [np.zeros(4800, dtype=np.float32)]) * self.gain
+                audio += self.np_rng.normal(0, self.noise, len(audio)).astype(np.float32)
+                with self.lock:
+                    self.pending.append(audio)
+
+    def read(self):
+        with self.lock:
+            parts, self.pending = self.pending, []
+        return np.concatenate(parts) if parts else np.zeros(0, dtype=np.float32)
+
+    def transmit(self, samples):
+        import struct
+        self.tx_id = (self.tx_id + 1) % 65536
+        self.last_lost = random.random() < self.loss
+        pcm = (np.clip(samples, -1, 1) * 32767).astype(np.int16)
+        chunks = [pcm[i:i + self.CHUNK] for i in range(0, len(pcm), self.CHUNK)]
+        time.sleep(len(samples) / config.SAMPLE_RATE)   # the "air" takes as long as sound would
+        if not self.last_lost:
+            for n in range(1, self.MAX_NODES + 1):
+                if n == self.node_id:
+                    continue
+                for i, chunk in enumerate(chunks):
+                    header = struct.pack("!BHHH", self.node_id, self.tx_id, i, len(chunks))
+                    try:
+                        self.sock.sendto(header + chunk.tobytes(), ("127.0.0.1", self.BASE_PORT + n))
+                    except OSError:
+                        pass
+
+    def level(self):
+        return 0.1 if time.time() < self.busy_until else self.noise
 
     overflows = 0

@@ -91,3 +91,21 @@ def test_equaliser_handles_a_weak_tone():
     assert gains[1] < gains[0]                          # it noticed tone 1 is weaker
     got, _ = modem.demodulate_bits(audio, found[0], len(bits), gains)
     assert got == bits
+
+
+def test_snr_estimate_is_correct_for_known_signal():
+    # A tone with power A^2/2 = 0.005 in white noise of variance 1e-4 per sample.
+    # Within one 4320-sample Goertzel bin the noise power is sigma^2 / n * (normalisation),
+    # so we just check that a 20 dB stronger tone reads ~20 dB higher than the noise.
+    from shout_lan import calibration
+    rng = np.random.default_rng(0)
+    fs = 48000
+    noise = rng.normal(0, 0.01, fs)
+    nb = calibration.noise_powers(noise)
+    n = calibration.tone_block_length()
+    t = np.arange(n) / fs
+    for amp_db in (0, 20):
+        amp = 10 ** (amp_db / 20) * 0.01 * np.sqrt(2) / np.sqrt(n / 2)   # tone power = noise power in bin * 10^(dB/10)
+        block = amp * np.sin(2 * np.pi * 2000 * t) + rng.normal(0, 0.01, n)
+        snr = 10 * np.log10(goertzel_power(block, 2000, fs) / nb[2000])
+        assert abs(snr - 10 * np.log10(1 + 10 ** (amp_db / 10))) < 3.5

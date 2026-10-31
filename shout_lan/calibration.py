@@ -20,6 +20,25 @@ SWEEP_TONE_TIME = 0.15                         # seconds per test tone
 SWEEP_GAP_TIME = 0.05                          # silence between test tones
 
 
+def tone_block_length():
+    """Samples in one measured tone block (same length must be used for noise)."""
+    n = int(config.SAMPLE_RATE * SWEEP_TONE_TIME)
+    return (n * 3) // 5
+
+
+def noise_powers(audio):
+    """
+    Noise power at every sweep frequency, measured in blocks of the SAME length
+    as the tone measurements and averaged. (Goertzel noise power depends on the
+    block length, so comparing a 1 s noise block with a 90 ms tone block would
+    make the SNR look ~10 dB better than it really is.)
+    """
+    n = tone_block_length()
+    blocks = [audio[i:i + n] for i in range(0, len(audio) - n + 1, n)] or [audio]
+    return {f: float(np.mean([goertzel_power(b, f, config.SAMPLE_RATE) for b in blocks]))
+            for f in SWEEP_FREQS}
+
+
 def measure_noise(mic_device=None, exclusive=True, seconds=1.0):
     """Record the quiet room and return (rms_level, power_per_frequency dict)."""
     import time
@@ -29,12 +48,11 @@ def measure_noise(mic_device=None, exclusive=True, seconds=1.0):
         time.sleep(seconds)
     finally:
         mic.stop()
-    audio = mic.read_available()
+    audio = mic.read_available()[int(0.2 * config.SAMPLE_RATE):]   # skip the start-up transient
     if len(audio) == 0:
         raise RuntimeError("Microphone returned no audio")
     rms = float(np.sqrt(np.mean(audio * audio)))
-    powers = {f: goertzel_power(audio, f, config.SAMPLE_RATE) for f in SWEEP_FREQS}
-    return rms, powers, audio
+    return rms, noise_powers(audio), audio
 
 
 def band_energy(audio, freqs):
@@ -65,8 +83,12 @@ def run_sweep(mic_device=None, speaker_device=None, exclusive=True, volume=confi
     Returns {freq: power}.
     """
     sweep = make_sweep(volume)
-    lead = 0.3
-    audio, _ = record_while_playing(sweep, mic_device, speaker_device, exclusive, lead=lead)
+    audio, _ = record_while_playing(sweep, mic_device, speaker_device, exclusive, lead=0.3)
+    return analyse_sweep(audio)
+
+
+def analyse_sweep(audio):
+    """Find the recorded sweep and measure every test tone's received power -> {freq: power}."""
     fs = config.SAMPLE_RATE
     n = int(fs * SWEEP_TONE_TIME)
     step = n + int(fs * SWEEP_GAP_TIME)
@@ -82,7 +104,7 @@ def run_sweep(mic_device=None, speaker_device=None, exclusive=True, volume=confi
     results = {}
     for i, f in enumerate(SWEEP_FREQS):
         start = best_off + i * step + n // 5
-        block = audio[start:start + (n * 3) // 5]
+        block = audio[start:start + tone_block_length()]
         results[f] = goertzel_power(block, f, fs) if len(block) else 0.0
     return results
 

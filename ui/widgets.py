@@ -1,0 +1,241 @@
+"""widgets.py - small reusable building blocks (cards, stat tiles, meters, charts, topology)."""
+
+import math
+import time
+
+from PySide6.QtCore import QPointF, QRectF, Qt
+from PySide6.QtGui import QColor, QFont, QPainter, QPen
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
+
+from ui import style
+
+
+class Card(QFrame):
+    """White rounded panel with an optional title and subtitle."""
+
+    def __init__(self, title=None, subtitle=None):
+        super().__init__()
+        self.setObjectName("card")
+        self.body = QVBoxLayout(self)
+        self.body.setContentsMargins(18, 16, 18, 16)
+        self.body.setSpacing(10)
+        if title:
+            head = QHBoxLayout()
+            t = QLabel(title)
+            t.setObjectName("cardTitle")
+            head.addWidget(t)
+            head.addStretch()
+            self.head = head
+            self.body.addLayout(head)
+        if subtitle:
+            s = QLabel(subtitle)
+            s.setObjectName("muted")
+            s.setWordWrap(True)
+            self.body.addWidget(s)
+
+    def add(self, widget_or_layout):
+        if isinstance(widget_or_layout, QWidget):
+            self.body.addWidget(widget_or_layout)
+        else:
+            self.body.addLayout(widget_or_layout)
+        return widget_or_layout
+
+
+class Chip(QLabel):
+    def __init__(self, text="", kind="neutral"):
+        super().__init__(text)
+        self.set(text, kind)
+
+    def set(self, text, kind="neutral"):
+        self.setText(text)
+        self.setStyleSheet(style.chip_style(kind))
+        self.adjustSize()
+
+
+class StatTile(QFrame):
+    """Big number + small label. Shows '—' when there is no real value yet."""
+
+    def __init__(self, label, hint=""):
+        super().__init__()
+        self.setObjectName("card")
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(14, 10, 14, 10)
+        lay.setSpacing(0)
+        self.setMinimumHeight(72)
+        self.value = QLabel("—")
+        self.value.setObjectName("statValue")
+        lab = QLabel(label)
+        lab.setObjectName("statLabel")
+        lay.addWidget(self.value)
+        lay.addWidget(lab)
+        if hint:
+            self.setToolTip(hint)
+
+    def set(self, text, color=None):
+        self.value.setText(str(text))
+        self.value.setStyleSheet(f"color:{color};" if color else "")
+
+
+class LevelMeter(QWidget):
+    """Horizontal microphone level bar (log scale), with the noise floor marked."""
+
+    def __init__(self):
+        super().__init__()
+        self.level = 0.0
+        self.floor = None
+        self.setMinimumHeight(14)
+        self.setMaximumHeight(14)
+
+    def set_level(self, level, floor=None):
+        self.level = level or 0.0
+        self.floor = floor
+        self.update()
+
+    @staticmethod
+    def _pos(value):
+        if value <= 0:
+            return 0.0
+        db = 20 * math.log10(max(value, 1e-6))          # -120 .. 0 dBFS
+        return min(1.0, max(0.0, (db + 70) / 70))         # show -70 .. 0 dB
+
+    def paintEvent(self, _):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        r = QRectF(self.rect()).adjusted(0, 2, 0, -2)
+        p.setPen(Qt.NoPen)
+        p.setBrush(QColor(style.BORDER))
+        p.drawRoundedRect(r, 5, 5)
+        w = r.width() * self._pos(self.level)
+        p.setBrush(QColor(style.GOOD if self._pos(self.level) < 0.85 else style.WARN))
+        p.drawRoundedRect(QRectF(r.x(), r.y(), w, r.height()), 5, 5)
+        if self.floor:
+            x = r.x() + r.width() * self._pos(self.floor)
+            p.setPen(QPen(QColor(style.MUTED), 2))
+            p.drawLine(QPointF(x, r.top()), QPointF(x, r.bottom()))
+
+
+class BarChart(QWidget):
+    """Simple labelled bar chart (used for calibration SNR and RTT samples)."""
+
+    def __init__(self, unit="", empty_text="No data yet"):
+        super().__init__()
+        self.items = []            # list of (label, value, highlight)
+        self.unit = unit
+        self.empty_text = empty_text
+        self.setMinimumHeight(110)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+    def set_items(self, items):
+        self.items = items
+        self.update()
+
+    def paintEvent(self, _):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        r = QRectF(self.rect()).adjusted(34, 10, -8, -24)
+        if not self.items:
+            p.setPen(QColor(style.MUTED))
+            p.drawText(self.rect(), Qt.AlignCenter, self.empty_text)
+            return
+        top = max(max(v for _, v, _ in self.items), 1e-9)
+        p.setPen(QPen(QColor(style.BORDER), 1))
+        for frac in (0, 0.5, 1):
+            y = r.bottom() - r.height() * frac
+            p.drawLine(QPointF(r.left(), y), QPointF(r.right(), y))
+            p.setPen(QColor(style.MUTED))
+            p.setFont(QFont("Segoe UI", 7))
+            p.drawText(QRectF(0, y - 7, 30, 14), Qt.AlignRight | Qt.AlignVCenter,
+                       f"{top * frac:.0f}{self.unit}")
+            p.setPen(QPen(QColor(style.BORDER), 1))
+        n = len(self.items)
+        slot = r.width() / n
+        step = max(1, n // 12)
+        for i, (label, value, hl) in enumerate(self.items):
+            h = r.height() * max(value, 0) / top
+            x = r.left() + i * slot + slot * 0.15
+            p.setPen(Qt.NoPen)
+            p.setBrush(QColor(style.ACCENT if hl else "#93C5FD"))
+            p.drawRoundedRect(QRectF(x, r.bottom() - h, slot * 0.7, h), 2, 2)
+            if i % step == 0:
+                p.setPen(QColor(style.MUTED))
+                p.setFont(QFont("Segoe UI", 7))
+                p.drawText(QRectF(x - 10, r.bottom() + 4, slot * 0.7 + 20, 16), Qt.AlignCenter, label)
+
+
+class TopologyView(QWidget):
+    """
+    Draws THIS node in the centre and the nodes it has ACTUALLY heard around it.
+    Nothing is drawn for nodes that were never heard.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.me = None
+        self.nodes = {}
+        self.simulated = False
+        self.setMinimumHeight(220)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+    def set_data(self, me, nodes, simulated):
+        self.me, self.nodes, self.simulated = me, nodes, simulated
+        self.update()
+
+    def paintEvent(self, _):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        c = QPointF(self.width() / 2, self.height() / 2)
+        if self.me is None:
+            p.setPen(QColor(style.MUTED))
+            p.drawText(self.rect(), Qt.AlignCenter, "Engine not connected")
+            return
+        radius = min(self.width(), self.height()) / 2 - 56
+        others = sorted(self.nodes.items())
+        now = time.time()
+        for i, (nid, info) in enumerate(others):
+            ang = -math.pi / 2 + 2 * math.pi * i / max(1, len(others))
+            pt = QPointF(c.x() + radius * math.cos(ang), c.y() + radius * math.sin(ang))
+            age = now - info.get("last_heard", now)
+            fresh = age < 120
+            pen = QPen(QColor(style.ACCENT if fresh else style.BORDER), 2,
+                       Qt.SolidLine if not self.simulated else Qt.DashLine)
+            p.setPen(pen)
+            p.drawLine(c, pt)
+            self._node(p, pt, str(nid), style.SURFACE, style.ACCENT if fresh else style.MUTED)
+            # label on the far side of the node, so the connecting line never crosses it
+            lp = QPointF(pt.x() + 38 * math.cos(ang), pt.y() + 38 * math.sin(ang))
+            p.setPen(QColor(style.MUTED))
+            p.setFont(QFont("Segoe UI", 8))
+            p.drawText(QRectF(lp.x() - 60, lp.y() - 8, 120, 16), Qt.AlignCenter,
+                       f"node {nid} · heard {age:.0f} s ago")
+        self._node(p, c, str(self.me), style.ACCENT, "white", big=True)
+        p.setPen(QColor(style.MUTED))
+        p.setFont(QFont("Segoe UI", 8))
+        p.drawText(QRectF(c.x() - 60, c.y() + 28, 120, 16), Qt.AlignCenter, "this laptop")
+        if not others:
+            p.drawText(QRectF(0, self.height() - 22, self.width(), 18), Qt.AlignCenter,
+                       "No other node heard yet - press Discover")
+
+    @staticmethod
+    def _node(p, pt, text, fill, fg, big=False):
+        r = 22 if big else 18
+        p.setPen(QPen(QColor(style.ACCENT), 2))
+        p.setBrush(QColor(fill))
+        p.drawEllipse(pt, r, r)
+        p.setPen(QColor(fg))
+        p.setFont(QFont("Segoe UI", 10 if big else 9, QFont.Bold))
+        p.drawText(QRectF(pt.x() - r, pt.y() - r, 2 * r, 2 * r), Qt.AlignCenter, text)
+
+
+def page_header(title, subtitle):
+    w = QWidget()
+    lay = QVBoxLayout(w)
+    lay.setContentsMargins(0, 0, 0, 6)
+    lay.setSpacing(2)
+    t = QLabel(title)
+    t.setObjectName("pageTitle")
+    s = QLabel(subtitle)
+    s.setObjectName("pageSub")
+    s.setWordWrap(True)
+    lay.addWidget(t)
+    lay.addWidget(s)
+    return w

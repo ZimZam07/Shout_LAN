@@ -196,3 +196,86 @@ Measured data-frame RTT (start of DATA → ACK received): 5.29–8.64 s; RTO con
 | C7 max retries → "delivery failed" | **Verified (acoustic loopback + simulated)** |
 | C8 20-char message ≥ 9/10 between **two laptops** | **Pending second laptop** |
 | C13 ping RTT min/avg/max/loss | **Engine verified (acoustic loopback)**; UI display pending M4 |
+
+---
+
+## M4 — Engine, local TCP control link, desktop app (2026-10-31)
+
+### Control link — `tests/test_control.py` → 8 passed
+| DoD | Test | Result |
+|---|---|---|
+| A3a | `LineBuffer`: one message fed 1 byte per `recv()`; 3 messages in one chunk; a 3-byte UTF-8 character split across `recv()` calls | **pass**. Found and fixed a bug: `json.dumps` escaped non-ASCII by default, so real UTF-8 never went on the wire; now `ensure_ascii=False` |
+| A3b | 2 clients, 4 threads × 1000 concurrent broadcasts → each client receives all 4000 lines, every line valid JSON, per-thread order preserved | **pass** |
+| A3c | Code check: exactly one `.sendall(` in the server, inside `ClientHandler.writer` | **pass** |
+| A3d | One client disconnects mid-stream → the other receives all 200 following events; client count drops to 1 | **pass** |
+| A2 | Command reaches handler, reply goes to that client; `connect()` to a closed port raises the real OS error | **pass** |
+
+### Engine processes — `tests/test_processes.py` → 2 passed (*SIMULATED channel*, UDP software air)
+- Two `run_engine.py` processes plus a UI-like client and a second "monitor" client.
+- The message was delivered; both clients received the events; `control_clients == 2`; status labelled SIMULATED.
+- A bad command (`dst 999`) returns an `error` event and the engine keeps running.
+
+**Bug found:** orphaned engine processes held their ports after a failed test start. **Fixed:** the fixture now always terminates the processes it started, and `run_engine.py` reports channel errors as a single `ERROR:` line.
+
+### Stress + clean shutdown — `tests/test_stress.py` → 1 passed (*SIMULATED*)
+- Setup: 2 engines, 4 TCP clients polling status as fast as possible, 3 messages each way at the same time.
+- Result: all 6 delivered, all 6 received exactly once.
+- Every client got only valid JSON, more than 50 status replies, and no error events (D3).
+- Afterwards all 6 engine threads stopped and both ports could be bound again (D4).
+- My first version of the D4 assertion was trivially true (`stop()` clears the thread list). It now captures the threads before stopping.
+
+### Desktop app — `tools/ui_smoke_test.py` (real window, offscreen Qt, *SIMULATED* channel) → **20/20** (`ui_smoke_20261031_182823.json`)
+- **Main flow:** Start engine → TCP connect; SIMULATED label in the top bar; HELLO discovery finds node 2; message shows "Delivered" only after the ACK; injected corruption → retransmission → delivered; monitor rows; measured metrics labelled SIMULATED; Stop engine → UI shows disconnected.
+- **Responsiveness (D1):** longest Qt event-loop stall while a 3-frame message was transmitted = **4 ms**.
+- **Every control has a real effect (A4):** volume slider (engine volume becomes 0.30), Apply tones, calibration disabled on SIMULATED, Refresh devices, Ping button (summary arrives), Drop-next-ACK (engine flag armed), Clear table, Reset (counters 0), Disconnect/Connect (A2 reconnect).
+- **Screenshots** in `results/screenshots/` were reviewed. Problems found and fixed:
+  - nav labels showed "Connect _Audio" (`&` treated as a shortcut marker);
+  - broken spin-box/combo arrows;
+  - the HTML chat rendered a full-width bar (replaced by bubble widgets);
+  - stat tiles were clipped and overlapping;
+  - the topology label was crossed by the connecting line;
+  - the mic meter showed a level on the SIMULATED channel (now "no microphone (SIMULATED)").
+- **Simulated-air realism fix:** the simulated channel delivered audio at the *start* of a transmission, so a reply could arrive while the sender was still "transmitting". It now delivers after the airtime, like sound. Simulated frame RTT is now 5.8 s, matching the acoustic 5.3–8.6 s.
+
+### Error handling (A5) — `run_engine.py` with bad devices (no sound played)
+| Arguments | Output | Exit |
+|---|---|---|
+| `--mic 999` | `ERROR: Audio device 999 does not exist` | 2 |
+| `--speaker 999` | `ERROR: Audio device 999 does not exist` | 2 |
+| `--mic 3` (a speaker) | `ERROR: Device 3 (Speaker (Realtek(R) Audio)) has no input channels` | 2 |
+| `--speaker 9` (a mic) | `ERROR: Device 9 (Microphone Array …) has no output channels` | 2 |
+
+**Bug found:** an invalid index first produced a raw `PortAudioError` traceback. **Fixed** with `audio_io.check_device()`.
+
+### Real engine process on the acoustic link — `tools/engine_acoustic_check.py` (*Measured – acoustic*, one engine)
+- `run_engine.py --node 1` (WASAPI exclusive) controlled over TCP.
+- Calibration through the engine's own mic stream: OK.
+- HELLO transmitted (1.91 s of sound).
+- Status: channel `acoustic`, stats source "Measured – acoustic", 0 mic overflows; shutdown command → exit code 0.
+- Files: `engine_acoustic_20261031_182206.json`, `…182246.json`.
+
+**Bug found (SNR):** the first run reported 70.6 dB. Noise power had been computed over a 1 s block while tones used 90 ms blocks; Goertzel noise power depends on block length.
+- **Fixed:** `calibration.noise_powers()` now uses equal-length blocks. A new unit test checks the SNR of a known synthetic signal to within 3.5 dB.
+- After the fix: 63.1 dB / 65.5 dB **per ~18 Hz detector bin** (wideband SNR ≈ 31 dB). This is physically consistent: tone ≈ 0.07 amplitude, noise RMS 0.002.
+- The UI now labels it "SNR inside the detector's ~18 Hz bin".
+- The M1 sweep SNR figures above used the old method (and included the mic start-up transient). Only their relative ordering was used, and the tone choice was made by real BER tests, so the M1 conclusions stand.
+
+### Not yet possible on one laptop
+A full **two-process acoustic** run (UI on node 1 ↔ engine on node 2) cannot be done on one laptop: the microphone can be opened by only one process in exclusive mode. The same `Engine` class *was* verified over real sound in-process (M3, `arq_test.py`). Full app-to-app acoustic testing needs the second laptop.
+
+### DoD status after M4
+| DoD | Status |
+|---|---|
+| A1 starts without errors | **Verified** (engine sim + acoustic, UI offscreen) |
+| A2 connect / real errors / reconnect | **Verified** (automated) |
+| A3, A3a–A3d | **Verified** (automated) |
+| A4 every control real | **Verified** (20/20 UI automation) |
+| A5 missing device error | **Verified** |
+| A6 no unhandled exceptions in full demo | Pending demo rehearsal (M10) |
+| A7 both paths labelled | **Verified** (screenshots) |
+| C13 ping in UI | **Verified (SIMULATED)**; acoustic engine ping verified in M3 |
+| C14 HELLO discovery lists only real nodes | **Verified (engine test + UI, SIMULATED)**; acoustic two-laptop pending |
+| D1 UI responsive | **Verified** (4 ms max stall) |
+| D2 capture keeps running | **Verified (acoustic)**: 0 overflows in every acoustic run |
+| D3 stress | **Verified (SIMULATED)** |
+| D4 clean shutdown | **Verified** |

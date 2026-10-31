@@ -1,0 +1,48 @@
+{
+ "kind": "Measured - acoustic (single engine process, single laptop)",
+ "calibration_ok": true,
+ "calibration": {
+  "event": "calibration",
+  "time": 1793451164.477,
+  "node": 1,
+  "ok": true,
+  "noise_rms": 0.00203,
+  "snr_db": {
+   "1000": 48.2,
+   "1250": 53.0,
+   "1500": 56.9,
+   "1750": 53.2,
+   "2000": 63.1,
+   "2250": 55.1,
+   "2500": 56.3,
+   "2750": 65.5,
+   "3000": 65.5,
+   "3250": 55.5,
+   "3500": 69.7,
+   "3750": 68.3,
+   "4000": 70.9,
+   "4250": 67.1,
+   "4500": 68.8,
+   "4750": 73.0,
+   "5000": 72.4,
+   "5250": 69.9,
+   "5500": 68.1,
+   "5750": 64.7,
+   "6000": 58.4
+  },
+  "freq0": 2000,
+  "freq1": 3000,
+  "current_snr": [
+   63.1,
+   65.5
+  ],
+  "source": "Measured - acoustic",
+  "text": "Calibration done: noise floor RMS 0.0020; SNR at 2000 Hz = 63.1 dB, 3000 Hz = 65.5 dB"
+ },
+ "hello_sent": true,
+ "status_channel": "acoustic",
+ "stats_source": "Measured - acoustic",
+ "mic_level": 0.0237,
+ "mic_overflows": 0,
+ "frames_tx": 1
+}

@@ -67,6 +67,7 @@ class Stats:
             # goodput: useful bytes that were acknowledged, per second of sending
             "goodput_bps": round(c["payload_bytes_acked"] * 8 / busy, 2) if busy > 0 else None,
             "rtt": self._summary(rtts),
+            "recent_rtts": [round(v, 2) for v in rtts[-30:]],
             "ping_rtt": self._summary(pings),
             "ping_loss": (round(1 - c["pongs_received"] / c["pings_sent"], 3)
                           if c["pings_sent"] else None),

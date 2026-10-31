@@ -64,6 +64,18 @@ def default_devices():
     return mic, spk
 
 
+def check_device(device, kind):
+    """Raise AudioError with a clear message if `device` doesn't exist or can't do `kind`."""
+    try:
+        dev = sd.query_devices(device, kind=kind) if device is None else sd.query_devices(device)
+    except Exception as exc:
+        raise AudioError(f"Audio device {device} does not exist ({exc})") from exc
+    key = "max_input_channels" if kind == "input" else "max_output_channels"
+    if dev[key] < 1:
+        raise AudioError(f"Device {device} ({dev['name']}) has no {kind} channels")
+    return dev
+
+
 def _is_wasapi(device):
     return device is not None and _hostapi_name(sd.query_devices(device)) == "Windows WASAPI"
 
@@ -88,6 +100,7 @@ class Microphone:
     """
 
     def __init__(self, device=None, exclusive=True, block_size=2048):
+        check_device(device, "input")
         self.device = device
         self.exclusive = exclusive and _is_wasapi(device)
         self.block_size = block_size
@@ -148,6 +161,7 @@ class Speaker:
     """
 
     def __init__(self, device=None):
+        check_device(device, "output")
         self.device = device
         self.lock = threading.Lock()     # only one transmission at a time (half-duplex)
         self.stream = None
