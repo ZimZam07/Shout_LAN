@@ -9,6 +9,7 @@ speaker -> air -> microphone.
     python tools/arq_test.py --quick      # only normal + corrupted + lost ACK
     python tools/arq_test.py --rest       # only 3-frame message + ping + max retries
     python tools/arq_test.py --security   # same text plain vs AES-GCM encrypted (overhead)
+    python tools/arq_test.py --m6         # Selective Repeat (normal / lost frame / lost SACK) + CSMA
 
 Results are saved in results/arq_*.json (all engine events included).
 """
@@ -58,9 +59,10 @@ class Log:
         return self.events[start:]
 
 
-def wait_message(log, msg_id, timeout=240):
+def wait_message(log, msg_id, timeout=240, node=1):
+    """Wait until message `msg_id` sent by `node` is delivered or failed."""
     return log.wait(lambda e: e["event"] == "message_status" and e.get("msg_id") == msg_id
-                    and e["status"] in ("delivered", "failed"), timeout)
+                    and e["node"] == node and e["status"] in ("delivered", "failed"), timeout)
 
 
 def scenario(name, log, a, b, action, check):
@@ -79,6 +81,25 @@ def scenario(name, log, a, b, action, check):
             "seconds": round(time.time() - t0, 1), "node1": da, "node2": db}
 
 
+def sr_resent_acked(events):
+    """
+    Selective Repeat's key property on a REAL (noisy) channel: it must never resend a
+    frame that a SACK already acknowledged. Returns the list of violations (should be []).
+    Natural noise may cause extra retransmissions; those are allowed and expected.
+    """
+    acked, bad = set(), []
+    for e in events:
+        if e["node"] != 1:
+            continue
+        if e["event"] == "message_status" and e["status"] == "sending":
+            acked = set()
+        elif e["event"] == "sack_rx":
+            acked.update(e["acked"])
+        elif e["event"] == "retransmit" and e["seq"] in acked:
+            bad.append(e["seq"])
+    return bad
+
+
 def delivered_texts(events):
     return [e["message"] for e in events if e["event"] == "message_rx"]
 
@@ -88,10 +109,12 @@ def main():
     p.add_argument("--quick", action="store_true")
     p.add_argument("--rest", action="store_true")
     p.add_argument("--security", action="store_true")
+    p.add_argument("--m6", action="store_true")
+    p.add_argument("--save-audio", action="store_true", help="keep the raw microphone recording")
     args = p.parse_args()
 
     mic, spk = default_devices()
-    hub = AcousticLoopbackHub(mic, spk)
+    hub = AcousticLoopbackHub(mic, spk, record=args.save_audio)
     from shout_lan.security import Security
     import os as _os
     key = _os.urandom(32)                       # a fresh shared key just for this test
@@ -103,7 +126,60 @@ def main():
     time.sleep(1)
     results = []
     try:
-        if args.security:
+        if args.m6:
+            long_text = "SELECTIVE REPEAT DEMO: this message is long enough to need four frames of 24 bytes!!"
+            a.set_protocol("sr")
+
+            def sr_run(setup):
+                def run():
+                    setup()
+                    return wait_message(log, a.send_message(2, long_text), timeout=200)
+                return run
+
+            results.append(scenario("SR: 4 frames, one window", log, a, b, sr_run(lambda: None),
+                lambda o, ev, da, db: (o and o["status"] == "delivered" and delivered_texts(ev) == [long_text]
+                                       and not sr_resent_acked(ev),
+                                       f"status={o and o['status']}, data frames={da['data_frames_tx']}, "
+                                       f"SACKs sent={db['acks_tx']}, retransmissions={da['retransmissions']} "
+                                       f"(CRC failures at receiver {db['crc_failures']}), resent-but-acked="
+                                       f"{sr_resent_acked(ev)}, seconds={o and o.get('seconds')}")))
+            results.append(scenario("SR: frame 2 lost (injected) -> only it is resent", log, a, b,
+                sr_run(lambda: a.set_injection("drop_frame", 2)),
+                lambda o, ev, da, db: (o and o["status"] == "delivered" and delivered_texts(ev) == [long_text]
+                                       and not sr_resent_acked(ev)
+                                       and set(e["seq"] for e in ev if e["event"] == "frame_dropped")
+                                       <= set(e["seq"] for e in ev if e["event"] == "retransmit"),
+                                       f"resent seqs={[e['seq'] for e in ev if e['event'] == 'retransmit']}, "
+                                       f"dropped={[e['seq'] for e in ev if e['event'] == 'frame_dropped']}, "
+                                       f"delivered {len(delivered_texts(ev))}x, resent-but-acked="
+                                       f"{sr_resent_acked(ev)}, CRC failures {db['crc_failures']}")))
+            results.append(scenario("SR: SACK lost (injected) -> recovery, delivered once", log, a, b,
+                sr_run(lambda: b.set_injection("drop_next_sack")),
+                lambda o, ev, da, db: (o and o["status"] == "delivered" and delivered_texts(ev) == [long_text]
+                                       and da["timeouts"] >= 1,
+                                       f"timeouts={da['timeouts']}, retransmissions={da['retransmissions']}, "
+                                       f"duplicates at receiver={db['duplicates']}, delivered "
+                                       f"{len(delivered_texts(ev))}x")))
+            a.set_protocol("sw")
+
+            def csma_run():
+                b.set_protocol("sr")
+                m_b = b.send_message(1, long_text)            # node 2 occupies the channel
+                time.sleep(1.0)
+                m_a = a.send_message(2, "CSMA TEST")          # node 1 must listen first
+                first = wait_message(log, m_a, timeout=200)
+                wait_message(log, m_b, timeout=200, node=2)
+                b.set_protocol("sw")
+                return first
+            results.append(scenario("CSMA: node 1 defers while node 2 transmits", log, a, b, csma_run,
+                lambda o, ev, da, db: (o and o["status"] == "delivered" and da["channel_busy_deferrals"] >= 1
+                                       and sorted(delivered_texts(ev)) == sorted([long_text, "CSMA TEST"]),
+                                       f"node 1 deferrals={da['channel_busy_deferrals']}, "
+                                       f"delivered={[t[:12] for t in delivered_texts(ev)]}")))
+            args.quick = True
+            args.rest = True
+            args.security = True                      # skip every other block below
+        elif args.security:
             text = "SECRET HELLO"
             for enc in (False, True):
                 def run(enc=enc):
@@ -184,6 +260,13 @@ def main():
         a.stop()
         b.stop()
 
+    if args.save_audio and hub.recording:
+        import numpy as np
+        os.makedirs(os.path.join(os.path.dirname(RESULTS_DIR), "recordings"), exist_ok=True)
+        rec_path = os.path.join(os.path.dirname(RESULTS_DIR), "recordings",
+                                f"arq_{datetime.now():%Y%m%d_%H%M%S}.npy")
+        np.save(rec_path, np.concatenate(hub.recording))
+        print("raw audio saved:", rec_path)
     passed = sum(r["passed"] for r in results)
     print(f"\n{passed}/{len(results)} scenarios passed")
     print("RTO after test:", round(a.timer.timeout(), 2), "s;  frame RTT:", a.stats.snapshot()["rtt"])

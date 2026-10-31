@@ -1,0 +1,15 @@
+{
+  "kind": "Measured - acoustic (single-laptop loopback)",
+  "hello_frames_sent": 10,
+  "hello_frames_valid": 8,
+  "valid_frames": 9,
+  "crc_or_format_failures": 4,
+  "errors": [
+    "CRC mismatch (received 0x62E0, calculated 0xE10F)",
+    "CRC mismatch (received 0x2880, calculated 0x2E3C)",
+    "CRC mismatch (received 0x6711, calculated 0x4D8B)",
+    "CRC mismatch (received 0x6DFD, calculated 0x2B8A)"
+  ],
+  "long_message_reassembled": false,
+  "volume": 0.5
+}

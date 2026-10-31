@@ -222,7 +222,16 @@ class Modem:
             gains.append(max(got / ref, 1e-12) if ref > 0 else 1.0)
         return gains[0], gains[1]
 
-    def demodulate_bits(self, audio, first_bit, n_bits, gains=None):
+    # Symbol-timing recovery settings (see demodulate_bits)
+    TRACK_GROUP = 4          # re-check the bit timing after every 4 bits
+    TRACK_RANGE = 480        # look up to half a bit (480 samples) earlier/later
+    TRACK_STEP = 12          # in steps of 12 samples (0.25 ms)
+    TRACK_GAIN = 0.03        # move only if the alignment score improves by more than this
+    TRACK_LIMIT_BITS = 2     # never drift more than 2 bits away from the preamble timing
+    TRACK_WIN_LO = 0.30      # alignment window = 30% .. 100% of the slot (skips most room echo;
+                             # chosen by re-decoding 89 real recorded frames, TESTING.md M6)
+
+    def demodulate_bits(self, audio, first_bit, n_bits, gains=None, track=True, trace=None):
         """
         Decide each bit by comparing tone strengths inside that bit's time slot.
 
@@ -230,22 +239,80 @@ class Modem:
           of a slot still contains the echo of the previous bit.
         - Each tone's power is divided by its channel gain (from the preamble),
           so a tone that the speaker plays weakly is not always out-voted.
+        - Symbol-timing recovery (track=True): Windows' audio path sometimes
+          inserts or drops a few milliseconds of sound in the middle of a
+          frame (TESTING.md M6), which shifts every later bit. After every 4
+          bits the receiver tries slightly earlier/later timings and keeps the
+          slot boundaries centred - like a real modem's clock recovery.
+          Alignment is judged with a window reaching to the very END of the
+          slot (30%..100%): it scores highest only when it ends exactly at the
+          bit boundary (a late window mixes in the next bit's tone), so small
+          shifts are corrected before they add up. The first 30% is skipped
+          because it is full of the previous bit's room echo.
+        Tone strength for ANY window is computed in O(1) from running sums of
+        x[n]·e^(-jωn) (a "sliding DFT" - the same value Goertzel gives).
         Returns (bits, confidences); confidence 0..1 shows how clear the decision was.
         """
         spb = self.samples_per_bit
         lo = int(spb * 0.40)
         hi = int(spb * 0.95)
+        length = hi - lo
         g0, g1 = gains if gains else (1.0, 1.0)
+        limit = self.TRACK_LIMIT_BITS * spb if track else 0
+        start = max(0, first_bit - limit)
+        x = np.asarray(audio[start:first_bit + n_bits * spb + limit], dtype=np.float64)
+        n = np.arange(len(x))
+        # running sums: S[k] = sum of x[m]*e^(-jωm) for m < k
+        s0 = np.concatenate([[0], np.cumsum(x * np.exp(-2j * np.pi * self.freq0 / self.sample_rate * n))])
+        s1 = np.concatenate([[0], np.cumsum(x * np.exp(-2j * np.pi * self.freq1 / self.sample_rate * n))])
+        base = first_bit - start                       # index of bit 0 inside x
+
+        def measure(begins, w_lo=lo, w_len=length):
+            """(p0, p1) tone powers for windows starting at the given bit-slot starts."""
+            a = np.asarray(begins) + w_lo
+            b = a + w_len
+            p0 = np.abs(s0[b] - s0[a]) ** 2 / (w_len * w_len) / g0
+            p1 = np.abs(s1[b] - s1[a]) ** 2 / (w_len * w_len) / g1
+            return p0, p1
+
+        def confidence(p0, p1):
+            return np.abs(p1 - p0) / (p1 + p0 + 1e-20)
+
+        offset = 0
         bits, conf = [], []
         for i in range(n_bits):
-            begin = first_bit + i * spb
-            block = np.asarray(audio[begin + lo: begin + hi], dtype=np.float64)
-            if len(block) < (hi - lo):
+            begin = base + i * spb + offset
+            if begin + hi > len(x) or begin + lo < 0:
                 break                                   # not enough audio yet
-            p0 = goertzel_power(block, self.freq0, self.sample_rate) / g0
-            p1 = goertzel_power(block, self.freq1, self.sample_rate) / g1
-            bits.append(1 if p1 > p0 else 0)
-            conf.append(abs(p1 - p0) / (p1 + p0 + 1e-20))
+            p0, p1 = measure([begin])
+            bits.append(1 if p1[0] > p0[0] else 0)
+            conf.append(float(confidence(p0, p1)[0]))
+            if track and (i + 1) % self.TRACK_GROUP == 0:
+                group = np.arange(i + 1 - self.TRACK_GROUP, i + 1)
+                shifts = np.arange(-self.TRACK_RANGE, self.TRACK_RANGE + 1, self.TRACK_STEP)
+                shifts = shifts[np.abs(offset + shifts) <= limit]
+                begins = base + group[None, :] * spb + offset + shifts[:, None]
+                t_lo = int(spb * self.TRACK_WIN_LO)
+                ok = (begins + t_lo >= 0).all(axis=1) & (begins + spb <= len(x)).all(axis=1)
+                shifts, begins = shifts[ok], begins[ok]
+                if len(shifts) == 0:
+                    continue
+                c = confidence(*measure(begins, t_lo, spb - t_lo))   # shape (shifts, 4 bits)
+                score = c.mean(axis=1)
+                current = score[shifts == 0][0] if (shifts == 0).any() else 0.0
+                best = int(np.argmax(score))
+                if shifts[best] != 0 and score[best] > current + self.TRACK_GAIN:
+                    offset += int(shifts[best])
+                    if trace is not None:
+                        trace.append((i, offset, round(float(current), 2), round(float(score[best]), 2)))
+                    # re-decide the bits of this group with the corrected timing where
+                    # that gives a clearer decision (the jump happened somewhere inside it)
+                    p0, p1 = measure(base + group * spb + offset)
+                    newc = confidence(p0, p1)
+                    for k, bit_index in enumerate(group):
+                        if newc[k] > conf[bit_index]:
+                            bits[bit_index] = 1 if p1[k] > p0[k] else 0
+                            conf[bit_index] = float(newc[k])
         return bits, conf
 
     def samples_needed(self, n_bits):

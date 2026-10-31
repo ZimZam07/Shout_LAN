@@ -23,7 +23,7 @@ Legend:
 - [x] **M3 Stop-and-Wait** – ACK, timeout, retransmit, duplicates, error injection (C5–C7). Verified: 6/6 scenarios over real sound (loopback) + 8 simulated tests (TESTING.md §M3). C8 two-laptop pending
 - [x] **M4 App** – engine threads, TCP control server (per-client writer queue), line-buffered client, PySide6 UI (5 screens), monitor, stats, ping, HELLO (A1–A5, A7, A3a–A3d, C13, C14, D1–D4). Verified (TESTING.md §M4). A6 at demo rehearsal; app-to-app acoustic needs 2nd laptop
 - [x] **M5 Security** – AES-GCM, random nonces, replay check, overhead measurement, threat model (E1–E5). Verified (TESTING.md §M5): 11 unit + 3 engine tests, acoustic overhead +7.7 s, 24/24 UI
-- [ ] **M6 Protocols** – Selective Repeat incl. SACK loss, CSMA, ALOHA + simulation (C9–C9d, C10–C12)
+- [~] **M6 Protocols** – Selective Repeat incl. SACK loss, CSMA, ALOHA + simulation (C9–C9d, C10–C12). Implemented; simulated tests pass; hardware 4/4 (TESTING.md §M6). Timing recovery under evaluation (needs stable-volume A/B)
 - [ ] **M7 Relay** – routing table, TTL, 3-engine test (C15)
 - [ ] **M8 NS-2** – **OPTIONAL / PENDING academic confirmation**; never blocks M1–M7 (G1–G3)
 - [ ] **M9 4-FSK** – OPTIONAL, only after BFSK is stable

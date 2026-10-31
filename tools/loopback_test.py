@@ -43,10 +43,13 @@ def save(name, data):
 def bit_trials(args, modem, mic, spk):
     rng = np.random.default_rng(args.seed)
     trials = []
+    saved_audio = []
     total_bits = total_errors = detected = 0
     for n in range(args.trials):
         bits = [int(b) for b in rng.integers(0, 2, args.bits)]
         audio, m = record_while_playing(modem.modulate(bits), mic, spk, exclusive=not args.shared)
+        if args.save_audio:
+            saved_audio.append((audio, bits))
         found = modem.find_preamble(audio)
         if found is None:
             trials.append({"trial": n, "preamble": False})
@@ -77,6 +80,12 @@ def bit_trials(args, modem, mic, spk):
     print(f"\nPreambles detected: {detected}/{args.trials}")
     print(f"Bit errors: {total_errors}/{total_bits}  ->  BER = {ber:.4%}")
     save("loopback", summary)
+    if args.save_audio:
+        os.makedirs(os.path.join(os.path.dirname(RESULTS_DIR), "recordings"), exist_ok=True)
+        path = os.path.join(os.path.dirname(RESULTS_DIR), "recordings",
+                            f"bits_{datetime.now():%Y%m%d_%H%M%S}.npz")
+        np.savez(path, *[a for a, _ in saved_audio], bits=np.array([b for _, b in saved_audio]))
+        print("raw audio saved:", path)
 
 
 def noise_test(args, modem, mic):
@@ -138,6 +147,7 @@ def main():
     p.add_argument("--seed", type=int, default=1)
     p.add_argument("--noise", type=float, default=0, help="seconds of false-detection test")
     p.add_argument("--calibrate", action="store_true")
+    p.add_argument("--save-audio", action="store_true", help="save every trial's recording + bits")
     args = p.parse_args()
 
     mic, spk = default_devices()

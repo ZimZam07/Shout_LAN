@@ -162,6 +162,66 @@ class BarChart(QWidget):
                 p.drawText(QRectF(x - 10, r.bottom() + 4, slot * 0.7 + 20, 16), Qt.AlignCenter, label)
 
 
+class LineChart(QWidget):
+    """
+    x/y chart with several series. Each series: (label, xs, ys, colour, dashed, points?).
+    Used for the ALOHA simulation (dots = simulated, dashed line = theory).
+    """
+
+    def __init__(self, x_label="", y_label="", empty_text="No data yet"):
+        super().__init__()
+        self.series = []
+        self.x_label, self.y_label, self.empty_text = x_label, y_label, empty_text
+        self.setMinimumHeight(200)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+    def set_series(self, series):
+        self.series = series
+        self.update()
+
+    def paintEvent(self, _):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        if not self.series:
+            p.setPen(QColor(style.MUTED))
+            p.drawText(self.rect(), Qt.AlignCenter, self.empty_text)
+            return
+        r = QRectF(self.rect()).adjusted(44, 26, -16, -34)
+        xmax = max(max(s[1]) for s in self.series)
+        ymax = max(max(s[2]) for s in self.series) * 1.1 or 1
+        p.setFont(QFont("Segoe UI", 7))
+        for frac in (0, 0.25, 0.5, 0.75, 1):
+            y = r.bottom() - r.height() * frac
+            p.setPen(QPen(QColor(style.BORDER), 1))
+            p.drawLine(QPointF(r.left(), y), QPointF(r.right(), y))
+            p.setPen(QColor(style.MUTED))
+            p.drawText(QRectF(0, y - 7, 40, 14), Qt.AlignRight | Qt.AlignVCenter, f"{ymax * frac:.2f}")
+        for frac in (0, 0.5, 1):
+            x = r.left() + r.width() * frac
+            p.drawText(QRectF(x - 20, r.bottom() + 4, 40, 14), Qt.AlignCenter, f"{xmax * frac:g}")
+        p.drawText(QRectF(r.left(), r.bottom() + 16, r.width(), 16), Qt.AlignCenter, self.x_label)
+        p.drawText(QRectF(r.left(), 4, r.width(), 16), Qt.AlignLeft, self.y_label)
+
+        def pt(x, y):
+            return QPointF(r.left() + r.width() * x / xmax, r.bottom() - r.height() * y / ymax)
+
+        legend_x = r.right() - 210
+        for n, (label, xs, ys, color, dashed, points) in enumerate(self.series):
+            pen = QPen(QColor(color), 2, Qt.DashLine if dashed else Qt.SolidLine)
+            p.setPen(pen)
+            if points:
+                p.setBrush(QColor(color))
+                for x, y in zip(xs, ys):
+                    p.drawEllipse(pt(x, y), 3, 3)
+            else:
+                for i in range(1, len(xs)):
+                    p.drawLine(pt(xs[i - 1], ys[i - 1]), pt(xs[i], ys[i]))
+            ly = r.top() + 4 + n * 16
+            p.drawLine(QPointF(legend_x, ly + 6), QPointF(legend_x + 18, ly + 6))
+            p.setPen(QColor(style.TEXT))
+            p.drawText(QRectF(legend_x + 24, ly, 190, 14), Qt.AlignLeft | Qt.AlignVCenter, label)
+
+
 class TopologyView(QWidget):
     """
     Draws THIS node in the centre and the nodes it has ACTUALLY heard around it.

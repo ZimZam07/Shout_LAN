@@ -169,6 +169,38 @@ def main():
         pump(app, 0.3)
         w.grab().save(os.path.join(SHOTS, "6_monitor_encrypted.png"))
 
+        # ---- M6: Selective Repeat with an injected lost frame, MAC choice, ALOHA simulation
+        w.nav.button(4).click()
+        perf = w.pages[4]
+        [b for b in perf.arq_group.buttons() if b.property("key") == "sr"][0].click()
+        check("Selective Repeat selected in the engine",
+              pump(app, 5, lambda: w.status and w.status["protocol_id"] == "sr"))
+        w.nav.button(3).click()
+        w.pages[3].dropframe_spin.setValue(2)
+        w.pages[3].dropframe_btn.click()
+        pump(app, 0.5)
+        retx_before = w.status["stats"]["counters"]["retransmissions"]
+        msgs.input.setText("SELECTIVE REPEAT DEMO: this message is long enough to need four frames of 24 bytes!!")
+        msgs.send_btn.click()
+        check("SR message with a lost frame is delivered",
+              pump(app, 120, lambda: sum(i.get("status") == "delivered" for i in msgs.items) >= 5))
+        pump(app, 1.5)
+        check("SR resent exactly one frame",
+              w.status["stats"]["counters"]["retransmissions"] - retx_before == 1)
+        w.grab().save(os.path.join(SHOTS, "7_monitor_selective_repeat.png"))
+        w.nav.button(4).click()
+        [b for b in perf.mac_group.buttons() if b.property("key") == "aloha"][0].click()
+        check("Pure ALOHA selected in the engine",
+              pump(app, 5, lambda: w.status and w.status["mac"] == "aloha"))
+        perf.sim_btn.click()
+        check("ALOHA simulation drawn and labelled Simulation",
+              len(perf.sim_chart.series) == 4 and "Simulation" in perf.sim_chip.text())
+        pump(app, 1)
+        w.grab().save(os.path.join(SHOTS, "8_protocols.png"))
+        [b for b in perf.mac_group.buttons() if b.property("key") == "csma"][0].click()
+        [b for b in perf.arq_group.buttons() if b.property("key") == "sw"][0].click()
+        pump(app, 2)
+
         # ---- every remaining control does something real (DoD A4)
         w.nav.button(1).click()
         page.volume.setValue(30)

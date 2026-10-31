@@ -35,14 +35,17 @@ OVERHEAD = HEADER_LEN + CRC_LEN   # 11 bytes
 DEFAULT_TTL = 4
 
 # Frame types (high nibble)
-DATA, ACK, SACK, PING, PONG, HELLO = 1, 2, 3, 4, 5, 6
-TYPE_NAMES = {DATA: "DATA", ACK: "ACK", SACK: "SACK", PING: "PING", PONG: "PONG", HELLO: "HELLO"}
+DATA, ACK, SACK, PING, PONG, HELLO, SRDATA = 1, 2, 3, 4, 5, 6, 7
+TYPE_NAMES = {DATA: "DATA", ACK: "ACK", SACK: "SACK", PING: "PING", PONG: "PONG", HELLO: "HELLO",
+              SRDATA: "DATA-SR"}
+DATA_TYPES = (DATA, SRDATA)    # DATA = Stop-and-Wait data, DATA-SR = Selective Repeat data
 
 # Flags (low nibble)
 F_LAST = 0x1        # last fragment of a message
 F_ENC = 0x2         # payload is AES-GCM encrypted
 F_POLL = 0x4        # Selective Repeat: "end of my burst, please send a SACK"
 F_FIRST = 0x8       # first fragment of a message
+                    # (on a SACK frame F_FIRST means "cumulative": every seq before SEQ arrived)
 
 
 class FrameError(Exception):

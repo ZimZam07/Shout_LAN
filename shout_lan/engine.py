@@ -21,7 +21,7 @@ import time
 
 import numpy as np
 
-from shout_lan import arq, calibration, config, frame as fr
+from shout_lan import arq, calibration, config, frame as fr, mac
 from shout_lan.crc import flip_bits
 from shout_lan.modem import Modem
 from shout_lan.receiver import FrameReceiver
@@ -55,17 +55,23 @@ class Engine:
         self.seq = random.randint(0, 255)       # random start, like TCP's initial sequence number
         self.seq_lock = threading.Lock()
         self.sw_receivers = {}                  # neighbour id -> StopAndWaitReceiver
+        self.sr_receivers = {}                  # neighbour id -> SelectiveRepeatReceiver
         self.reassemblers = {}                  # origin id   -> Reassembler
         self.nodes = {}                         # neighbour id -> {"last_heard": t, "score": s}
         self.nodes_lock = threading.Lock()
         ack_air = self.modem.airtime(fr.OVERHEAD * 8)
         self.timer = arq.RetransmissionTimer(initial=ack_air + 2.5, minimum=ack_air + 0.8)
         self.sw_sender = arq.StopAndWaitSender(self)
+        self.sr_sender = arq.SelectiveRepeatSender(self)
+        self.protocol = "sw"                    # "sw" Stop-and-Wait or "sr" Selective Repeat
+        self.mac_mode = mac.CSMA                # medium access: csma / aloha / none
+        self.carrier = mac.CarrierSense()
         self.msg_ids = itertools.count(1)
         self.ping_ids = itertools.count(1)
 
         # error injection switches (for demonstrations; every use is logged as "injected")
-        self.inject = {"corrupt_next_data": False, "drop_next_ack": False}
+        self.inject = {"corrupt_next_data": False, "drop_next_ack": False,
+                       "drop_frame": 0, "drop_next_sack": False}
         self.inject_lock = threading.Lock()
 
         self.listeners = []
@@ -160,7 +166,9 @@ class Engine:
         """
         raw = fr.build(frame)
         injected = None
-        if frame.ftype == fr.DATA and self._take_injection("corrupt_next_data"):
+        if wait and frame.ftype not in (fr.ACK, fr.SACK, fr.PONG):
+            self._carrier_sense(frame)        # MAC: may we use the channel now?
+        if frame.ftype in fr.DATA_TYPES and self._take_injection("corrupt_next_data"):
             raw = flip_bits(raw, [len(raw) * 8 - 30])      # one bit inside the payload/CRC area
             injected = "corrupted (injected bit error)"
             self.stats.add("injected_events")
@@ -207,7 +215,7 @@ class Engine:
                 item["done"].set()
                 continue
             self.stats.add("frames_tx")
-            if frame.ftype == fr.DATA:
+            if frame.ftype in fr.DATA_TYPES:
                 self.stats.add("data_frames_tx")
             if frame.ftype in (fr.ACK, fr.SACK):
                 self.stats.add("acks_tx")
@@ -216,6 +224,8 @@ class Engine:
                       airtime=round(airtime, 2), duration=round(time.time() - started, 2),
                       retry=item["retry"], msg_id=item["msg_id"], injected=item["injected"],
                       lost_in_simulation=getattr(self.channel, "last_lost", False),
+                      mic_overflows=int(getattr(self.channel, "overflows", 0) or 0),
+                      speaker_underflows=int(getattr(self.channel, "underflows", 0) or 0),
                       text=f"Sent {frame.type_name} seq {frame.seq} to node {frame.dst}"
                            + (f" (retry {item['retry']})" if item["retry"] else "")
                            + (f" - {item['injected']}" if item["injected"] else ""))
@@ -238,6 +248,9 @@ class Engine:
                 continue_sleep = True
             else:
                 continue_sleep = len(audio) == 0
+                if len(audio):
+                    self.carrier.add(calibration.band_energy(
+                        audio, (self.modem.freq0, self.modem.freq1, 1500, 3500)))
                 for result in self.receiver.feed(audio):
                     try:
                         self._handle(result)
@@ -271,6 +284,8 @@ class Engine:
             self.ack_queue.put(f)
         elif f.ftype == fr.DATA:
             self._on_data(f)
+        elif f.ftype == fr.SRDATA:
+            self._on_sr_data(f)
         elif f.ftype == fr.PING:
             self.transmit(fr.Frame(fr.PONG, self.node_id, f.src, seq=f.seq, payload=f.payload),
                           wait=False, priority=0)
@@ -326,6 +341,110 @@ class Engine:
                   encrypted=encrypted,
                   text=f"Message from node {origin} delivered"
                        + (" (AES-GCM verified + decrypted)" if encrypted else "") + f": {text!r}")
+
+    def _on_sr_data(self, f):
+        rcv = self.sr_receivers.setdefault(f.src, arq.SelectiveRepeatReceiver())
+        dups = rcv.duplicates
+        ready = rcv.accept(f)
+        if rcv.duplicates > dups:
+            self.stats.add("duplicates")
+            self.emit("duplicate", seq=f.seq, src=f.src,
+                      text=f"Duplicate seq {f.seq} from node {f.src}: reported in SACK, not delivered twice")
+        elif not ready and rcv.rcv_base is not None:
+            self.emit("sr_buffered", seq=f.seq, waiting_for=rcv.rcv_base,
+                      text=f"Seq {f.seq} buffered out of order (waiting for seq {rcv.rcv_base})")
+        for g in ready:
+            reasm = self.reassemblers.setdefault(g.origin, fr.Reassembler())
+            message = reasm.add(g.payload, g.flags)
+            if message is not None:
+                self._deliver(g.origin, message, g.flags)
+        if f.flags & fr.F_POLL:
+            ref, bitmap, cumulative = rcv.sack()
+            if self._take_injection("drop_next_sack"):
+                self.stats.add("injected_events")
+                self.emit("sack_dropped", text="SACK NOT sent (injected SACK loss)")
+                return
+            self.transmit(fr.Frame(fr.SACK, self.node_id, f.src, seq=ref, payload=bytes([bitmap]),
+                                   flags=fr.F_FIRST if cumulative else 0), wait=False, priority=0)
+            got = [(ref + i) % 256 for i in range(8) if bitmap >> i & 1]
+            self.emit("sack_tx", ref=ref, bitmap=bitmap,
+                      text=f"SACK to node {f.src}: everything before seq {ref} delivered"
+                           + (f", also holding seq {got}" if got else ""))
+
+    def wait_for_sack(self, peer, timeout):
+        """Wait up to `timeout` seconds for a SACK from `peer`."""
+        deadline = time.time() + timeout
+        while True:
+            left = deadline - time.time()
+            if left <= 0:
+                return None
+            try:
+                f = self.ack_queue.get(timeout=left)
+            except queue.Empty:
+                return None
+            if f.ftype == fr.SACK and f.src == peer:
+                return f
+
+    # ------------------------------------------------------------ MAC sublayer
+    def channel_busy(self):
+        """Carrier sense: (busy?, reason). Uses only real measurements of this node's channel."""
+        if self.receiver.first_bit is not None:
+            return True, "a frame is being received"
+        if self.channel.kind == "acoustic":
+            busy, ratio = self.carrier.busy()
+            if busy:
+                return True, f"sound in our band {10 * np.log10(ratio):.0f} dB above the noise floor"
+            return False, None
+        level = self.channel.level()
+        return (level > 0.05, "simulated channel in use") if level > 0.05 else (False, None)
+
+    def _carrier_sense(self, frame):
+        """CSMA (non-persistent): listen; if busy, wait a random time and listen again."""
+        if self.mac_mode != mac.CSMA:
+            return
+        for attempt in range(mac.CSMA_MAX_DEFERS):
+            busy, reason = self.channel_busy()
+            if not busy:
+                if attempt:
+                    self.emit("channel_idle", text="Channel idle - transmitting now")
+                return
+            wait = mac.csma_backoff()
+            self.stats.add("channel_busy_deferrals")
+            self.emit("channel_busy", reason=reason, wait=round(wait, 2),
+                      text=f"CSMA: channel BUSY ({reason}) - deferring {frame.type_name} "
+                           f"seq {frame.seq} for {wait:.1f} s")
+            time.sleep(wait * self.time_scale)
+        self.emit("channel_busy", reason="gave up",
+                  text=f"CSMA: channel still busy after {mac.CSMA_MAX_DEFERS} checks - "
+                       f"transmitting anyway (a collision is possible)")
+
+    def before_retransmit(self, attempt):
+        """ALOHA: after a missing ACK wait a random backoff before retransmitting."""
+        if self.mac_mode != mac.ALOHA:
+            return
+        frame_time = self.modem.airtime((fr.OVERHEAD + fr.MAX_PAYLOAD) * 8)
+        wait = mac.aloha_backoff(attempt, frame_time)
+        self.stats.add("backoffs")
+        self.emit("backoff", wait=round(wait, 2), attempt=attempt,
+                  text=f"ALOHA: random backoff {wait:.1f} s before retransmission "
+                       f"(attempt {attempt}, up to {2 ** min(attempt, 4) - 1} frame times)")
+        time.sleep(wait * self.time_scale)
+
+    def set_protocol(self, name):
+        if name not in ("sw", "sr"):
+            raise ValueError("protocol must be 'sw' or 'sr'")
+        self.protocol = name
+        self.emit("setting", name="protocol", value=name,
+                  text=f"Reliability protocol set to {self._sender().name}")
+
+    def set_mac(self, mode):
+        if mode not in mac.NAMES:
+            raise ValueError(f"MAC must be one of {list(mac.NAMES)}")
+        self.mac_mode = mode
+        self.emit("setting", name="mac", value=mode, text=f"Medium access set to {mac.NAMES[mode]}")
+
+    def _sender(self):
+        return self.sr_sender if self.protocol == "sr" else self.sw_sender
 
     def wait_for_ack(self, peer, seq, timeout):
         """Wait up to `timeout` seconds for ACK `seq` from `peer`. Stale ACKs are ignored."""
@@ -399,9 +518,9 @@ class Engine:
         arq.drain(self.ack_queue)
         self.stats.add("messages_sent")
         self.emit("message_status", msg_id=msg_id, dst=dst, status="sending", frames=len(pieces),
-                  text=f"Sending message #{msg_id} with {self.sw_sender.name}")
+                  text=f"Sending message #{msg_id} with {self._sender().name} + {mac.NAMES[self.mac_mode]}")
         started = time.time()
-        ok = self.sw_sender.send(msg_id, dst, pieces, base_flags=base_flags)
+        ok = self._sender().send(msg_id, dst, pieces, base_flags=base_flags)
         elapsed = time.time() - started
         self.stats.add_busy_time(elapsed)
         if ok:
@@ -527,7 +646,9 @@ class Engine:
     def status(self):
         return {"node_id": self.node_id, "channel": self.channel.kind,
                 "channel_label": self.channel.label, "running": self.running,
-                "transmitting": self.transmitting, "protocol": self.sw_sender.name,
+                "transmitting": self.transmitting, "protocol": self._sender().name,
+                "protocol_id": self.protocol, "mac": self.mac_mode, "mac_name": mac.NAMES[self.mac_mode],
+                "channel_busy": self.channel_busy()[0],
                 "rto": round(self.timer.timeout(), 2), "inject": dict(self.inject),
                 "nodes": self.node_table(), "stats": self.stats.snapshot(),
                 "freq0": self.modem.freq0, "freq1": self.modem.freq1,

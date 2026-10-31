@@ -1,0 +1,174 @@
+{
+  "kind": "Measured - acoustic (single-laptop loopback)",
+  "mic": 9,
+  "speaker": 8,
+  "exclusive": true,
+  "freq0": 2000,
+  "freq1": 3000,
+  "bit_time": 0.02,
+  "volume": 0.5,
+  "bits_per_trial": 256,
+  "trials": 20,
+  "preambles_detected": 19,
+  "total_bits": 5120,
+  "bit_errors": 1043,
+  "ber": 0.2037109375,
+  "details": [
+    {
+      "trial": 0,
+      "preamble": true,
+      "score": 0.695,
+      "errors": 0,
+      "min_confidence": 0.776,
+      "overflows": 0
+    },
+    {
+      "trial": 1,
+      "preamble": true,
+      "score": 0.736,
+      "errors": 73,
+      "min_confidence": 0.616,
+      "overflows": 0
+    },
+    {
+      "trial": 2,
+      "preamble": true,
+      "score": 0.682,
+      "errors": 0,
+      "min_confidence": 0.701,
+      "overflows": 0
+    },
+    {
+      "trial": 3,
+      "preamble": true,
+      "score": 0.831,
+      "errors": 80,
+      "min_confidence": 0.524,
+      "overflows": 0
+    },
+    {
+      "trial": 4,
+      "preamble": true,
+      "score": 0.476,
+      "errors": 0,
+      "min_confidence": 0.611,
+      "overflows": 0
+    },
+    {
+      "trial": 5,
+      "preamble": true,
+      "score": 0.643,
+      "errors": 71,
+      "min_confidence": 0.326,
+      "overflows": 0
+    },
+    {
+      "trial": 6,
+      "preamble": true,
+      "score": 0.495,
+      "errors": 39,
+      "min_confidence": 0.323,
+      "overflows": 0
+    },
+    {
+      "trial": 7,
+      "preamble": true,
+      "score": 0.436,
+      "errors": 129,
+      "min_confidence": 0.45,
+      "overflows": 0
+    },
+    {
+      "trial": 8,
+      "preamble": true,
+      "score": 0.478,
+      "errors": 3,
+      "min_confidence": 0.486,
+      "overflows": 0
+    },
+    {
+      "trial": 9,
+      "preamble": true,
+      "score": 0.5,
+      "errors": 74,
+      "min_confidence": 0.495,
+      "overflows": 0
+    },
+    {
+      "trial": 10,
+      "preamble": true,
+      "score": 0.493,
+      "errors": 0,
+      "min_confidence": 0.53,
+      "overflows": 0
+    },
+    {
+      "trial": 11,
+      "preamble": true,
+      "score": 0.441,
+      "errors": 49,
+      "min_confidence": 0.498,
+      "overflows": 0
+    },
+    {
+      "trial": 12,
+      "preamble": false
+    },
+    {
+      "trial": 13,
+      "preamble": true,
+      "score": 0.543,
+      "errors": 33,
+      "min_confidence": 0.664,
+      "overflows": 0
+    },
+    {
+      "trial": 14,
+      "preamble": true,
+      "score": 0.519,
+      "errors": 41,
+      "min_confidence": 0.701,
+      "overflows": 0
+    },
+    {
+      "trial": 15,
+      "preamble": true,
+      "score": 0.565,
+      "errors": 0,
+      "min_confidence": 0.674,
+      "overflows": 0
+    },
+    {
+      "trial": 16,
+      "preamble": true,
+      "score": 0.514,
+      "errors": 111,
+      "min_confidence": 0.636,
+      "overflows": 0
+    },
+    {
+      "trial": 17,
+      "preamble": true,
+      "score": 0.423,
+      "errors": 0,
+      "min_confidence": 0.678,
+      "overflows": 0
+    },
+    {
+      "trial": 18,
+      "preamble": true,
+      "score": 0.514,
+      "errors": 84,
+      "min_confidence": 0.371,
+      "overflows": 0
+    },
+    {
+      "trial": 19,
+      "preamble": true,
+      "score": 0.561,
+      "errors": 0,
+      "min_confidence": 0.879,
+      "overflows": 0
+    }
+  ]
+}

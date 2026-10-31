@@ -1,0 +1,3961 @@
+{
+ "kind": "Measured - acoustic (single-laptop loopback, 2 engines)",
+ "results": [
+  {
+   "scenario": "SR: 4 frames, one window",
+   "passed": true,
+   "detail": "status=delivered, data frames=9, SACKs sent=3, retransmissions=5 (CRC failures at receiver 3), resent-but-acked=[], seconds=79.4",
+   "seconds": 81.9,
+   "node1": {
+    "frames_tx": 9,
+    "data_frames_tx": 9,
+    "frames_rx_ok": 3,
+    "crc_failures": 3,
+    "acks_tx": 0,
+    "acks_rx": 3,
+    "retransmissions": 5,
+    "timeouts": 2,
+    "duplicates": 0,
+    "messages_sent": 1,
+    "messages_delivered": 1,
+    "messages_failed": 0,
+    "messages_received": 0,
+    "payload_bytes_acked": 84,
+    "pings_sent": 0,
+    "pongs_received": 0,
+    "injected_events": 0,
+    "channel_busy_deferrals": 10,
+    "backoffs": 0,
+    "forwarded": 0,
+    "ttl_expired": 0,
+    "security_rejects": 0
+   },
+   "node2": {
+    "frames_tx": 3,
+    "data_frames_tx": 0,
+    "frames_rx_ok": 5,
+    "crc_failures": 3,
+    "acks_tx": 3,
+    "acks_rx": 0,
+    "retransmissions": 0,
+    "timeouts": 0,
+    "duplicates": 1,
+    "messages_sent": 0,
+    "messages_delivered": 0,
+    "messages_failed": 0,
+    "messages_received": 1,
+    "payload_bytes_acked": 0,
+    "pings_sent": 0,
+    "pongs_received": 0,
+    "injected_events": 0,
+    "channel_busy_deferrals": 0,
+    "backoffs": 0,
+    "forwarded": 0,
+    "ttl_expired": 0,
+    "security_rejects": 0
+   }
+  },
+  {
+   "scenario": "SR: frame 2 lost (injected) -> only it is resent",
+   "passed": true,
+   "detail": "resent seqs=[48, 49, 50], dropped=[49], delivered 1x, resent-but-acked=[], CRC failures 2",
+   "seconds": 49.7,
+   "node1": {
+    "frames_tx": 6,
+    "data_frames_tx": 6,
+    "frames_rx_ok": 2,
+    "crc_failures": 2,
+    "acks_tx": 0,
+    "acks_rx": 2,
+    "retransmissions": 3,
+    "timeouts": 1,
+    "duplicates": 0,
+    "messages_sent": 1,
+    "messages_delivered": 1,
+    "messages_failed": 0,
+    "messages_received": 0,
+    "payload_bytes_acked": 84,
+    "pings_sent": 0,
+    "pongs_received": 0,
+    "injected_events": 1,
+    "channel_busy_deferrals": 4,
+    "backoffs": 0,
+    "forwarded": 0,
+    "ttl_expired": 0,
+    "security_rejects": 0
+   },
+   "node2": {
+    "frames_tx": 3,
+    "data_frames_tx": 0,
+    "frames_rx_ok": 5,
+    "crc_failures": 2,
+    "acks_tx": 3,
+    "acks_rx": 0,
+    "retransmissions": 0,
+    "timeouts": 0,
+    "duplicates": 1,
+    "messages_sent": 0,
+    "messages_delivered": 0,
+    "messages_failed": 0,
+    "messages_received": 1,
+    "payload_bytes_acked": 0,
+    "pings_sent": 0,
+    "pongs_received": 0,
+    "injected_events": 0,
+    "channel_busy_deferrals": 0,
+    "backoffs": 0,
+    "forwarded": 0,
+    "ttl_expired": 0,
+    "security_rejects": 0
+   }
+  },
+  {
+   "scenario": "SR: SACK lost (injected) -> recovery, delivered once",
+   "passed": true,
+   "detail": "timeouts=1, retransmissions=1, duplicates at receiver=0, delivered 1x",
+   "seconds": 40.7,
+   "node1": {
+    "frames_tx": 5,
+    "data_frames_tx": 5,
+    "frames_rx_ok": 1,
+    "crc_failures": 1,
+    "acks_tx": 0,
+    "acks_rx": 1,
+    "retransmissions": 1,
+    "timeouts": 1,
+    "duplicates": 0,
+    "messages_sent": 1,
+    "messages_delivered": 1,
+    "messages_failed": 0,
+    "messages_received": 0,
+    "payload_bytes_acked": 84,
+    "pings_sent": 0,
+    "pongs_received": 0,
+    "injected_events": 0,
+    "channel_busy_deferrals": 3,
+    "backoffs": 0,
+    "forwarded": 0,
+    "ttl_expired": 0,
+    "security_rejects": 0
+   },
+   "node2": {
+    "frames_tx": 1,
+    "data_frames_tx": 0,
+    "frames_rx_ok": 4,
+    "crc_failures": 1,
+    "acks_tx": 1,
+    "acks_rx": 0,
+    "retransmissions": 0,
+    "timeouts": 0,
+    "duplicates": 0,
+    "messages_sent": 0,
+    "messages_delivered": 0,
+    "messages_failed": 0,
+    "messages_received": 1,
+    "payload_bytes_acked": 0,
+    "pings_sent": 0,
+    "pongs_received": 0,
+    "injected_events": 1,
+    "channel_busy_deferrals": 0,
+    "backoffs": 0,
+    "forwarded": 0,
+    "ttl_expired": 0,
+    "security_rejects": 0
+   }
+  },
+  {
+   "scenario": "CSMA: node 1 defers while node 2 transmits",
+   "passed": true,
+   "detail": "node 1 deferrals=9, delivered=['CSMA TEST', 'SELECTIVE RE']",
+   "seconds": 49.0,
+   "node1": {
+    "frames_tx": 3,
+    "data_frames_tx": 1,
+    "frames_rx_ok": 5,
+    "crc_failures": 2,
+    "acks_tx": 2,
+    "acks_rx": 1,
+    "retransmissions": 0,
+    "timeouts": 0,
+    "duplicates": 0,
+    "messages_sent": 1,
+    "messages_delivered": 1,
+    "messages_failed": 0,
+    "messages_received": 1,
+    "payload_bytes_acked": 9,
+    "pings_sent": 0,
+    "pongs_received": 0,
+    "injected_events": 0,
+    "channel_busy_deferrals": 9,
+    "backoffs": 0,
+    "forwarded": 0,
+    "ttl_expired": 0,
+    "security_rejects": 0
+   },
+   "node2": {
+    "frames_tx": 7,
+    "data_frames_tx": 6,
+    "frames_rx_ok": 3,
+    "crc_failures": 2,
+    "acks_tx": 1,
+    "acks_rx": 2,
+    "retransmissions": 2,
+    "timeouts": 0,
+    "duplicates": 0,
+    "messages_sent": 1,
+    "messages_delivered": 1,
+    "messages_failed": 0,
+    "messages_received": 1,
+    "payload_bytes_acked": 84,
+    "pings_sent": 0,
+    "pongs_received": 0,
+    "injected_events": 0,
+    "channel_busy_deferrals": 9,
+    "backoffs": 0,
+    "forwarded": 0,
+    "ttl_expired": 0,
+    "security_rejects": 0
+   }
+  }
+ ],
+ "stats_node1": {
+  "source": "Measured - acoustic",
+  "counters": {
+   "frames_tx": 23,
+   "data_frames_tx": 21,
+   "frames_rx_ok": 11,
+   "crc_failures": 8,
+   "acks_tx": 2,
+   "acks_rx": 7,
+   "retransmissions": 9,
+   "timeouts": 4,
+   "duplicates": 0,
+   "messages_sent": 4,
+   "messages_delivered": 4,
+   "messages_failed": 0,
+   "messages_received": 1,
+   "payload_bytes_acked": 261,
+   "pings_sent": 0,
+   "pongs_received": 0,
+   "injected_events": 1,
+   "channel_busy_deferrals": 26,
+   "backoffs": 0,
+   "forwarded": 0,
+   "ttl_expired": 0,
+   "security_rejects": 0
+  },
+  "delivery_ratio": 1.0,
+  "frame_loss": 0.429,
+  "goodput_bps": 11.49,
+  "rtt": {
+   "min": 8.075,
+   "avg": 13.59,
+   "max": 30.046,
+   "count": 7
+  },
+  "recent_rtts": [
+   30.05,
+   8.11,
+   8.63,
+   8.08,
+   15.23,
+   8.16,
+   16.88
+  ],
+  "ping_rtt": null,
+  "ping_loss": null
+ },
+ "stats_node2": {
+  "source": "Measured - acoustic",
+  "counters": {
+   "frames_tx": 14,
+   "data_frames_tx": 6,
+   "frames_rx_ok": 17,
+   "crc_failures": 8,
+   "acks_tx": 8,
+   "acks_rx": 2,
+   "retransmissions": 2,
+   "timeouts": 0,
+   "duplicates": 2,
+   "messages_sent": 1,
+   "messages_delivered": 1,
+   "messages_failed": 0,
+   "messages_received": 4,
+   "payload_bytes_acked": 84,
+   "pings_sent": 0,
+   "pongs_received": 0,
+   "injected_events": 1,
+   "channel_busy_deferrals": 9,
+   "backoffs": 0,
+   "forwarded": 0,
+   "ttl_expired": 0,
+   "security_rejects": 0
+  },
+  "delivery_ratio": 1.0,
+  "frame_loss": 0.333,
+  "goodput_bps": 14.46,
+  "rtt": {
+   "min": 15.544,
+   "avg": 23.24,
+   "max": 30.936,
+   "count": 2
+  },
+  "recent_rtts": [
+   30.94,
+   15.54
+  ],
+  "ping_rtt": null,
+  "ping_loss": null
+ },
+ "events": [
+  {
+   "event": "engine_started",
+   "time": 1793455110.472,
+   "node": 1,
+   "channel": "acoustic",
+   "label": "Acoustic link (single-laptop loopback)",
+   "text": "Node 1 started on the Acoustic link (single-laptop loopback)"
+  },
+  {
+   "event": "engine_started",
+   "time": 1793455110.474,
+   "node": 2,
+   "channel": "acoustic",
+   "label": "Acoustic link (single-laptop loopback)",
+   "text": "Node 2 started on the Acoustic link (single-laptop loopback)"
+  },
+  {
+   "event": "setting",
+   "time": 1793455111.478,
+   "node": 1,
+   "name": "protocol",
+   "value": "sr",
+   "text": "Reliability protocol set to Selective Repeat"
+  },
+  {
+   "event": "message_status",
+   "time": 1793455111.478,
+   "node": 1,
+   "msg_id": 1,
+   "dst": 2,
+   "status": "queued",
+   "frames": 4,
+   "message": "SELECTIVE REPEAT DEMO: this message is long enough to need four frames of 24 bytes!!",
+   "encrypted": false,
+   "text": "Message #1 to node 2 queued (84 bytes, 4 frame(s))"
+  },
+  {
+   "event": "message_status",
+   "time": 1793455111.479,
+   "node": 1,
+   "msg_id": 1,
+   "dst": 2,
+   "status": "sending",
+   "frames": 4,
+   "text": "Sending message #1 with Selective Repeat + CSMA (listen before talk)"
+  },
+  {
+   "event": "sr_window",
+   "time": 1793455111.479,
+   "node": 1,
+   "msg_id": 1,
+   "window": [
+    44,
+    45,
+    46,
+    47
+   ],
+   "sending": [
+    44,
+    45,
+    46,
+    47
+   ],
+   "text": "Window [44, 45, 46, 47] - sending seq 44, 45, 46, 47"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455111.48,
+   "node": 1,
+   "reason": "sound in our band 32 dB above the noise floor",
+   "wait": 0.64,
+   "text": "CSMA: channel BUSY (sound in our band 32 dB above the noise floor) - deferring DATA-SR seq 44 for 0.6 s"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455112.123,
+   "node": 1,
+   "reason": "sound in our band 27 dB above the noise floor",
+   "wait": 0.96,
+   "text": "CSMA: channel BUSY (sound in our band 27 dB above the noise floor) - deferring DATA-SR seq 44 for 1.0 s"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455113.083,
+   "node": 1,
+   "reason": "sound in our band 25 dB above the noise floor",
+   "wait": 0.98,
+   "text": "CSMA: channel BUSY (sound in our band 25 dB above the noise floor) - deferring DATA-SR seq 44 for 1.0 s"
+  },
+  {
+   "event": "channel_idle",
+   "time": 1793455114.068,
+   "node": 1,
+   "text": "Channel idle - transmitting now"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455114.084,
+   "node": 1,
+   "seq": 44,
+   "type": "DATA-SR",
+   "airtime": 5.75
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455120.851,
+   "node": 1,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "FIRST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 44,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74"
+   },
+   "raw": "7e 78 01 02 2c 18 01 02 04 53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74 71 14",
+   "bytes": 35,
+   "airtime": 5.75,
+   "duration": 6.77,
+   "retry": 0,
+   "msg_id": 1,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA-SR seq 44 to node 2"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455120.852,
+   "node": 1,
+   "reason": "a frame is being received",
+   "wait": 0.36,
+   "text": "CSMA: channel BUSY (a frame is being received) - deferring DATA-SR seq 45 for 0.4 s"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455121.024,
+   "node": 2,
+   "ok": false,
+   "error": "CRC mismatch (received 0x634B, calculated 0x1972)",
+   "raw": "7e 78 01 02 2c 18 01 02 04 53 44 88 94 ad 7e c3 1f 08 6a 78 9a d5 02 46 0e 0e 73 62 88 46 b1 a0 c1 63 4b",
+   "score": 0.69,
+   "text": "Frame rejected: CRC mismatch (received 0x634B, calculated 0x1972)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455121.028,
+   "node": 1,
+   "ok": false,
+   "error": "CRC mismatch (received 0x634B, calculated 0x1972)",
+   "raw": "7e 78 01 02 2c 18 01 02 04 53 44 88 94 ad 7e c3 1f 08 6a 78 9a d5 02 46 0e 0e 73 62 88 46 b1 a0 c1 63 4b",
+   "score": 0.69,
+   "text": "Frame rejected: CRC mismatch (received 0x634B, calculated 0x1972)"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455121.217,
+   "node": 1,
+   "reason": "sound in our band 49 dB above the noise floor",
+   "wait": 0.78,
+   "text": "CSMA: channel BUSY (sound in our band 49 dB above the noise floor) - deferring DATA-SR seq 45 for 0.8 s"
+  },
+  {
+   "event": "channel_idle",
+   "time": 1793455122.001,
+   "node": 1,
+   "text": "Channel idle - transmitting now"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455122.023,
+   "node": 1,
+   "seq": 45,
+   "type": "DATA-SR",
+   "airtime": 5.75
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455127.788,
+   "node": 1,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [],
+    "src": 1,
+    "dst": 2,
+    "seq": 45,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "68 69 73 20 6d 65 73 73 61 67 65 20 69 73 20 6c 6f 6e 67 20 65 6e 6f 75"
+   },
+   "raw": "7e 70 01 02 2d 18 01 02 04 68 69 73 20 6d 65 73 73 61 67 65 20 69 73 20 6c 6f 6e 67 20 65 6e 6f 75 71 06",
+   "bytes": 35,
+   "airtime": 5.75,
+   "duration": 5.77,
+   "retry": 0,
+   "msg_id": 1,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA-SR seq 45 to node 2"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455127.789,
+   "node": 1,
+   "reason": "a frame is being received",
+   "wait": 1.07,
+   "text": "CSMA: channel BUSY (a frame is being received) - deferring DATA-SR seq 46 for 1.1 s"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455127.899,
+   "node": 2,
+   "ok": true,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [],
+    "src": 1,
+    "dst": 2,
+    "seq": 45,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "68 69 73 20 6d 65 73 73 61 67 65 20 69 73 20 6c 6f 6e 67 20 65 6e 6f 75"
+   },
+   "raw": "7e 70 01 02 2d 18 01 02 04 68 69 73 20 6d 65 73 73 61 67 65 20 69 73 20 6c 6f 6e 67 20 65 6e 6f 75 71 06",
+   "score": 0.68,
+   "confidence": 0.98,
+   "for_me": true,
+   "text": "Received DATA-SR seq 45 from node 1 - CRC OK"
+  },
+  {
+   "event": "channel_idle",
+   "time": 1793455128.858,
+   "node": 1,
+   "text": "Channel idle - transmitting now"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455128.883,
+   "node": 1,
+   "seq": 46,
+   "type": "DATA-SR",
+   "airtime": 5.75
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455134.677,
+   "node": 1,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [],
+    "src": 1,
+    "dst": 2,
+    "seq": 46,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "67 68 20 74 6f 20 6e 65 65 64 20 66 6f 75 72 20 66 72 61 6d 65 73 20 6f"
+   },
+   "raw": "7e 70 01 02 2e 18 01 02 04 67 68 20 74 6f 20 6e 65 65 64 20 66 6f 75 72 20 66 72 61 6d 65 73 20 6f 4a 78",
+   "bytes": 35,
+   "airtime": 5.75,
+   "duration": 5.79,
+   "retry": 0,
+   "msg_id": 1,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA-SR seq 46 to node 2"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455134.678,
+   "node": 1,
+   "reason": "a frame is being received",
+   "wait": 0.68,
+   "text": "CSMA: channel BUSY (a frame is being received) - deferring DATA-SR seq 47 for 0.7 s"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455134.889,
+   "node": 2,
+   "ok": false,
+   "error": "CRC mismatch (received 0xF0C8, calculated 0x4A78)",
+   "raw": "7e 70 01 02 2e 18 01 02 04 67 68 20 74 6f 20 6e 65 65 64 20 66 6f 75 72 20 66 72 61 6d 65 73 20 6f f0 c8",
+   "score": 0.68,
+   "text": "Frame rejected: CRC mismatch (received 0xF0C8, calculated 0x4A78)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455134.896,
+   "node": 1,
+   "ok": false,
+   "error": "CRC mismatch (received 0xF0C8, calculated 0x4A78)",
+   "raw": "7e 70 01 02 2e 18 01 02 04 67 68 20 74 6f 20 6e 65 65 64 20 66 6f 75 72 20 66 72 61 6d 65 73 20 6f f0 c8",
+   "score": 0.68,
+   "text": "Frame rejected: CRC mismatch (received 0xF0C8, calculated 0x4A78)"
+  },
+  {
+   "event": "channel_idle",
+   "time": 1793455135.355,
+   "node": 1,
+   "text": "Channel idle - transmitting now"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455135.369,
+   "node": 1,
+   "seq": 47,
+   "type": "DATA-SR",
+   "airtime": 3.83
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455139.214,
+   "node": 1,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "LAST",
+     "POLL"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 47,
+    "len": 12,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "66 20 32 34 20 62 79 74 65 73 21 21"
+   },
+   "raw": "7e 75 01 02 2f 0c 01 02 04 66 20 32 34 20 62 79 74 65 73 21 21 63 17",
+   "bytes": 23,
+   "airtime": 3.83,
+   "duration": 3.84,
+   "retry": 0,
+   "msg_id": 1,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA-SR seq 47 to node 2"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455139.332,
+   "node": 2,
+   "ok": true,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "LAST",
+     "POLL"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 47,
+    "len": 12,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "66 20 32 34 20 62 79 74 65 73 21 21"
+   },
+   "raw": "7e 75 01 02 2f 0c 01 02 04 66 20 32 34 20 62 79 74 65 73 21 21 63 17",
+   "score": 0.68,
+   "confidence": 0.98,
+   "for_me": true,
+   "text": "Received DATA-SR seq 47 from node 1 - CRC OK"
+  },
+  {
+   "event": "sack_tx",
+   "time": 1793455139.332,
+   "node": 2,
+   "ref": 45,
+   "bitmap": 5,
+   "text": "SACK to node 1: everything before seq 45 delivered, also holding seq [45, 47]"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455139.339,
+   "node": 2,
+   "seq": 45,
+   "type": "SACK",
+   "airtime": 2.07
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455141.417,
+   "node": 2,
+   "frame": {
+    "type": "SACK",
+    "flags": [],
+    "src": 2,
+    "dst": 1,
+    "seq": 45,
+    "len": 1,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": "05"
+   },
+   "raw": "7e 30 02 01 2d 01 02 01 04 05 4c 94",
+   "bytes": 12,
+   "airtime": 2.07,
+   "duration": 2.08,
+   "retry": 0,
+   "msg_id": null,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent SACK seq 45 to node 1"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455141.526,
+   "node": 1,
+   "ok": true,
+   "frame": {
+    "type": "SACK",
+    "flags": [],
+    "src": 2,
+    "dst": 1,
+    "seq": 45,
+    "len": 1,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": "05"
+   },
+   "raw": "7e 30 02 01 2d 01 02 01 04 05 4c 94",
+   "score": 0.68,
+   "confidence": 0.98,
+   "for_me": true,
+   "text": "Received SACK seq 45 from node 2 - CRC OK"
+  },
+  {
+   "event": "sack_rx",
+   "time": 1793455141.526,
+   "node": 1,
+   "msg_id": 1,
+   "acked": [
+    45,
+    47
+   ],
+   "missing": [
+    44,
+    46
+   ],
+   "text": "SACK says received seq [45, 47]; still missing seq [44, 46]"
+  },
+  {
+   "event": "sr_window",
+   "time": 1793455141.526,
+   "node": 1,
+   "msg_id": 1,
+   "window": [
+    44,
+    45,
+    46,
+    47
+   ],
+   "sending": [
+    44,
+    46
+   ],
+   "text": "Window [44, 45, 46, 47] - sending seq 44, 46"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793455141.526,
+   "node": 1,
+   "seq": 44,
+   "msg_id": 1,
+   "text": "Selective Repeat: resending ONLY seq 44"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455141.527,
+   "node": 1,
+   "reason": "sound in our band 43 dB above the noise floor",
+   "wait": 0.5,
+   "text": "CSMA: channel BUSY (sound in our band 43 dB above the noise floor) - deferring DATA-SR seq 44 for 0.5 s"
+  },
+  {
+   "event": "channel_idle",
+   "time": 1793455142.025,
+   "node": 1,
+   "text": "Channel idle - transmitting now"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455142.046,
+   "node": 1,
+   "seq": 44,
+   "type": "DATA-SR",
+   "airtime": 5.75
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455147.816,
+   "node": 1,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "FIRST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 44,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74"
+   },
+   "raw": "7e 78 01 02 2c 18 01 02 04 53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74 71 14",
+   "bytes": 35,
+   "airtime": 5.75,
+   "duration": 5.77,
+   "retry": 1,
+   "msg_id": 1,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA-SR seq 44 to node 2 (retry 1)"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793455147.816,
+   "node": 1,
+   "seq": 46,
+   "msg_id": 1,
+   "text": "Selective Repeat: resending ONLY seq 46"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455147.816,
+   "node": 1,
+   "reason": "a frame is being received",
+   "wait": 0.82,
+   "text": "CSMA: channel BUSY (a frame is being received) - deferring DATA-SR seq 46 for 0.8 s"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455147.923,
+   "node": 2,
+   "ok": true,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "FIRST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 44,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74"
+   },
+   "raw": "7e 78 01 02 2c 18 01 02 04 53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74 71 14",
+   "score": 0.68,
+   "confidence": 0.96,
+   "for_me": true,
+   "text": "Received DATA-SR seq 44 from node 1 - CRC OK"
+  },
+  {
+   "event": "channel_idle",
+   "time": 1793455148.642,
+   "node": 1,
+   "text": "Channel idle - transmitting now"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455148.658,
+   "node": 1,
+   "seq": 46,
+   "type": "DATA-SR",
+   "airtime": 5.75
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455154.432,
+   "node": 1,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "POLL"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 46,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "67 68 20 74 6f 20 6e 65 65 64 20 66 6f 75 72 20 66 72 61 6d 65 73 20 6f"
+   },
+   "raw": "7e 74 01 02 2e 18 01 02 04 67 68 20 74 6f 20 6e 65 65 64 20 66 6f 75 72 20 66 72 61 6d 65 73 20 6f 3f 41",
+   "bytes": 35,
+   "airtime": 5.75,
+   "duration": 5.77,
+   "retry": 1,
+   "msg_id": 1,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA-SR seq 46 to node 2 (retry 1)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455154.623,
+   "node": 2,
+   "ok": false,
+   "error": "CRC mismatch (received 0xCA54, calculated 0x8B5A)",
+   "raw": "7e 74 01 02 2e 18 01 02 04 67 68 20 74 6f 20 6e 65 65 64 20 66 6f 75 72 20 66 72 61 da ab 10 5f 5f ca 54",
+   "score": 0.65,
+   "text": "Frame rejected: CRC mismatch (received 0xCA54, calculated 0x8B5A)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455154.629,
+   "node": 1,
+   "ok": false,
+   "error": "CRC mismatch (received 0xCA54, calculated 0x8B5A)",
+   "raw": "7e 74 01 02 2e 18 01 02 04 67 68 20 74 6f 20 6e 65 65 64 20 66 6f 75 72 20 66 72 61 da ab 10 5f 5f ca 54",
+   "score": 0.65,
+   "text": "Frame rejected: CRC mismatch (received 0xCA54, calculated 0x8B5A)"
+  },
+  {
+   "event": "timeout",
+   "time": 1793455161.369,
+   "node": 1,
+   "msg_id": 1,
+   "waited": 6.93,
+   "text": "No SACK after 6.9 s - timeout; resending the oldest missing frame (seq 44) with POLL"
+  },
+  {
+   "event": "sr_window",
+   "time": 1793455161.369,
+   "node": 1,
+   "msg_id": 1,
+   "window": [
+    44,
+    45,
+    46,
+    47
+   ],
+   "sending": [
+    44
+   ],
+   "text": "Window [44, 45, 46, 47] - sending seq 44"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793455161.369,
+   "node": 1,
+   "seq": 44,
+   "msg_id": 1,
+   "text": "Selective Repeat: resending ONLY seq 44"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455161.397,
+   "node": 1,
+   "seq": 44,
+   "type": "DATA-SR",
+   "airtime": 5.75
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455167.2,
+   "node": 1,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "FIRST",
+     "POLL"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 44,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74"
+   },
+   "raw": "7e 7c 01 02 2c 18 01 02 04 53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74 04 2d",
+   "bytes": 35,
+   "airtime": 5.75,
+   "duration": 5.8,
+   "retry": 1,
+   "msg_id": 1,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA-SR seq 44 to node 2 (retry 1)"
+  },
+  {
+   "event": "timeout",
+   "time": 1793455174.136,
+   "node": 1,
+   "msg_id": 1,
+   "waited": 6.93,
+   "text": "No SACK after 6.9 s - timeout; resending the oldest missing frame (seq 44) with POLL"
+  },
+  {
+   "event": "sr_window",
+   "time": 1793455174.137,
+   "node": 1,
+   "msg_id": 1,
+   "window": [
+    44,
+    45,
+    46,
+    47
+   ],
+   "sending": [
+    44
+   ],
+   "text": "Window [44, 45, 46, 47] - sending seq 44"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793455174.137,
+   "node": 1,
+   "seq": 44,
+   "msg_id": 1,
+   "text": "Selective Repeat: resending ONLY seq 44"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455174.168,
+   "node": 1,
+   "seq": 44,
+   "type": "DATA-SR",
+   "airtime": 5.75
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455179.926,
+   "node": 1,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "FIRST",
+     "POLL"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 44,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74"
+   },
+   "raw": "7e 7c 01 02 2c 18 01 02 04 53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74 04 2d",
+   "bytes": 35,
+   "airtime": 5.75,
+   "duration": 5.76,
+   "retry": 1,
+   "msg_id": 1,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA-SR seq 44 to node 2 (retry 1)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455180.052,
+   "node": 2,
+   "ok": true,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "FIRST",
+     "POLL"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 44,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74"
+   },
+   "raw": "7e 7c 01 02 2c 18 01 02 04 53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74 04 2d",
+   "score": 0.7,
+   "confidence": 0.93,
+   "for_me": true,
+   "text": "Received DATA-SR seq 44 from node 1 - CRC OK"
+  },
+  {
+   "event": "duplicate",
+   "time": 1793455180.052,
+   "node": 2,
+   "seq": 44,
+   "src": 1,
+   "text": "Duplicate seq 44 from node 1: reported in SACK, not delivered twice"
+  },
+  {
+   "event": "sack_tx",
+   "time": 1793455180.052,
+   "node": 2,
+   "ref": 46,
+   "bitmap": 2,
+   "text": "SACK to node 1: everything before seq 46 delivered, also holding seq [47]"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455180.058,
+   "node": 2,
+   "seq": 46,
+   "type": "SACK",
+   "airtime": 2.07
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455182.132,
+   "node": 2,
+   "frame": {
+    "type": "SACK",
+    "flags": [
+     "FIRST"
+    ],
+    "src": 2,
+    "dst": 1,
+    "seq": 46,
+    "len": 1,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": "02"
+   },
+   "raw": "7e 38 02 01 2e 01 02 01 04 02 db 6c",
+   "bytes": 12,
+   "airtime": 2.07,
+   "duration": 2.07,
+   "retry": 0,
+   "msg_id": null,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent SACK seq 46 to node 1"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455182.243,
+   "node": 1,
+   "ok": true,
+   "frame": {
+    "type": "SACK",
+    "flags": [
+     "FIRST"
+    ],
+    "src": 2,
+    "dst": 1,
+    "seq": 46,
+    "len": 1,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": "02"
+   },
+   "raw": "7e 38 02 01 2e 01 02 01 04 02 db 6c",
+   "score": 0.7,
+   "confidence": 0.96,
+   "for_me": true,
+   "text": "Received SACK seq 46 from node 2 - CRC OK"
+  },
+  {
+   "event": "sack_rx",
+   "time": 1793455182.245,
+   "node": 1,
+   "msg_id": 1,
+   "acked": [
+    44
+   ],
+   "missing": [
+    46
+   ],
+   "text": "SACK says received seq [44]; still missing seq [46]"
+  },
+  {
+   "event": "message_progress",
+   "time": 1793455182.245,
+   "node": 1,
+   "msg_id": 1,
+   "done": 1,
+   "total": 4,
+   "text": "Frame 1/4 acknowledged (seq 44)"
+  },
+  {
+   "event": "message_progress",
+   "time": 1793455182.245,
+   "node": 1,
+   "msg_id": 1,
+   "done": 2,
+   "total": 4,
+   "text": "Frame 2/4 acknowledged (seq 45)"
+  },
+  {
+   "event": "sr_window",
+   "time": 1793455182.245,
+   "node": 1,
+   "msg_id": 1,
+   "window": [
+    46,
+    47
+   ],
+   "sending": [
+    46
+   ],
+   "text": "Window [46, 47] - sending seq 46"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793455182.245,
+   "node": 1,
+   "seq": 46,
+   "msg_id": 1,
+   "text": "Selective Repeat: resending ONLY seq 46"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455182.245,
+   "node": 1,
+   "reason": "sound in our band 66 dB above the noise floor",
+   "wait": 0.52,
+   "text": "CSMA: channel BUSY (sound in our band 66 dB above the noise floor) - deferring DATA-SR seq 46 for 0.5 s"
+  },
+  {
+   "event": "channel_idle",
+   "time": 1793455182.764,
+   "node": 1,
+   "text": "Channel idle - transmitting now"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455182.785,
+   "node": 1,
+   "seq": 46,
+   "type": "DATA-SR",
+   "airtime": 5.75
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455188.555,
+   "node": 1,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "POLL"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 46,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "67 68 20 74 6f 20 6e 65 65 64 20 66 6f 75 72 20 66 72 61 6d 65 73 20 6f"
+   },
+   "raw": "7e 74 01 02 2e 18 01 02 04 67 68 20 74 6f 20 6e 65 65 64 20 66 6f 75 72 20 66 72 61 6d 65 73 20 6f 3f 41",
+   "bytes": 35,
+   "airtime": 5.75,
+   "duration": 5.77,
+   "retry": 1,
+   "msg_id": 1,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA-SR seq 46 to node 2 (retry 1)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455188.677,
+   "node": 2,
+   "ok": true,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "POLL"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 46,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "67 68 20 74 6f 20 6e 65 65 64 20 66 6f 75 72 20 66 72 61 6d 65 73 20 6f"
+   },
+   "raw": "7e 74 01 02 2e 18 01 02 04 67 68 20 74 6f 20 6e 65 65 64 20 66 6f 75 72 20 66 72 61 6d 65 73 20 6f 3f 41",
+   "score": 0.69,
+   "confidence": 0.96,
+   "for_me": true,
+   "text": "Received DATA-SR seq 46 from node 1 - CRC OK"
+  },
+  {
+   "event": "message_rx",
+   "time": 1793455188.677,
+   "node": 2,
+   "origin": 1,
+   "message": "SELECTIVE REPEAT DEMO: this message is long enough to need four frames of 24 bytes!!",
+   "length": 84,
+   "encrypted": false,
+   "text": "Message from node 1 delivered: 'SELECTIVE REPEAT DEMO: this message is long enough to need four frames of 24 bytes!!'"
+  },
+  {
+   "event": "sack_tx",
+   "time": 1793455188.677,
+   "node": 2,
+   "ref": 48,
+   "bitmap": 0,
+   "text": "SACK to node 1: everything before seq 48 delivered"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455188.685,
+   "node": 2,
+   "seq": 48,
+   "type": "SACK",
+   "airtime": 2.07
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455190.766,
+   "node": 2,
+   "frame": {
+    "type": "SACK",
+    "flags": [
+     "FIRST"
+    ],
+    "src": 2,
+    "dst": 1,
+    "seq": 48,
+    "len": 1,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": "00"
+   },
+   "raw": "7e 38 02 01 30 01 02 01 04 00 61 09",
+   "bytes": 12,
+   "airtime": 2.07,
+   "duration": 2.08,
+   "retry": 0,
+   "msg_id": null,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent SACK seq 48 to node 1"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455190.873,
+   "node": 1,
+   "ok": true,
+   "frame": {
+    "type": "SACK",
+    "flags": [
+     "FIRST"
+    ],
+    "src": 2,
+    "dst": 1,
+    "seq": 48,
+    "len": 1,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": "00"
+   },
+   "raw": "7e 38 02 01 30 01 02 01 04 00 61 09",
+   "score": 0.69,
+   "confidence": 0.97,
+   "for_me": true,
+   "text": "Received SACK seq 48 from node 2 - CRC OK"
+  },
+  {
+   "event": "sack_rx",
+   "time": 1793455190.874,
+   "node": 1,
+   "msg_id": 1,
+   "acked": [
+    46
+   ],
+   "missing": [],
+   "text": "SACK says received seq [46]"
+  },
+  {
+   "event": "message_progress",
+   "time": 1793455190.874,
+   "node": 1,
+   "msg_id": 1,
+   "done": 3,
+   "total": 4,
+   "text": "Frame 3/4 acknowledged (seq 46)"
+  },
+  {
+   "event": "message_progress",
+   "time": 1793455190.875,
+   "node": 1,
+   "msg_id": 1,
+   "done": 4,
+   "total": 4,
+   "text": "Frame 4/4 acknowledged (seq 47)"
+  },
+  {
+   "event": "message_status",
+   "time": 1793455190.878,
+   "node": 1,
+   "msg_id": 1,
+   "dst": 2,
+   "status": "delivered",
+   "seconds": 79.4,
+   "text": "Message #1 DELIVERED to node 2 in 79.4 s (every frame acknowledged)"
+  },
+  {
+   "event": "injection_set",
+   "time": 1793455193.379,
+   "node": 1,
+   "name": "drop_frame",
+   "value": 2,
+   "text": "Error injection 'drop_frame' ARMED"
+  },
+  {
+   "event": "message_status",
+   "time": 1793455193.379,
+   "node": 1,
+   "msg_id": 2,
+   "dst": 2,
+   "status": "queued",
+   "frames": 4,
+   "message": "SELECTIVE REPEAT DEMO: this message is long enough to need four frames of 24 bytes!!",
+   "encrypted": false,
+   "text": "Message #2 to node 2 queued (84 bytes, 4 frame(s))"
+  },
+  {
+   "event": "message_status",
+   "time": 1793455193.379,
+   "node": 1,
+   "msg_id": 2,
+   "dst": 2,
+   "status": "sending",
+   "frames": 4,
+   "text": "Sending message #2 with Selective Repeat + CSMA (listen before talk)"
+  },
+  {
+   "event": "sr_window",
+   "time": 1793455193.379,
+   "node": 1,
+   "msg_id": 2,
+   "window": [
+    48,
+    49,
+    50,
+    51
+   ],
+   "sending": [
+    48,
+    49,
+    50,
+    51
+   ],
+   "text": "Window [48, 49, 50, 51] - sending seq 48, 49, 50, 51"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455193.398,
+   "node": 1,
+   "seq": 48,
+   "type": "DATA-SR",
+   "airtime": 5.75
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455199.185,
+   "node": 1,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "FIRST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 48,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74"
+   },
+   "raw": "7e 78 01 02 30 18 01 02 04 53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74 8a b7",
+   "bytes": 35,
+   "airtime": 5.75,
+   "duration": 5.79,
+   "retry": 0,
+   "msg_id": 2,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA-SR seq 48 to node 2"
+  },
+  {
+   "event": "frame_dropped",
+   "time": 1793455199.185,
+   "node": 1,
+   "seq": 49,
+   "msg_id": 2,
+   "text": "Frame seq 49 NOT sent (injected frame loss)"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455199.186,
+   "node": 1,
+   "reason": "a frame is being received",
+   "wait": 0.81,
+   "text": "CSMA: channel BUSY (a frame is being received) - deferring DATA-SR seq 50 for 0.8 s"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455199.327,
+   "node": 2,
+   "ok": true,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "FIRST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 48,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74"
+   },
+   "raw": "7e 78 01 02 30 18 01 02 04 53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74 8a b7",
+   "score": 0.68,
+   "confidence": 0.96,
+   "for_me": true,
+   "text": "Received DATA-SR seq 48 from node 1 - CRC OK"
+  },
+  {
+   "event": "channel_idle",
+   "time": 1793455199.995,
+   "node": 1,
+   "text": "Channel idle - transmitting now"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455200.019,
+   "node": 1,
+   "seq": 50,
+   "type": "DATA-SR",
+   "airtime": 5.75
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455205.827,
+   "node": 1,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [],
+    "src": 1,
+    "dst": 2,
+    "seq": 50,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "67 68 20 74 6f 20 6e 65 65 64 20 66 6f 75 72 20 66 72 61 6d 65 73 20 6f"
+   },
+   "raw": "7e 70 01 02 32 18 01 02 04 67 68 20 74 6f 20 6e 65 65 64 20 66 6f 75 72 20 66 72 61 6d 65 73 20 6f b1 db",
+   "bytes": 35,
+   "airtime": 5.75,
+   "duration": 5.81,
+   "retry": 0,
+   "msg_id": 2,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA-SR seq 50 to node 2"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455205.828,
+   "node": 1,
+   "reason": "a frame is being received",
+   "wait": 0.69,
+   "text": "CSMA: channel BUSY (a frame is being received) - deferring DATA-SR seq 51 for 0.7 s"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455205.965,
+   "node": 2,
+   "ok": false,
+   "error": "CRC mismatch (received 0x9378, calculated 0xD833)",
+   "raw": "7e 70 01 02 32 18 01 02 04 67 68 20 7c 3b 44 d7 f7 66 de 71 7d 1a ce 4b d3 1f f6 eb 81 4c 21 e0 c7 93 78",
+   "score": 0.69,
+   "text": "Frame rejected: CRC mismatch (received 0x9378, calculated 0xD833)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455205.971,
+   "node": 1,
+   "ok": false,
+   "error": "CRC mismatch (received 0x9378, calculated 0xD833)",
+   "raw": "7e 70 01 02 32 18 01 02 04 67 68 20 7c 3b 44 d7 f7 66 de 71 7d 1a ce 4b d3 1f f6 eb 81 4c 21 e0 c7 93 78",
+   "score": 0.69,
+   "text": "Frame rejected: CRC mismatch (received 0x9378, calculated 0xD833)"
+  },
+  {
+   "event": "channel_idle",
+   "time": 1793455206.517,
+   "node": 1,
+   "text": "Channel idle - transmitting now"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455206.53,
+   "node": 1,
+   "seq": 51,
+   "type": "DATA-SR",
+   "airtime": 3.83
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455210.36,
+   "node": 1,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "LAST",
+     "POLL"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 51,
+    "len": 12,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "66 20 32 34 20 62 79 74 65 73 21 21"
+   },
+   "raw": "7e 75 01 02 33 0c 01 02 04 66 20 32 34 20 62 79 74 65 73 21 21 b9 8e",
+   "bytes": 23,
+   "airtime": 3.83,
+   "duration": 3.83,
+   "retry": 0,
+   "msg_id": 2,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA-SR seq 51 to node 2"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455210.492,
+   "node": 2,
+   "ok": true,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "LAST",
+     "POLL"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 51,
+    "len": 12,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "66 20 32 34 20 62 79 74 65 73 21 21"
+   },
+   "raw": "7e 75 01 02 33 0c 01 02 04 66 20 32 34 20 62 79 74 65 73 21 21 b9 8e",
+   "score": 0.69,
+   "confidence": 0.97,
+   "for_me": true,
+   "text": "Received DATA-SR seq 51 from node 1 - CRC OK"
+  },
+  {
+   "event": "sr_buffered",
+   "time": 1793455210.492,
+   "node": 2,
+   "seq": 51,
+   "waiting_for": 49,
+   "text": "Seq 51 buffered out of order (waiting for seq 49)"
+  },
+  {
+   "event": "sack_tx",
+   "time": 1793455210.492,
+   "node": 2,
+   "ref": 49,
+   "bitmap": 4,
+   "text": "SACK to node 1: everything before seq 49 delivered, also holding seq [51]"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455210.503,
+   "node": 2,
+   "seq": 49,
+   "type": "SACK",
+   "airtime": 2.07
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455212.609,
+   "node": 2,
+   "frame": {
+    "type": "SACK",
+    "flags": [
+     "FIRST"
+    ],
+    "src": 2,
+    "dst": 1,
+    "seq": 49,
+    "len": 1,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": "04"
+   },
+   "raw": "7e 38 02 01 31 01 02 01 04 04 64 2d",
+   "bytes": 12,
+   "airtime": 2.07,
+   "duration": 2.11,
+   "retry": 0,
+   "msg_id": null,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent SACK seq 49 to node 1"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455212.703,
+   "node": 1,
+   "ok": false,
+   "error": "CRC mismatch (received 0x1438, calculated 0xB803)",
+   "raw": "7e 38 02 01 31 01 02 72 4b 00 14 38",
+   "score": 0.69,
+   "text": "Frame rejected: CRC mismatch (received 0x1438, calculated 0xB803)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455212.714,
+   "node": 2,
+   "ok": false,
+   "error": "CRC mismatch (received 0x1438, calculated 0xB803)",
+   "raw": "7e 38 02 01 31 01 02 72 4b 00 14 38",
+   "score": 0.69,
+   "text": "Frame rejected: CRC mismatch (received 0x1438, calculated 0xB803)"
+  },
+  {
+   "event": "timeout",
+   "time": 1793455217.296,
+   "node": 1,
+   "msg_id": 2,
+   "waited": 6.93,
+   "text": "No SACK after 6.9 s - timeout; resending the oldest missing frame (seq 48) with POLL"
+  },
+  {
+   "event": "sr_window",
+   "time": 1793455217.296,
+   "node": 1,
+   "msg_id": 2,
+   "window": [
+    48,
+    49,
+    50,
+    51
+   ],
+   "sending": [
+    48
+   ],
+   "text": "Window [48, 49, 50, 51] - sending seq 48"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793455217.296,
+   "node": 1,
+   "seq": 48,
+   "msg_id": 2,
+   "text": "Selective Repeat: resending ONLY seq 48"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455217.319,
+   "node": 1,
+   "seq": 48,
+   "type": "DATA-SR",
+   "airtime": 5.75
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455223.089,
+   "node": 1,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "FIRST",
+     "POLL"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 48,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74"
+   },
+   "raw": "7e 7c 01 02 30 18 01 02 04 53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74 ff 8e",
+   "bytes": 35,
+   "airtime": 5.75,
+   "duration": 5.77,
+   "retry": 1,
+   "msg_id": 2,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA-SR seq 48 to node 2 (retry 1)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455223.18,
+   "node": 2,
+   "ok": true,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "FIRST",
+     "POLL"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 48,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74"
+   },
+   "raw": "7e 7c 01 02 30 18 01 02 04 53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74 ff 8e",
+   "score": 0.67,
+   "confidence": 0.94,
+   "for_me": true,
+   "text": "Received DATA-SR seq 48 from node 1 - CRC OK"
+  },
+  {
+   "event": "duplicate",
+   "time": 1793455223.18,
+   "node": 2,
+   "seq": 48,
+   "src": 1,
+   "text": "Duplicate seq 48 from node 1: reported in SACK, not delivered twice"
+  },
+  {
+   "event": "sack_tx",
+   "time": 1793455223.18,
+   "node": 2,
+   "ref": 49,
+   "bitmap": 4,
+   "text": "SACK to node 1: everything before seq 49 delivered, also holding seq [51]"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455223.187,
+   "node": 2,
+   "seq": 49,
+   "type": "SACK",
+   "airtime": 2.07
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455225.26,
+   "node": 2,
+   "frame": {
+    "type": "SACK",
+    "flags": [
+     "FIRST"
+    ],
+    "src": 2,
+    "dst": 1,
+    "seq": 49,
+    "len": 1,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": "04"
+   },
+   "raw": "7e 38 02 01 31 01 02 01 04 04 64 2d",
+   "bytes": 12,
+   "airtime": 2.07,
+   "duration": 2.07,
+   "retry": 0,
+   "msg_id": null,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent SACK seq 49 to node 1"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455225.371,
+   "node": 1,
+   "ok": true,
+   "frame": {
+    "type": "SACK",
+    "flags": [
+     "FIRST"
+    ],
+    "src": 2,
+    "dst": 1,
+    "seq": 49,
+    "len": 1,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": "04"
+   },
+   "raw": "7e 38 02 01 31 01 02 01 04 04 64 2d",
+   "score": 0.69,
+   "confidence": 0.97,
+   "for_me": true,
+   "text": "Received SACK seq 49 from node 2 - CRC OK"
+  },
+  {
+   "event": "sack_rx",
+   "time": 1793455225.371,
+   "node": 1,
+   "msg_id": 2,
+   "acked": [
+    48,
+    51
+   ],
+   "missing": [
+    49,
+    50
+   ],
+   "text": "SACK says received seq [48, 51]; still missing seq [49, 50]"
+  },
+  {
+   "event": "message_progress",
+   "time": 1793455225.372,
+   "node": 1,
+   "msg_id": 2,
+   "done": 1,
+   "total": 4,
+   "text": "Frame 1/4 acknowledged (seq 48)"
+  },
+  {
+   "event": "sr_window",
+   "time": 1793455225.372,
+   "node": 1,
+   "msg_id": 2,
+   "window": [
+    49,
+    50,
+    51
+   ],
+   "sending": [
+    49,
+    50
+   ],
+   "text": "Window [49, 50, 51] - sending seq 49, 50"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793455225.372,
+   "node": 1,
+   "seq": 49,
+   "msg_id": 2,
+   "text": "Selective Repeat: resending ONLY seq 49"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455225.372,
+   "node": 1,
+   "reason": "sound in our band 62 dB above the noise floor",
+   "wait": 0.85,
+   "text": "CSMA: channel BUSY (sound in our band 62 dB above the noise floor) - deferring DATA-SR seq 49 for 0.8 s"
+  },
+  {
+   "event": "channel_idle",
+   "time": 1793455226.223,
+   "node": 1,
+   "text": "Channel idle - transmitting now"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455226.243,
+   "node": 1,
+   "seq": 49,
+   "type": "DATA-SR",
+   "airtime": 5.75
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455232.011,
+   "node": 1,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [],
+    "src": 1,
+    "dst": 2,
+    "seq": 49,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "68 69 73 20 6d 65 73 73 61 67 65 20 69 73 20 6c 6f 6e 67 20 65 6e 6f 75"
+   },
+   "raw": "7e 70 01 02 31 18 01 02 04 68 69 73 20 6d 65 73 73 61 67 65 20 69 73 20 6c 6f 6e 67 20 65 6e 6f 75 8a a5",
+   "bytes": 35,
+   "airtime": 5.75,
+   "duration": 5.77,
+   "retry": 1,
+   "msg_id": 2,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA-SR seq 49 to node 2 (retry 1)"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793455232.012,
+   "node": 1,
+   "seq": 50,
+   "msg_id": 2,
+   "text": "Selective Repeat: resending ONLY seq 50"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455232.012,
+   "node": 1,
+   "reason": "a frame is being received",
+   "wait": 0.4,
+   "text": "CSMA: channel BUSY (a frame is being received) - deferring DATA-SR seq 50 for 0.4 s"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455232.103,
+   "node": 2,
+   "ok": true,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [],
+    "src": 1,
+    "dst": 2,
+    "seq": 49,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "68 69 73 20 6d 65 73 73 61 67 65 20 69 73 20 6c 6f 6e 67 20 65 6e 6f 75"
+   },
+   "raw": "7e 70 01 02 31 18 01 02 04 68 69 73 20 6d 65 73 73 61 67 65 20 69 73 20 6c 6f 6e 67 20 65 6e 6f 75 8a a5",
+   "score": 0.68,
+   "confidence": 0.96,
+   "for_me": true,
+   "text": "Received DATA-SR seq 49 from node 1 - CRC OK"
+  },
+  {
+   "event": "channel_idle",
+   "time": 1793455232.416,
+   "node": 1,
+   "text": "Channel idle - transmitting now"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455232.436,
+   "node": 1,
+   "seq": 50,
+   "type": "DATA-SR",
+   "airtime": 5.75
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455238.193,
+   "node": 1,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "POLL"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 50,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "67 68 20 74 6f 20 6e 65 65 64 20 66 6f 75 72 20 66 72 61 6d 65 73 20 6f"
+   },
+   "raw": "7e 74 01 02 32 18 01 02 04 67 68 20 74 6f 20 6e 65 65 64 20 66 6f 75 72 20 66 72 61 6d 65 73 20 6f c4 e2",
+   "bytes": 35,
+   "airtime": 5.75,
+   "duration": 5.76,
+   "retry": 1,
+   "msg_id": 2,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA-SR seq 50 to node 2 (retry 1)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455238.367,
+   "node": 2,
+   "ok": true,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "POLL"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 50,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "67 68 20 74 6f 20 6e 65 65 64 20 66 6f 75 72 20 66 72 61 6d 65 73 20 6f"
+   },
+   "raw": "7e 74 01 02 32 18 01 02 04 67 68 20 74 6f 20 6e 65 65 64 20 66 6f 75 72 20 66 72 61 6d 65 73 20 6f c4 e2",
+   "score": 0.69,
+   "confidence": 0.97,
+   "for_me": true,
+   "text": "Received DATA-SR seq 50 from node 1 - CRC OK"
+  },
+  {
+   "event": "message_rx",
+   "time": 1793455238.367,
+   "node": 2,
+   "origin": 1,
+   "message": "SELECTIVE REPEAT DEMO: this message is long enough to need four frames of 24 bytes!!",
+   "length": 84,
+   "encrypted": false,
+   "text": "Message from node 1 delivered: 'SELECTIVE REPEAT DEMO: this message is long enough to need four frames of 24 bytes!!'"
+  },
+  {
+   "event": "sack_tx",
+   "time": 1793455238.367,
+   "node": 2,
+   "ref": 52,
+   "bitmap": 0,
+   "text": "SACK to node 1: everything before seq 52 delivered"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455238.373,
+   "node": 2,
+   "seq": 52,
+   "type": "SACK",
+   "airtime": 2.07
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455240.451,
+   "node": 2,
+   "frame": {
+    "type": "SACK",
+    "flags": [
+     "FIRST"
+    ],
+    "src": 2,
+    "dst": 1,
+    "seq": 52,
+    "len": 1,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": "00"
+   },
+   "raw": "7e 38 02 01 34 01 02 01 04 00 67 a8",
+   "bytes": 12,
+   "airtime": 2.07,
+   "duration": 2.08,
+   "retry": 0,
+   "msg_id": null,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent SACK seq 52 to node 1"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455240.598,
+   "node": 1,
+   "ok": true,
+   "frame": {
+    "type": "SACK",
+    "flags": [
+     "FIRST"
+    ],
+    "src": 2,
+    "dst": 1,
+    "seq": 52,
+    "len": 1,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": "00"
+   },
+   "raw": "7e 38 02 01 34 01 02 01 04 00 67 a8",
+   "score": 0.69,
+   "confidence": 0.98,
+   "for_me": true,
+   "text": "Received SACK seq 52 from node 2 - CRC OK"
+  },
+  {
+   "event": "sack_rx",
+   "time": 1793455240.598,
+   "node": 1,
+   "msg_id": 2,
+   "acked": [
+    49,
+    50
+   ],
+   "missing": [],
+   "text": "SACK says received seq [49, 50]"
+  },
+  {
+   "event": "message_progress",
+   "time": 1793455240.598,
+   "node": 1,
+   "msg_id": 2,
+   "done": 2,
+   "total": 4,
+   "text": "Frame 2/4 acknowledged (seq 49)"
+  },
+  {
+   "event": "message_progress",
+   "time": 1793455240.599,
+   "node": 1,
+   "msg_id": 2,
+   "done": 3,
+   "total": 4,
+   "text": "Frame 3/4 acknowledged (seq 50)"
+  },
+  {
+   "event": "message_progress",
+   "time": 1793455240.599,
+   "node": 1,
+   "msg_id": 2,
+   "done": 4,
+   "total": 4,
+   "text": "Frame 4/4 acknowledged (seq 51)"
+  },
+  {
+   "event": "message_status",
+   "time": 1793455240.599,
+   "node": 1,
+   "msg_id": 2,
+   "dst": 2,
+   "status": "delivered",
+   "seconds": 47.2,
+   "text": "Message #2 DELIVERED to node 2 in 47.2 s (every frame acknowledged)"
+  },
+  {
+   "event": "injection_set",
+   "time": 1793455243.1,
+   "node": 2,
+   "name": "drop_next_sack",
+   "value": true,
+   "text": "Error injection 'drop_next_sack' ARMED"
+  },
+  {
+   "event": "message_status",
+   "time": 1793455243.1,
+   "node": 1,
+   "msg_id": 3,
+   "dst": 2,
+   "status": "queued",
+   "frames": 4,
+   "message": "SELECTIVE REPEAT DEMO: this message is long enough to need four frames of 24 bytes!!",
+   "encrypted": false,
+   "text": "Message #3 to node 2 queued (84 bytes, 4 frame(s))"
+  },
+  {
+   "event": "message_status",
+   "time": 1793455243.1,
+   "node": 1,
+   "msg_id": 3,
+   "dst": 2,
+   "status": "sending",
+   "frames": 4,
+   "text": "Sending message #3 with Selective Repeat + CSMA (listen before talk)"
+  },
+  {
+   "event": "sr_window",
+   "time": 1793455243.101,
+   "node": 1,
+   "msg_id": 3,
+   "window": [
+    52,
+    53,
+    54,
+    55
+   ],
+   "sending": [
+    52,
+    53,
+    54,
+    55
+   ],
+   "text": "Window [52, 53, 54, 55] - sending seq 52, 53, 54, 55"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455243.123,
+   "node": 1,
+   "seq": 52,
+   "type": "DATA-SR",
+   "airtime": 5.75
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455248.907,
+   "node": 1,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "FIRST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 52,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74"
+   },
+   "raw": "7e 78 01 02 34 18 01 02 04 53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74 79 4c",
+   "bytes": 35,
+   "airtime": 5.75,
+   "duration": 5.78,
+   "retry": 0,
+   "msg_id": 3,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA-SR seq 52 to node 2"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455248.908,
+   "node": 1,
+   "reason": "a frame is being received",
+   "wait": 0.94,
+   "text": "CSMA: channel BUSY (a frame is being received) - deferring DATA-SR seq 53 for 0.9 s"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455249.015,
+   "node": 2,
+   "ok": false,
+   "error": "CRC mismatch (received 0x6952, calculated 0x1E0D)",
+   "raw": "7e 78 01 02 34 18 01 02 04 53 45 4c 45 43 54 49 56 45 20 78 9a 56 3f 45 38 14 6e 7f ca be 34 df 52 69 52",
+   "score": 0.69,
+   "text": "Frame rejected: CRC mismatch (received 0x6952, calculated 0x1E0D)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455249.035,
+   "node": 1,
+   "ok": false,
+   "error": "CRC mismatch (received 0x6952, calculated 0x1E0D)",
+   "raw": "7e 78 01 02 34 18 01 02 04 53 45 4c 45 43 54 49 56 45 20 78 9a 56 3f 45 38 14 6e 7f ca be 34 df 52 69 52",
+   "score": 0.69,
+   "text": "Frame rejected: CRC mismatch (received 0x6952, calculated 0x1E0D)"
+  },
+  {
+   "event": "channel_idle",
+   "time": 1793455249.849,
+   "node": 1,
+   "text": "Channel idle - transmitting now"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455249.869,
+   "node": 1,
+   "seq": 53,
+   "type": "DATA-SR",
+   "airtime": 5.75
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455255.624,
+   "node": 1,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [],
+    "src": 1,
+    "dst": 2,
+    "seq": 53,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "68 69 73 20 6d 65 73 73 61 67 65 20 69 73 20 6c 6f 6e 67 20 65 6e 6f 75"
+   },
+   "raw": "7e 70 01 02 35 18 01 02 04 68 69 73 20 6d 65 73 73 61 67 65 20 69 73 20 6c 6f 6e 67 20 65 6e 6f 75 79 5e",
+   "bytes": 35,
+   "airtime": 5.75,
+   "duration": 5.75,
+   "retry": 0,
+   "msg_id": 3,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA-SR seq 53 to node 2"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455255.624,
+   "node": 1,
+   "reason": "a frame is being received",
+   "wait": 0.54,
+   "text": "CSMA: channel BUSY (a frame is being received) - deferring DATA-SR seq 54 for 0.5 s"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455255.74,
+   "node": 2,
+   "ok": true,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [],
+    "src": 1,
+    "dst": 2,
+    "seq": 53,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "68 69 73 20 6d 65 73 73 61 67 65 20 69 73 20 6c 6f 6e 67 20 65 6e 6f 75"
+   },
+   "raw": "7e 70 01 02 35 18 01 02 04 68 69 73 20 6d 65 73 73 61 67 65 20 69 73 20 6c 6f 6e 67 20 65 6e 6f 75 79 5e",
+   "score": 0.69,
+   "confidence": 0.98,
+   "for_me": true,
+   "text": "Received DATA-SR seq 53 from node 1 - CRC OK"
+  },
+  {
+   "event": "sr_buffered",
+   "time": 1793455255.74,
+   "node": 2,
+   "seq": 53,
+   "waiting_for": 52,
+   "text": "Seq 53 buffered out of order (waiting for seq 52)"
+  },
+  {
+   "event": "channel_idle",
+   "time": 1793455256.161,
+   "node": 1,
+   "text": "Channel idle - transmitting now"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455256.183,
+   "node": 1,
+   "seq": 54,
+   "type": "DATA-SR",
+   "airtime": 5.75
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455261.944,
+   "node": 1,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [],
+    "src": 1,
+    "dst": 2,
+    "seq": 54,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "67 68 20 74 6f 20 6e 65 65 64 20 66 6f 75 72 20 66 72 61 6d 65 73 20 6f"
+   },
+   "raw": "7e 70 01 02 36 18 01 02 04 67 68 20 74 6f 20 6e 65 65 64 20 66 6f 75 72 20 66 72 61 6d 65 73 20 6f 42 20",
+   "bytes": 35,
+   "airtime": 5.75,
+   "duration": 5.76,
+   "retry": 0,
+   "msg_id": 3,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA-SR seq 54 to node 2"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455261.945,
+   "node": 1,
+   "reason": "a frame is being received",
+   "wait": 0.42,
+   "text": "CSMA: channel BUSY (a frame is being received) - deferring DATA-SR seq 55 for 0.4 s"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455262.077,
+   "node": 2,
+   "ok": true,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [],
+    "src": 1,
+    "dst": 2,
+    "seq": 54,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "67 68 20 74 6f 20 6e 65 65 64 20 66 6f 75 72 20 66 72 61 6d 65 73 20 6f"
+   },
+   "raw": "7e 70 01 02 36 18 01 02 04 67 68 20 74 6f 20 6e 65 65 64 20 66 6f 75 72 20 66 72 61 6d 65 73 20 6f 42 20",
+   "score": 0.69,
+   "confidence": 0.97,
+   "for_me": true,
+   "text": "Received DATA-SR seq 54 from node 1 - CRC OK"
+  },
+  {
+   "event": "sr_buffered",
+   "time": 1793455262.077,
+   "node": 2,
+   "seq": 54,
+   "waiting_for": 52,
+   "text": "Seq 54 buffered out of order (waiting for seq 52)"
+  },
+  {
+   "event": "channel_idle",
+   "time": 1793455262.363,
+   "node": 1,
+   "text": "Channel idle - transmitting now"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455262.379,
+   "node": 1,
+   "seq": 55,
+   "type": "DATA-SR",
+   "airtime": 3.83
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455266.211,
+   "node": 1,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "LAST",
+     "POLL"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 55,
+    "len": 12,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "66 20 32 34 20 62 79 74 65 73 21 21"
+   },
+   "raw": "7e 75 01 02 37 0c 01 02 04 66 20 32 34 20 62 79 74 65 73 21 21 fa 06",
+   "bytes": 23,
+   "airtime": 3.83,
+   "duration": 3.83,
+   "retry": 0,
+   "msg_id": 3,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA-SR seq 55 to node 2"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455266.326,
+   "node": 2,
+   "ok": true,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "LAST",
+     "POLL"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 55,
+    "len": 12,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "66 20 32 34 20 62 79 74 65 73 21 21"
+   },
+   "raw": "7e 75 01 02 37 0c 01 02 04 66 20 32 34 20 62 79 74 65 73 21 21 fa 06",
+   "score": 0.69,
+   "confidence": 0.98,
+   "for_me": true,
+   "text": "Received DATA-SR seq 55 from node 1 - CRC OK"
+  },
+  {
+   "event": "sr_buffered",
+   "time": 1793455266.326,
+   "node": 2,
+   "seq": 55,
+   "waiting_for": 52,
+   "text": "Seq 55 buffered out of order (waiting for seq 52)"
+  },
+  {
+   "event": "sack_dropped",
+   "time": 1793455266.326,
+   "node": 2,
+   "text": "SACK NOT sent (injected SACK loss)"
+  },
+  {
+   "event": "timeout",
+   "time": 1793455273.147,
+   "node": 1,
+   "msg_id": 3,
+   "waited": 6.93,
+   "text": "No SACK after 6.9 s - timeout; resending the oldest missing frame (seq 52) with POLL"
+  },
+  {
+   "event": "sr_window",
+   "time": 1793455273.147,
+   "node": 1,
+   "msg_id": 3,
+   "window": [
+    52,
+    53,
+    54,
+    55
+   ],
+   "sending": [
+    52
+   ],
+   "text": "Window [52, 53, 54, 55] - sending seq 52"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793455273.147,
+   "node": 1,
+   "seq": 52,
+   "msg_id": 3,
+   "text": "Selective Repeat: resending ONLY seq 52"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455273.168,
+   "node": 1,
+   "seq": 52,
+   "type": "DATA-SR",
+   "airtime": 5.75
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455278.93,
+   "node": 1,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "FIRST",
+     "POLL"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 52,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74"
+   },
+   "raw": "7e 7c 01 02 34 18 01 02 04 53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74 0c 75",
+   "bytes": 35,
+   "airtime": 5.75,
+   "duration": 5.76,
+   "retry": 1,
+   "msg_id": 3,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA-SR seq 52 to node 2 (retry 1)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455279.094,
+   "node": 2,
+   "ok": true,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "FIRST",
+     "POLL"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 52,
+    "len": 24,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74"
+   },
+   "raw": "7e 7c 01 02 34 18 01 02 04 53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74 0c 75",
+   "score": 0.68,
+   "confidence": 0.97,
+   "for_me": true,
+   "text": "Received DATA-SR seq 52 from node 1 - CRC OK"
+  },
+  {
+   "event": "message_rx",
+   "time": 1793455279.094,
+   "node": 2,
+   "origin": 1,
+   "message": "SELECTIVE REPEAT DEMO: this message is long enough to need four frames of 24 bytes!!",
+   "length": 84,
+   "encrypted": false,
+   "text": "Message from node 1 delivered: 'SELECTIVE REPEAT DEMO: this message is long enough to need four frames of 24 bytes!!'"
+  },
+  {
+   "event": "sack_tx",
+   "time": 1793455279.094,
+   "node": 2,
+   "ref": 56,
+   "bitmap": 0,
+   "text": "SACK to node 1: everything before seq 56 delivered"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455279.102,
+   "node": 2,
+   "seq": 56,
+   "type": "SACK",
+   "airtime": 2.07
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455281.179,
+   "node": 2,
+   "frame": {
+    "type": "SACK",
+    "flags": [
+     "FIRST"
+    ],
+    "src": 2,
+    "dst": 1,
+    "seq": 56,
+    "len": 1,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": "00"
+   },
+   "raw": "7e 38 02 01 38 01 02 01 04 00 6c 4b",
+   "bytes": 12,
+   "airtime": 2.07,
+   "duration": 2.08,
+   "retry": 0,
+   "msg_id": null,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent SACK seq 56 to node 1"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455281.305,
+   "node": 1,
+   "ok": true,
+   "frame": {
+    "type": "SACK",
+    "flags": [
+     "FIRST"
+    ],
+    "src": 2,
+    "dst": 1,
+    "seq": 56,
+    "len": 1,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": "00"
+   },
+   "raw": "7e 38 02 01 38 01 02 01 04 00 6c 4b",
+   "score": 0.69,
+   "confidence": 0.97,
+   "for_me": true,
+   "text": "Received SACK seq 56 from node 2 - CRC OK"
+  },
+  {
+   "event": "sack_rx",
+   "time": 1793455281.305,
+   "node": 1,
+   "msg_id": 3,
+   "acked": [
+    52,
+    53,
+    54,
+    55
+   ],
+   "missing": [],
+   "text": "SACK says received seq [52, 53, 54, 55]"
+  },
+  {
+   "event": "message_progress",
+   "time": 1793455281.305,
+   "node": 1,
+   "msg_id": 3,
+   "done": 1,
+   "total": 4,
+   "text": "Frame 1/4 acknowledged (seq 52)"
+  },
+  {
+   "event": "message_progress",
+   "time": 1793455281.305,
+   "node": 1,
+   "msg_id": 3,
+   "done": 2,
+   "total": 4,
+   "text": "Frame 2/4 acknowledged (seq 53)"
+  },
+  {
+   "event": "message_progress",
+   "time": 1793455281.306,
+   "node": 1,
+   "msg_id": 3,
+   "done": 3,
+   "total": 4,
+   "text": "Frame 3/4 acknowledged (seq 54)"
+  },
+  {
+   "event": "message_progress",
+   "time": 1793455281.306,
+   "node": 1,
+   "msg_id": 3,
+   "done": 4,
+   "total": 4,
+   "text": "Frame 4/4 acknowledged (seq 55)"
+  },
+  {
+   "event": "message_status",
+   "time": 1793455281.306,
+   "node": 1,
+   "msg_id": 3,
+   "dst": 2,
+   "status": "delivered",
+   "seconds": 38.2,
+   "text": "Message #3 DELIVERED to node 2 in 38.2 s (every frame acknowledged)"
+  },
+  {
+   "event": "setting",
+   "time": 1793455283.807,
+   "node": 1,
+   "name": "protocol",
+   "value": "sw",
+   "text": "Reliability protocol set to Stop-and-Wait"
+  },
+  {
+   "event": "setting",
+   "time": 1793455283.807,
+   "node": 2,
+   "name": "protocol",
+   "value": "sr",
+   "text": "Reliability protocol set to Selective Repeat"
+  },
+  {
+   "event": "message_status",
+   "time": 1793455283.808,
+   "node": 2,
+   "msg_id": 1,
+   "dst": 1,
+   "status": "queued",
+   "frames": 4,
+   "message": "SELECTIVE REPEAT DEMO: this message is long enough to need four frames of 24 bytes!!",
+   "encrypted": false,
+   "text": "Message #1 to node 1 queued (84 bytes, 4 frame(s))"
+  },
+  {
+   "event": "message_status",
+   "time": 1793455283.808,
+   "node": 2,
+   "msg_id": 1,
+   "dst": 1,
+   "status": "sending",
+   "frames": 4,
+   "text": "Sending message #1 with Selective Repeat + CSMA (listen before talk)"
+  },
+  {
+   "event": "sr_window",
+   "time": 1793455283.808,
+   "node": 2,
+   "msg_id": 1,
+   "window": [
+    179,
+    180,
+    181,
+    182
+   ],
+   "sending": [
+    179,
+    180,
+    181,
+    182
+   ],
+   "text": "Window [179, 180, 181, 182] - sending seq 179, 180, 181, 182"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455283.828,
+   "node": 2,
+   "seq": 179,
+   "type": "DATA-SR",
+   "airtime": 5.75
+  },
+  {
+   "event": "message_status",
+   "time": 1793455284.811,
+   "node": 1,
+   "msg_id": 4,
+   "dst": 2,
+   "status": "queued",
+   "frames": 1,
+   "message": "CSMA TEST",
+   "encrypted": false,
+   "text": "Message #4 to node 2 queued (9 bytes, 1 frame(s))"
+  },
+  {
+   "event": "message_status",
+   "time": 1793455284.811,
+   "node": 1,
+   "msg_id": 4,
+   "dst": 2,
+   "status": "sending",
+   "frames": 1,
+   "text": "Sending message #4 with Stop-and-Wait + CSMA (listen before talk)"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455284.812,
+   "node": 1,
+   "reason": "a frame is being received",
+   "wait": 0.32,
+   "text": "CSMA: channel BUSY (a frame is being received) - deferring DATA seq 56 for 0.3 s"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455285.136,
+   "node": 1,
+   "reason": "a frame is being received",
+   "wait": 1.15,
+   "text": "CSMA: channel BUSY (a frame is being received) - deferring DATA seq 56 for 1.2 s"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455286.29,
+   "node": 1,
+   "reason": "a frame is being received",
+   "wait": 0.78,
+   "text": "CSMA: channel BUSY (a frame is being received) - deferring DATA seq 56 for 0.8 s"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455287.072,
+   "node": 1,
+   "reason": "a frame is being received",
+   "wait": 0.59,
+   "text": "CSMA: channel BUSY (a frame is being received) - deferring DATA seq 56 for 0.6 s"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455287.67,
+   "node": 1,
+   "reason": "a frame is being received",
+   "wait": 0.47,
+   "text": "CSMA: channel BUSY (a frame is being received) - deferring DATA seq 56 for 0.5 s"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455288.14,
+   "node": 1,
+   "reason": "a frame is being received",
+   "wait": 0.58,
+   "text": "CSMA: channel BUSY (a frame is being received) - deferring DATA seq 56 for 0.6 s"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455288.721,
+   "node": 1,
+   "reason": "a frame is being received",
+   "wait": 0.63,
+   "text": "CSMA: channel BUSY (a frame is being received) - deferring DATA seq 56 for 0.6 s"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455289.352,
+   "node": 1,
+   "reason": "a frame is being received",
+   "wait": 0.43,
+   "text": "CSMA: channel BUSY (a frame is being received) - deferring DATA seq 56 for 0.4 s"
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455289.601,
+   "node": 2,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "FIRST"
+    ],
+    "src": 2,
+    "dst": 1,
+    "seq": 179,
+    "len": 24,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": "53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74"
+   },
+   "raw": "7e 78 02 01 b3 18 02 01 04 53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74 45 70",
+   "bytes": 35,
+   "airtime": 5.75,
+   "duration": 5.77,
+   "retry": 0,
+   "msg_id": 1,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA-SR seq 179 to node 1"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455289.601,
+   "node": 2,
+   "reason": "a frame is being received",
+   "wait": 0.74,
+   "text": "CSMA: channel BUSY (a frame is being received) - deferring DATA-SR seq 180 for 0.7 s"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455289.755,
+   "node": 1,
+   "ok": false,
+   "error": "CRC mismatch (received 0x774C, calculated 0x4570)",
+   "raw": "7e 78 02 01 b3 18 02 01 04 53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74 77 4c",
+   "score": 0.68,
+   "text": "Frame rejected: CRC mismatch (received 0x774C, calculated 0x4570)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455289.759,
+   "node": 2,
+   "ok": false,
+   "error": "CRC mismatch (received 0x774C, calculated 0x4570)",
+   "raw": "7e 78 02 01 b3 18 02 01 04 53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74 77 4c",
+   "score": 0.68,
+   "text": "Frame rejected: CRC mismatch (received 0x774C, calculated 0x4570)"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455289.786,
+   "node": 1,
+   "reason": "sound in our band 59 dB above the noise floor",
+   "wait": 0.63,
+   "text": "CSMA: channel BUSY (sound in our band 59 dB above the noise floor) - deferring DATA seq 56 for 0.6 s"
+  },
+  {
+   "event": "channel_idle",
+   "time": 1793455290.345,
+   "node": 2,
+   "text": "Channel idle - transmitting now"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455290.369,
+   "node": 2,
+   "seq": 180,
+   "type": "DATA-SR",
+   "airtime": 5.75
+  },
+  {
+   "event": "channel_idle",
+   "time": 1793455290.419,
+   "node": 1,
+   "text": "Channel idle - transmitting now"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455290.45,
+   "node": 1,
+   "seq": 56,
+   "type": "DATA",
+   "airtime": 3.35
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455296.145,
+   "node": 2,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [],
+    "src": 2,
+    "dst": 1,
+    "seq": 180,
+    "len": 24,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": "68 69 73 20 6d 65 73 73 61 67 65 20 69 73 20 6c 6f 6e 67 20 65 6e 6f 75"
+   },
+   "raw": "7e 70 02 01 b4 18 02 01 04 68 69 73 20 6d 65 73 73 61 67 65 20 69 73 20 6c 6f 6e 67 20 65 6e 6f 75 47 74",
+   "bytes": 35,
+   "airtime": 5.75,
+   "duration": 5.78,
+   "retry": 0,
+   "msg_id": 1,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA-SR seq 180 to node 1"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455296.149,
+   "node": 2,
+   "reason": "a frame is being received",
+   "wait": 0.69,
+   "text": "CSMA: channel BUSY (a frame is being received) - deferring DATA-SR seq 181 for 0.7 s"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455296.319,
+   "node": 1,
+   "ok": false,
+   "error": "CRC mismatch (received 0xF64E, calculated 0x432D)",
+   "raw": "7e 70 02 01 b4 18 02 01 04 68 69 73 20 6d 65 73 71 9a 49 e3 28 ca a4 75 a4 33 fb 6e fc 2b 1e f8 d2 f6 4e",
+   "score": 0.69,
+   "text": "Frame rejected: CRC mismatch (received 0xF64E, calculated 0x432D)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455296.32,
+   "node": 2,
+   "ok": false,
+   "error": "CRC mismatch (received 0xF64E, calculated 0x432D)",
+   "raw": "7e 70 02 01 b4 18 02 01 04 68 69 73 20 6d 65 73 71 9a 49 e3 28 ca a4 75 a4 33 fb 6e fc 2b 1e f8 d2 f6 4e",
+   "score": 0.69,
+   "text": "Frame rejected: CRC mismatch (received 0xF64E, calculated 0x432D)"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455296.839,
+   "node": 2,
+   "reason": "a frame is being received",
+   "wait": 1.02,
+   "text": "CSMA: channel BUSY (a frame is being received) - deferring DATA-SR seq 181 for 1.0 s"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455297.86,
+   "node": 2,
+   "reason": "a frame is being received",
+   "wait": 0.58,
+   "text": "CSMA: channel BUSY (a frame is being received) - deferring DATA-SR seq 181 for 0.6 s"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455298.437,
+   "node": 2,
+   "reason": "a frame is being received",
+   "wait": 0.8,
+   "text": "CSMA: channel BUSY (a frame is being received) - deferring DATA-SR seq 181 for 0.8 s"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455299.235,
+   "node": 2,
+   "reason": "a frame is being received",
+   "wait": 0.51,
+   "text": "CSMA: channel BUSY (a frame is being received) - deferring DATA-SR seq 181 for 0.5 s"
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455299.498,
+   "node": 1,
+   "frame": {
+    "type": "DATA",
+    "flags": [
+     "FIRST",
+     "LAST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 56,
+    "len": 9,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "43 53 4d 41 20 54 45 53 54"
+   },
+   "raw": "7e 19 01 02 38 09 01 02 04 43 53 4d 41 20 54 45 53 54 32 1f",
+   "bytes": 20,
+   "airtime": 3.35,
+   "duration": 9.05,
+   "retry": 0,
+   "msg_id": 4,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA seq 56 to node 2"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455299.657,
+   "node": 2,
+   "ok": true,
+   "frame": {
+    "type": "DATA",
+    "flags": [
+     "FIRST",
+     "LAST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 56,
+    "len": 9,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "43 53 4d 41 20 54 45 53 54"
+   },
+   "raw": "7e 19 01 02 38 09 01 02 04 43 53 4d 41 20 54 45 53 54 32 1f",
+   "score": 0.69,
+   "confidence": 0.97,
+   "for_me": true,
+   "text": "Received DATA seq 56 from node 1 - CRC OK"
+  },
+  {
+   "event": "message_rx",
+   "time": 1793455299.658,
+   "node": 2,
+   "origin": 1,
+   "message": "CSMA TEST",
+   "length": 9,
+   "encrypted": false,
+   "text": "Message from node 1 delivered: 'CSMA TEST'"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455299.667,
+   "node": 2,
+   "seq": 56,
+   "type": "ACK",
+   "airtime": 1.91
+  },
+  {
+   "event": "channel_idle",
+   "time": 1793455299.749,
+   "node": 2,
+   "text": "Channel idle - transmitting now"
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455301.581,
+   "node": 2,
+   "frame": {
+    "type": "ACK",
+    "flags": [],
+    "src": 2,
+    "dst": 1,
+    "seq": 56,
+    "len": 0,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": ""
+   },
+   "raw": "7e 20 02 01 38 00 02 01 04 7c 03",
+   "bytes": 11,
+   "airtime": 1.91,
+   "duration": 1.91,
+   "retry": 0,
+   "msg_id": null,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent ACK seq 56 to node 1"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455301.602,
+   "node": 2,
+   "seq": 181,
+   "type": "DATA-SR",
+   "airtime": 5.75
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455301.696,
+   "node": 1,
+   "ok": true,
+   "frame": {
+    "type": "ACK",
+    "flags": [],
+    "src": 2,
+    "dst": 1,
+    "seq": 56,
+    "len": 0,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": ""
+   },
+   "raw": "7e 20 02 01 38 00 02 01 04 7c 03",
+   "score": 0.69,
+   "confidence": 0.97,
+   "for_me": true,
+   "text": "Received ACK seq 56 from node 2 - CRC OK"
+  },
+  {
+   "event": "message_progress",
+   "time": 1793455301.696,
+   "node": 1,
+   "msg_id": 4,
+   "done": 1,
+   "total": 1,
+   "text": "Frame 1/1 acknowledged (seq 56)"
+  },
+  {
+   "event": "message_status",
+   "time": 1793455301.697,
+   "node": 1,
+   "msg_id": 4,
+   "dst": 2,
+   "status": "delivered",
+   "seconds": 16.9,
+   "text": "Message #4 DELIVERED to node 2 in 16.9 s (every frame acknowledged)"
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455307.365,
+   "node": 2,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [],
+    "src": 2,
+    "dst": 1,
+    "seq": 181,
+    "len": 24,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": "67 68 20 74 6f 20 6e 65 65 64 20 66 6f 75 72 20 66 72 61 6d 65 73 20 6f"
+   },
+   "raw": "7e 70 02 01 b5 18 02 01 04 67 68 20 74 6f 20 6e 65 65 64 20 66 6f 75 72 20 66 72 61 6d 65 73 20 6f 8d e7",
+   "bytes": 35,
+   "airtime": 5.75,
+   "duration": 5.76,
+   "retry": 0,
+   "msg_id": 1,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA-SR seq 181 to node 1"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455307.366,
+   "node": 2,
+   "reason": "a frame is being received",
+   "wait": 1.19,
+   "text": "CSMA: channel BUSY (a frame is being received) - deferring DATA-SR seq 182 for 1.2 s"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455307.521,
+   "node": 1,
+   "ok": true,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [],
+    "src": 2,
+    "dst": 1,
+    "seq": 181,
+    "len": 24,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": "67 68 20 74 6f 20 6e 65 65 64 20 66 6f 75 72 20 66 72 61 6d 65 73 20 6f"
+   },
+   "raw": "7e 70 02 01 b5 18 02 01 04 67 68 20 74 6f 20 6e 65 65 64 20 66 6f 75 72 20 66 72 61 6d 65 73 20 6f 8d e7",
+   "score": 0.68,
+   "confidence": 0.97,
+   "for_me": true,
+   "text": "Received DATA-SR seq 181 from node 2 - CRC OK"
+  },
+  {
+   "event": "channel_idle",
+   "time": 1793455308.554,
+   "node": 2,
+   "text": "Channel idle - transmitting now"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455308.568,
+   "node": 2,
+   "seq": 182,
+   "type": "DATA-SR",
+   "airtime": 3.83
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455312.408,
+   "node": 2,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "LAST",
+     "POLL"
+    ],
+    "src": 2,
+    "dst": 1,
+    "seq": 182,
+    "len": 12,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": "66 20 32 34 20 62 79 74 65 73 21 21"
+   },
+   "raw": "7e 75 02 01 b6 0c 02 01 04 66 20 32 34 20 62 79 74 65 73 21 21 06 18",
+   "bytes": 23,
+   "airtime": 3.83,
+   "duration": 3.84,
+   "retry": 0,
+   "msg_id": 1,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA-SR seq 182 to node 1"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455312.553,
+   "node": 1,
+   "ok": true,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "LAST",
+     "POLL"
+    ],
+    "src": 2,
+    "dst": 1,
+    "seq": 182,
+    "len": 12,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": "66 20 32 34 20 62 79 74 65 73 21 21"
+   },
+   "raw": "7e 75 02 01 b6 0c 02 01 04 66 20 32 34 20 62 79 74 65 73 21 21 06 18",
+   "score": 0.68,
+   "confidence": 0.97,
+   "for_me": true,
+   "text": "Received DATA-SR seq 182 from node 2 - CRC OK"
+  },
+  {
+   "event": "sack_tx",
+   "time": 1793455312.554,
+   "node": 1,
+   "ref": 181,
+   "bitmap": 3,
+   "text": "SACK to node 2: everything before seq 181 delivered, also holding seq [181, 182]"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455312.564,
+   "node": 1,
+   "seq": 181,
+   "type": "SACK",
+   "airtime": 2.07
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455314.647,
+   "node": 1,
+   "frame": {
+    "type": "SACK",
+    "flags": [],
+    "src": 1,
+    "dst": 2,
+    "seq": 181,
+    "len": 1,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "03"
+   },
+   "raw": "7e 30 01 02 b5 01 01 02 04 03 3d cf",
+   "bytes": 12,
+   "airtime": 2.07,
+   "duration": 2.08,
+   "retry": 0,
+   "msg_id": null,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent SACK seq 181 to node 2"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455314.744,
+   "node": 2,
+   "ok": true,
+   "frame": {
+    "type": "SACK",
+    "flags": [],
+    "src": 1,
+    "dst": 2,
+    "seq": 181,
+    "len": 1,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "03"
+   },
+   "raw": "7e 30 01 02 b5 01 01 02 04 03 3d cf",
+   "score": 0.69,
+   "confidence": 0.97,
+   "for_me": true,
+   "text": "Received SACK seq 181 from node 1 - CRC OK"
+  },
+  {
+   "event": "sack_rx",
+   "time": 1793455314.744,
+   "node": 2,
+   "msg_id": 1,
+   "acked": [
+    181,
+    182
+   ],
+   "missing": [
+    179,
+    180
+   ],
+   "text": "SACK says received seq [181, 182]; still missing seq [179, 180]"
+  },
+  {
+   "event": "sr_window",
+   "time": 1793455314.745,
+   "node": 2,
+   "msg_id": 1,
+   "window": [
+    179,
+    180,
+    181,
+    182
+   ],
+   "sending": [
+    179,
+    180
+   ],
+   "text": "Window [179, 180, 181, 182] - sending seq 179, 180"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793455314.745,
+   "node": 2,
+   "seq": 179,
+   "msg_id": 1,
+   "text": "Selective Repeat: resending ONLY seq 179"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455314.745,
+   "node": 2,
+   "reason": "sound in our band 24 dB above the noise floor",
+   "wait": 0.89,
+   "text": "CSMA: channel BUSY (sound in our band 24 dB above the noise floor) - deferring DATA-SR seq 179 for 0.9 s"
+  },
+  {
+   "event": "channel_idle",
+   "time": 1793455315.64,
+   "node": 2,
+   "text": "Channel idle - transmitting now"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455315.663,
+   "node": 2,
+   "seq": 179,
+   "type": "DATA-SR",
+   "airtime": 5.75
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455321.422,
+   "node": 2,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "FIRST"
+    ],
+    "src": 2,
+    "dst": 1,
+    "seq": 179,
+    "len": 24,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": "53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74"
+   },
+   "raw": "7e 78 02 01 b3 18 02 01 04 53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74 45 70",
+   "bytes": 35,
+   "airtime": 5.75,
+   "duration": 5.76,
+   "retry": 1,
+   "msg_id": 1,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA-SR seq 179 to node 1 (retry 1)"
+  },
+  {
+   "event": "retransmit",
+   "time": 1793455321.422,
+   "node": 2,
+   "seq": 180,
+   "msg_id": 1,
+   "text": "Selective Repeat: resending ONLY seq 180"
+  },
+  {
+   "event": "channel_busy",
+   "time": 1793455321.422,
+   "node": 2,
+   "reason": "a frame is being received",
+   "wait": 0.77,
+   "text": "CSMA: channel BUSY (a frame is being received) - deferring DATA-SR seq 180 for 0.8 s"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455321.558,
+   "node": 1,
+   "ok": true,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "FIRST"
+    ],
+    "src": 2,
+    "dst": 1,
+    "seq": 179,
+    "len": 24,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": "53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74"
+   },
+   "raw": "7e 78 02 01 b3 18 02 01 04 53 45 4c 45 43 54 49 56 45 20 52 45 50 45 41 54 20 44 45 4d 4f 3a 20 74 45 70",
+   "score": 0.68,
+   "confidence": 0.97,
+   "for_me": true,
+   "text": "Received DATA-SR seq 179 from node 2 - CRC OK"
+  },
+  {
+   "event": "channel_idle",
+   "time": 1793455322.195,
+   "node": 2,
+   "text": "Channel idle - transmitting now"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455322.219,
+   "node": 2,
+   "seq": 180,
+   "type": "DATA-SR",
+   "airtime": 5.75
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455327.983,
+   "node": 2,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "POLL"
+    ],
+    "src": 2,
+    "dst": 1,
+    "seq": 180,
+    "len": 24,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": "68 69 73 20 6d 65 73 73 61 67 65 20 69 73 20 6c 6f 6e 67 20 65 6e 6f 75"
+   },
+   "raw": "7e 74 02 01 b4 18 02 01 04 68 69 73 20 6d 65 73 73 61 67 65 20 69 73 20 6c 6f 6e 67 20 65 6e 6f 75 32 4d",
+   "bytes": 35,
+   "airtime": 5.75,
+   "duration": 5.76,
+   "retry": 1,
+   "msg_id": 1,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent DATA-SR seq 180 to node 1 (retry 1)"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455328.115,
+   "node": 1,
+   "ok": true,
+   "frame": {
+    "type": "DATA-SR",
+    "flags": [
+     "POLL"
+    ],
+    "src": 2,
+    "dst": 1,
+    "seq": 180,
+    "len": 24,
+    "origin": 2,
+    "final": 1,
+    "ttl": 4,
+    "payload_hex": "68 69 73 20 6d 65 73 73 61 67 65 20 69 73 20 6c 6f 6e 67 20 65 6e 6f 75"
+   },
+   "raw": "7e 74 02 01 b4 18 02 01 04 68 69 73 20 6d 65 73 73 61 67 65 20 69 73 20 6c 6f 6e 67 20 65 6e 6f 75 32 4d",
+   "score": 0.68,
+   "confidence": 0.96,
+   "for_me": true,
+   "text": "Received DATA-SR seq 180 from node 2 - CRC OK"
+  },
+  {
+   "event": "message_rx",
+   "time": 1793455328.115,
+   "node": 1,
+   "origin": 2,
+   "message": "SELECTIVE REPEAT DEMO: this message is long enough to need four frames of 24 bytes!!",
+   "length": 84,
+   "encrypted": false,
+   "text": "Message from node 2 delivered: 'SELECTIVE REPEAT DEMO: this message is long enough to need four frames of 24 bytes!!'"
+  },
+  {
+   "event": "sack_tx",
+   "time": 1793455328.115,
+   "node": 1,
+   "ref": 183,
+   "bitmap": 0,
+   "text": "SACK to node 2: everything before seq 183 delivered"
+  },
+  {
+   "event": "tx_start",
+   "time": 1793455328.121,
+   "node": 1,
+   "seq": 183,
+   "type": "SACK",
+   "airtime": 2.07
+  },
+  {
+   "event": "frame_tx",
+   "time": 1793455330.202,
+   "node": 1,
+   "frame": {
+    "type": "SACK",
+    "flags": [
+     "FIRST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 183,
+    "len": 1,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "00"
+   },
+   "raw": "7e 38 01 02 b7 01 01 02 04 00 af 13",
+   "bytes": 12,
+   "airtime": 2.07,
+   "duration": 2.08,
+   "retry": 0,
+   "msg_id": null,
+   "injected": null,
+   "lost_in_simulation": false,
+   "mic_overflows": 0,
+   "speaker_underflows": 0,
+   "text": "Sent SACK seq 183 to node 2"
+  },
+  {
+   "event": "frame_rx",
+   "time": 1793455330.288,
+   "node": 2,
+   "ok": true,
+   "frame": {
+    "type": "SACK",
+    "flags": [
+     "FIRST"
+    ],
+    "src": 1,
+    "dst": 2,
+    "seq": 183,
+    "len": 1,
+    "origin": 1,
+    "final": 2,
+    "ttl": 4,
+    "payload_hex": "00"
+   },
+   "raw": "7e 38 01 02 b7 01 01 02 04 00 af 13",
+   "score": 0.69,
+   "confidence": 0.97,
+   "for_me": true,
+   "text": "Received SACK seq 183 from node 1 - CRC OK"
+  },
+  {
+   "event": "sack_rx",
+   "time": 1793455330.289,
+   "node": 2,
+   "msg_id": 1,
+   "acked": [
+    179,
+    180
+   ],
+   "missing": [],
+   "text": "SACK says received seq [179, 180]"
+  },
+  {
+   "event": "message_progress",
+   "time": 1793455330.289,
+   "node": 2,
+   "msg_id": 1,
+   "done": 1,
+   "total": 4,
+   "text": "Frame 1/4 acknowledged (seq 179)"
+  },
+  {
+   "event": "message_progress",
+   "time": 1793455330.289,
+   "node": 2,
+   "msg_id": 1,
+   "done": 2,
+   "total": 4,
+   "text": "Frame 2/4 acknowledged (seq 180)"
+  },
+  {
+   "event": "message_progress",
+   "time": 1793455330.289,
+   "node": 2,
+   "msg_id": 1,
+   "done": 3,
+   "total": 4,
+   "text": "Frame 3/4 acknowledged (seq 181)"
+  },
+  {
+   "event": "message_progress",
+   "time": 1793455330.289,
+   "node": 2,
+   "msg_id": 1,
+   "done": 4,
+   "total": 4,
+   "text": "Frame 4/4 acknowledged (seq 182)"
+  },
+  {
+   "event": "message_status",
+   "time": 1793455330.289,
+   "node": 2,
+   "msg_id": 1,
+   "dst": 1,
+   "status": "delivered",
+   "seconds": 46.5,
+   "text": "Message #1 DELIVERED to node 1 in 46.5 s (every frame acknowledged)"
+  },
+  {
+   "event": "setting",
+   "time": 1793455330.29,
+   "node": 2,
+   "name": "protocol",
+   "value": "sw",
+   "text": "Reliability protocol set to Stop-and-Wait"
+  },
+  {
+   "event": "engine_stopped",
+   "time": 1793455332.794,
+   "node": 1,
+   "text": "Node 1 stopped"
+  },
+  {
+   "event": "engine_stopped",
+   "time": 1793455333.051,
+   "node": 2,
+   "text": "Node 2 stopped"
+  }
+ ]
+}

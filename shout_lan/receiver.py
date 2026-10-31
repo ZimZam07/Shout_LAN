@@ -75,8 +75,9 @@ class FrameReceiver:
             self.gains = m.estimate_gains(self.buffer, self.first_bit)
 
         # 2. Decode the header to learn the frame length
+        margin = m.TRACK_LIMIT_BITS * spb               # timing recovery may look a bit further
         if self.total_bytes is None:
-            if len(self.buffer) < self.first_bit + HEADER_BITS * spb:
+            if len(self.buffer) < self.first_bit + HEADER_BITS * spb + margin:
                 return None                         # wait for more audio
             bits, _ = m.demodulate_bits(self.buffer, self.first_bit, HEADER_BITS, self.gains)
             header = whiten(bits_to_bytes(bits))
@@ -87,7 +88,7 @@ class FrameReceiver:
 
         # 3. Decode the whole frame once enough audio has arrived
         n_bits = self.total_bytes * 8
-        if len(self.buffer) < self.first_bit + n_bits * spb:
+        if len(self.buffer) < self.first_bit + n_bits * spb + margin:
             return None
         bits, conf = m.demodulate_bits(self.buffer, self.first_bit, n_bits, self.gains)
         raw = whiten(bits_to_bytes(bits))

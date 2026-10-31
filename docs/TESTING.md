@@ -353,3 +353,54 @@ plus the measured cost.
 | E3 overhead measured | **Verified** (acoustic loopback: +7.7 s, 2.1× for 12 B) |
 | E4 key ignored by git, missing/wrong key errors | **Verified** |
 | E5 threat model | **Done** |
+
+---
+
+## M6 — Selective Repeat, CSMA, ALOHA (IN PROGRESS, 2026-10-31)
+
+### Automated tests — `tests/test_sr_mac.py` → 14 passed (unit + *SIMULATED* channel); full suite 86 passed
+| DoD | Check | Result |
+|---|---|---|
+| C9a | Receiver buffers 0, 2, 3, then 1 and delivers 0, 1, 2, 3; the SACK before the missing frame = (11, bitmap 0b110, cumulative) | pass |
+| C9d | A resent copy of a delivered frame and of a buffered frame → `duplicates = 2`, nothing delivered twice; sequence wrap 254, 0, 1, 255 → 254, 255, 0, 1 | pass |
+| — | A new message after an abandoned one is not stuck; the sender reads the SACK bitmap correctly | pass |
+| C9 | 84-byte message (4 frames) with frame 2 lost (injected): exactly that frame is resent; receiver logs "buffered out of order" | pass |
+| C9b | SACK lost (injected): sender times out, resends only the oldest frame, receiver reports a duplicate, message delivered exactly once | pass |
+| C9c | POLL frame lost: recovery via timeout, delivered | pass |
+| — | Selective Repeat faster than Stop-and-Wait for the same 4-frame message | pass |
+| C10 | CSMA (simulated): node 1 defers while node 2 occupies the channel; both messages delivered | pass |
+| C11 | Pure ALOHA: 5 random backoffs before 5 retransmissions, no carrier sensing | pass |
+| C12 | Pure ALOHA simulation at G=0.5 and slotted at G=1.0 within ±0.03 of theory (20 000 frame-times); maxima near G 0.5 / 1.0 | pass |
+
+**Bug fixed during M6:** the simulated channels marked the medium "busy" only at the *end* of a transmission (a side effect of the M4 realism change), which is backwards for carrier sensing. Both simulated channels now mark it busy for the whole transmission. The UDP version sends a short "carrier" notice first.
+
+### Hardware runs — `tools/arq_test.py --m6` (*Measured – acoustic, single-laptop loopback*)
+| Run | Notes | Result |
+|---|---|---|
+| `arq_20261031_191159` | CSMA threshold 10 dB | 1/4 by the original criteria. About half of all frames had CRC errors. Test bug: the CSMA scenario matched message ids across nodes and stopped early |
+| `arq_20261031_191725` | threshold 20 dB, node-aware wait | 2/4 by the original criteria. Every message was delivered exactly once. The "failures" were the criterion "exactly N retransmissions", which can't hold on a noisy channel |
+| `arq_20261031_192459` (+ raw audio) | **principled criterion**: SR must never resend a frame a SACK already acknowledged | **4/4** |
+| `arq_20261031_193213` (+ raw audio) | larger audio buffers (`latency="high"`) | **4/4** |
+
+Across these hardware runs, **no Selective Repeat retransmission was ever of an already-acknowledged frame** (26 retransmissions checked in the first two runs, 0 violations; later runs check it automatically).
+
+### Investigation: frames corrupted from a point onwards
+- **Symptom:** a corrupted frame is correct up to byte k, then wrong to the end.
+- **Ruled out:**
+  - speaker underflows / mic overflows: 0 reported (counters added to every `frame_tx`);
+  - sound-card clock drift: ≤ 2 samples over 5.6 s (measured offline);
+  - outside noise: corrupted frames had *less* energy at unused frequencies (median −0.3 dB) than good ones (+1.1 dB);
+  - low confidence: many corrupted frames had *no* low-confidence bits.
+- **Found** (offline correlation against the transmitted waveform): sudden timing **jumps of ≈192 / ≈384 samples (4 / 8 ms, one Windows audio period)** inside frames. A brief level dip at one jump suggests a playback gap.
+- **Mitigation 1:** larger stream buffers (`latency="high"`). Bad frames fell from 20/52 to 8/36 between runs (not a controlled comparison).
+- **Mitigation 2:** symbol-timing recovery in `Modem.demodulate_bits` (sliding-DFT running sums; alignment re-checked every 4 bits).
+  - Synthetic tests with mid-frame gaps of ±192/±384 samples and double gaps: all pass; the same gaps without tracking break the frame.
+  - Tuned by re-decoding the 89 real recorded frames: alignment window 30–100 % of the slot, threshold 0.03 → **72/89 valid vs 60/89 without tracking**.
+
+**Status of timing recovery: UNDER EVALUATION, not verified.** Re-checking M1/M2 on hardware afterwards gave:
+- `loopback_20261031_194412`: one trial with 114/256 confident errors (others 0).
+- `frames_20261031_194503`: 9/13 valid.
+- `loopback_20261031_194808` + raw audio: BER 20 %.
+  - Offline analysis of that run: **the received signal level dropped about 4× from trial 4 onwards** (≈0.025 → ≈0.006 RMS), while the mic noise level is unchanged when measured separately. Most likely the playback volume changed externally during the run.
+  - Errors occurred with tracking OFF too (9 bad trials) and ON (10 bad trials); tracking fixed 2 trials and broke 2.
+  - **This run cannot judge the tracker.** A controlled A/B under stable volume is pending.

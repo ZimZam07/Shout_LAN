@@ -123,7 +123,7 @@ class Microphone:
             self.stream = sd.InputStream(device=self.device, channels=channels,
                                          samplerate=config.SAMPLE_RATE, dtype="float32",
                                          blocksize=self.block_size, callback=self._callback,
-                                         extra_settings=extra)
+                                         extra_settings=extra, latency="high")
             self.stream.start()
         except Exception as exc:          # PortAudioError, ValueError, ...
             self.stream = None
@@ -166,11 +166,16 @@ class Speaker:
         self.lock = threading.Lock()     # only one transmission at a time (half-duplex)
         self.stream = None
         self.channels = 1
+        self.underflows = 0              # times the output ran dry while playing (= a gap in the sound)
 
     def _open(self):
         self.channels = _channels(self.device, "output")
+        # latency="high" = a bigger output buffer (~0.1-0.2 s). With the default low-latency
+        # buffer, Windows occasionally ran dry for one 8 ms period while both engines were busy
+        # decoding, which inserted a gap mid-frame and shifted every later bit (TESTING.md M6).
         self.stream = sd.OutputStream(device=self.device, channels=self.channels,
-                                      samplerate=config.SAMPLE_RATE, dtype="float32")
+                                      samplerate=config.SAMPLE_RATE, dtype="float32",
+                                      latency="high")
         self.stream.start()
         self.stream.write(np.zeros((2400, self.channels), dtype=np.float32))   # warm-up silence
 
@@ -181,7 +186,8 @@ class Speaker:
                     self._open()
                 data = np.asarray(samples, dtype=np.float32)
                 data = np.repeat(data[:, None], self.channels, axis=1)
-                self.stream.write(data)          # blocks until the data is in the output buffer
+                if self.stream.write(data):      # blocks until the data is in the output buffer
+                    self.underflows += 1             # True = the speaker ran out of samples (gap)
                 time.sleep(self.stream.latency)  # ...and until the buffer has actually played
             except Exception as exc:
                 self.close()

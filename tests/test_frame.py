@@ -160,3 +160,45 @@ def test_receiver_reports_crc_failure_for_corrupted_frame():
     results = FrameReceiver(modem).feed(audio)
     assert len(results) == 1 and not results[0]["ok"]
     assert "CRC mismatch" in results[0]["error"]
+
+
+# ---------------------------------------------------------------- timing recovery (M6 finding)
+def _frame_audio_with_slips(slips, seed=0):
+    """
+    A 35-byte frame where samples are inserted (+n) or removed (-n) at the given
+    bit positions, like the 4 ms / 8 ms jumps measured on the real laptop
+    (TESTING.md M6). `slips` = [(samples, at_bit), ...].
+    """
+    modem = Modem()
+    f = fr.Frame(fr.SRDATA, 1, 2, seq=9, payload=bytes(range(65, 89)))
+    sig = modem.modulate_bytes(fr.build(f)).astype(np.float64) * 0.3
+    head = len(modem.preamble_wave) + modem.gap_samples
+    for slip, at_bit in sorted(slips, key=lambda s: -s[1]):      # from the end, so positions stay valid
+        cut = head + at_bit * modem.samples_per_bit + 300
+        if slip > 0:
+            sig = np.concatenate([sig[:cut], np.zeros(slip), sig[cut:]])
+        else:
+            sig = np.concatenate([sig[:cut], sig[cut - slip:]])
+    rng = np.random.default_rng(seed)
+    audio = np.concatenate([np.zeros(6000), sig, np.zeros(6000)])
+    return modem, f, audio + rng.normal(0, 0.003, len(audio))
+
+
+@pytest.mark.parametrize("slips", [[(192, 150)], [(384, 150)], [(-192, 150)], [(-384, 150)],
+                                   [(384, 100), (192, 200)],          # like the measured 378 -> 570
+                                   [(384, 80), (384, 180)]])          # 16 ms in total
+def test_timing_recovery_survives_mid_frame_gaps(slips):
+    modem, f, audio = _frame_audio_with_slips(slips)
+    results = FrameReceiver(modem).feed(audio)
+    assert len(results) == 1 and results[0]["ok"], results
+    assert results[0]["frame"].payload == f.payload
+
+
+def test_without_timing_recovery_the_same_gaps_break_the_frame():
+    # shows WHY the tracker is needed: two 8 ms gaps, tracking switched off
+    from shout_lan.modem import bits_to_bytes, whiten
+    modem, f, audio = _frame_audio_with_slips([(384, 80), (384, 180)])
+    first_bit = modem.find_preamble(audio)[0]
+    bits, _ = modem.demodulate_bits(audio, first_bit, 35 * 8, track=False)
+    with pytest.raises(fr.FrameError):
+        fr.parse(whiten(bits_to_bytes(bits)))

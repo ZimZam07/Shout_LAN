@@ -8,7 +8,7 @@ import time
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (QAbstractItemView, QHBoxLayout, QHeaderView, QLabel, QPushButton,
-                               QSplitter, QTableWidget, QTableWidgetItem, QTextBrowser,
+                               QSpinBox, QSplitter, QTableWidget, QTableWidgetItem, QTextBrowser,
                                QVBoxLayout, QWidget)
 
 from ui import style
@@ -31,16 +31,34 @@ class MonitorPage(QWidget):
                                    "the microphone. Click a row to see its layers."))
 
         inject = Card("Error injection (for demonstrations)",
-                      "Press on the SENDING laptop to corrupt its next data frame; press on the "
-                      "RECEIVING laptop to drop its next ACK. Each use is logged as 'injected'.")
+                      "Sender-side buttons act on the SENDING laptop, receiver-side buttons on the "
+                      "RECEIVING laptop. Each use is logged as 'injected'.")
         row = QHBoxLayout()
         self.corrupt_btn = QPushButton("Corrupt next DATA frame")
         self.corrupt_btn.setObjectName("warn")
         self.dropack_btn = QPushButton("Drop next ACK")
         self.dropack_btn.setObjectName("warn")
         self.clear_btn = QPushButton("Clear table")
+        self.dropframe_spin = QSpinBox()
+        self.dropframe_spin.setRange(1, 10)
+        self.dropframe_spin.setValue(2)
+        self.dropframe_spin.setPrefix("frame ")
+        self.dropframe_btn = QPushButton("Lose this frame (Selective Repeat)")
+        self.dropframe_btn.setObjectName("warn")
+        self.dropsack_btn = QPushButton("Drop next SACK")
+        self.dropsack_btn.setObjectName("warn")
+        sender_lbl = QLabel("Sender:")
+        sender_lbl.setObjectName("muted")
+        receiver_lbl = QLabel("Receiver:")
+        receiver_lbl.setObjectName("muted")
+        row.addWidget(sender_lbl)
         row.addWidget(self.corrupt_btn)
+        row.addWidget(self.dropframe_spin)
+        row.addWidget(self.dropframe_btn)
+        row.addSpacing(16)
+        row.addWidget(receiver_lbl)
         row.addWidget(self.dropack_btn)
+        row.addWidget(self.dropsack_btn)
         row.addStretch()
         row.addWidget(self.clear_btn)
         inject.add(row)
@@ -80,6 +98,11 @@ class MonitorPage(QWidget):
             lambda: self.app.command({"cmd": "inject", "name": "corrupt_next_data", "value": True}))
         self.dropack_btn.clicked.connect(
             lambda: self.app.command({"cmd": "inject", "name": "drop_next_ack", "value": True}))
+        self.dropframe_btn.clicked.connect(
+            lambda: self.app.command({"cmd": "inject", "name": "drop_frame",
+                                      "value": self.dropframe_spin.value()}))
+        self.dropsack_btn.clicked.connect(
+            lambda: self.app.command({"cmd": "inject", "name": "drop_next_sack", "value": True}))
         self.clear_btn.clicked.connect(self.clear)
         self.table.itemSelectionChanged.connect(self.show_detail)
 
@@ -90,13 +113,16 @@ class MonitorPage(QWidget):
     # ---------------------------------------------------------------- events
     def on_event(self, e):
         ev = e["event"]
-        if ev in ("frame_tx", "frame_rx"):
+        if ev in ("frame_tx", "frame_rx", "frame_dropped"):
             self.add_row(e)
         text = e.get("text")
         if text and ev not in ("tx_start", "status"):
             color = {"timeout": style.BAD, "retransmit": style.WARN, "ack_dropped": style.WARN,
                      "injection_set": style.WARN, "error": style.BAD, "duplicate": style.WARN,
                      "message_rx": style.GOOD, "security_reject": style.BAD,
+                     "frame_dropped": style.WARN, "sack_dropped": style.WARN,
+                     "channel_busy": style.WARN, "backoff": style.WARN, "sack_rx": style.ACCENT,
+                     "sr_buffered": style.ACCENT,
                      "encrypted": style.ACCENT}.get(ev, style.TEXT)
             if ev == "frame_rx" and not e.get("ok"):
                 color = style.BAD
@@ -111,7 +137,12 @@ class MonitorPage(QWidget):
     def add_row(self, e):
         f = e.get("frame") or {}
         tx = e["event"] == "frame_tx"
-        if tx:
+        if e["event"] == "frame_dropped":
+            f = {"type": "DATA-SR", "src": e.get("node", "?"), "dst": "?", "seq": e.get("seq"),
+                 "len": "?"}
+            crc = "—"
+            notes = ["✗ NOT sent - injected frame loss (the receiver never hears it)"]
+        elif tx:
             crc = "sent"
             notes = []
             if e.get("retry"):
@@ -139,7 +170,7 @@ class MonitorPage(QWidget):
             if col == 7:
                 item.setForeground(QColor(style.GOOD if "OK" in crc else
                                           style.BAD if "FAIL" in crc else style.MUTED))
-            if col == 8 and (e.get("injected") or e.get("retry")):
+            if col == 8 and (e.get("injected") or e.get("retry") or e["event"] == "frame_dropped"):
                 item.setForeground(QColor(style.WARN))
             self.table.setItem(row, col, item)
         self.rows.append(e)
@@ -153,6 +184,13 @@ class MonitorPage(QWidget):
         if not sel:
             return
         e = self.rows[sel[0].row()]
+        if e["event"] == "frame_dropped":
+            self.detail.setHtml(
+                f"<h3 style='color:{style.WARN}'>Injected frame loss</h3>"
+                f"<p>Frame seq {e.get('seq')} was deliberately <b>not</b> played through the speaker, "
+                "as if it had been lost in the air. Watch the SACK: it reports this frame as "
+                "missing, and Selective Repeat resends only this one.</p>")
+            return
         f = e.get("frame")
         raw = e.get("raw", "")
         if f is None:
@@ -192,5 +230,5 @@ class MonitorPage(QWidget):
 
     def on_status(self, s):
         ok = s is not None
-        self.corrupt_btn.setEnabled(ok)
-        self.dropack_btn.setEnabled(ok)
+        for b in (self.corrupt_btn, self.dropack_btn, self.dropframe_btn, self.dropsack_btn):
+            b.setEnabled(ok)

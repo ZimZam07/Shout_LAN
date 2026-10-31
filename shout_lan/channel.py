@@ -53,6 +53,10 @@ class AcousticChannel:
     def overflows(self):
         return self.mic.overflows
 
+    @property
+    def underflows(self):
+        return self.speaker.underflows
+
 
 class AcousticLoopbackHub:
     """
@@ -62,10 +66,11 @@ class AcousticLoopbackHub:
     each engine ignores the frames it sent itself (by source address).
     """
 
-    def __init__(self, mic_device=None, speaker_device=None, exclusive=True):
+    def __init__(self, mic_device=None, speaker_device=None, exclusive=True, record=False):
         self.mic = Microphone(mic_device, exclusive=exclusive)
         self.speaker = Speaker(speaker_device)
         self.members = []
+        self.recording = [] if record else None     # optional copy of all audio (diagnostics)
         self.lock = threading.Lock()
         self.thread = None
         self.running = False
@@ -95,6 +100,8 @@ class AcousticLoopbackHub:
         while self.running:
             audio = self.mic.read_available()
             if len(audio):
+                if self.recording is not None:
+                    self.recording.append(audio)
                 with self.lock:
                     members = list(self.members)
                 for m in members:
@@ -137,6 +144,10 @@ class LoopbackAcousticChannel:
     def overflows(self):
         return self.hub.mic.overflows
 
+    @property
+    def underflows(self):
+        return self.hub.speaker.underflows
+
 
 class SimulatedAir:
     """
@@ -167,12 +178,15 @@ class SimulatedAir:
             if channel in self.nodes:
                 self.nodes.remove(channel)
 
+    def occupy(self, seconds):
+        """A transmission starts: the medium is busy for its whole duration (carrier sense)."""
+        with self.lock:
+            self.busy_until = max(self.busy_until, time.time() + seconds)
+
     def broadcast(self, sender, samples):
         lost = self.rng.random() < self.loss
         with self.lock:
             receivers = [n for n in self.nodes if n is not sender]
-            duration = len(samples) / config.SAMPLE_RATE * self.time_scale
-            self.busy_until = max(self.busy_until, time.time() + duration)
         if not lost:
             for node in receivers:
                 node._hear(np.asarray(samples, dtype=np.float32) * self.gain)
@@ -216,7 +230,9 @@ class SimulatedChannel:
     def transmit(self, samples):
         # Like real sound, the receivers have the complete frame only once it has
         # finished "playing", so wait for the airtime first, then deliver it.
-        time.sleep(len(samples) / config.SAMPLE_RATE * self.air.time_scale)
+        duration = len(samples) / config.SAMPLE_RATE * self.air.time_scale
+        self.air.occupy(duration)
+        time.sleep(duration)
         self.last_lost = self.air.broadcast(self, samples)
 
     def level(self):
@@ -287,11 +303,13 @@ class UdpSimulatedChannel:
             except OSError:
                 continue
             sender, tx_id, index, total = struct.unpack("!BHHH", packet[:7])
+            if index == 0xFFFF:                      # "carrier" notice: a transmission started
+                self.busy_until = time.time() + total / 1000
+                continue
             samples = np.frombuffer(packet[7:], dtype=np.int16).astype(np.float32) / 32767
             key = (sender, tx_id)
             parts = self.partial.setdefault(key, [None] * total)
             parts[index] = samples
-            self.busy_until = time.time() + 0.3
             if all(p is not None for p in parts):
                 del self.partial[key]
                 audio = np.concatenate(parts + [np.zeros(4800, dtype=np.float32)]) * self.gain
@@ -310,7 +328,16 @@ class UdpSimulatedChannel:
         self.last_lost = random.random() < self.loss
         pcm = (np.clip(samples, -1, 1) * 32767).astype(np.int16)
         chunks = [pcm[i:i + self.CHUNK] for i in range(0, len(pcm), self.CHUNK)]
-        time.sleep(len(samples) / config.SAMPLE_RATE)   # the "air" takes as long as sound would
+        duration = len(samples) / config.SAMPLE_RATE
+        for n in range(1, self.MAX_NODES + 1):       # tell the others the channel is now busy
+            if n != self.node_id:
+                try:
+                    self.sock.sendto(struct.pack("!BHHH", self.node_id, self.tx_id, 0xFFFF,
+                                                 min(65535, int(duration * 1000))),
+                                     ("127.0.0.1", self.BASE_PORT + n))
+                except OSError:
+                    pass
+        time.sleep(duration)                         # the "air" takes as long as sound would
         if not self.last_lost:
             for n in range(1, self.MAX_NODES + 1):
                 if n == self.node_id:

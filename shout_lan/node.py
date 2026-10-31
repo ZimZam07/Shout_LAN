@@ -10,6 +10,8 @@ Commands (UI -> engine), one JSON object per line:
     {"cmd": "inject", "name": "drop_next_ack", "value": true}
     {"cmd": "set_volume", "value": 0.4}
     {"cmd": "set_tones", "freq0": 2000, "freq1": 3000}
+    {"cmd": "set_protocol", "value": "sr"}            sw = Stop-and-Wait, sr = Selective Repeat
+    {"cmd": "set_mac", "value": "csma"}               csma / aloha / none
     {"cmd": "calibrate"}
     {"cmd": "reset_stats"}
     {"cmd": "shutdown"}
@@ -37,7 +39,12 @@ def make_command_handler(engine, on_shutdown):
         elif name == "hello":
             engine.hello()
         elif name == "inject":
-            engine.set_injection(cmd["name"], bool(cmd.get("value", True)))
+            value = cmd.get("value", True)
+            engine.set_injection(cmd["name"], int(value) if cmd["name"] == "drop_frame" else bool(value))
+        elif name == "set_protocol":
+            engine.set_protocol(cmd["value"])
+        elif name == "set_mac":
+            engine.set_mac(cmd["value"])
         elif name == "set_volume":
             engine.set_volume(float(cmd["value"]))
         elif name == "set_tones":
