@@ -12,6 +12,18 @@ Changes in revision 2:
 - Python support wording corrected;
 - milestone evidence rule added.
 
+## As implemented (2026-11-01): differences from the plan below, all driven by measurements
+| Plan | Implementation | Why (evidence in TESTING.md) |
+|---|---|---|
+| Tones 2000/3000 Hz | Default **2500/3500 Hz**; **Calibrate** chooses tones by real bit-error tests | 2000/3000 fell into an echo notch after the laptop moved (19 % vs 0 % errors) |
+| Shared-mode audio | **WASAPI exclusive** microphone *and* speaker; shared-mode fallback is shown as a warning | Shared mic: 44 % BER (noise suppression); shared speaker: 18.6 % BER (dropped buffers) vs 0 % exclusive |
+| Receiver deaf for a while after transmitting | **Microphone never muted**; own frames and own echo filtered | The deaf window made quick replies lose their preamble (fake-audio tests) |
+| — | Scrambler (802.11 LFSR) + preamble-based equaliser + late bit window | Echo-induced errors on real hardware (M2) |
+| — | Symbol-timing recovery: implemented, **disabled** | Helped on 2 recordings, failed on 1 |
+| Relay | Store-and-forward of whole messages, hop-by-hop ARQ, TTL; "delivered" for a routed message = next hop ACKed (no end-to-end ACK) | Simple and explainable; honestly labelled in the UI |
+| NS-2 | Scripts + AWK written; **not run** | NS-2 not installed (needs sudo) |
+| Optional M9 (4-FSK, X25519, file transfer) | Not implemented | Core reliability first |
+
 Feature classes used throughout:
 
 - **CORE** – the project does not work without it.

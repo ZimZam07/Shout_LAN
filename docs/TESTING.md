@@ -424,3 +424,54 @@ Across these hardware runs, **no Selective Repeat retransmission was ever of an 
 | `arq_20261031_231645` `--security` | 2/2 pass (plain 7.6 s; encrypted needed 5 data-frame transmissions, 52.4 s) | Same degraded channel |
 
 **Status at the end of this session (the user then paused all audio work):** the acoustic link on this laptop is **not currently verified reliable** in the continuous engine path. One clear root cause was found and fixed (shared-mode playback dropping buffers), but a remaining cause in the persistent-stream engine path is unidentified. Next steps are in the hardware-test checklist (`docs/HARDWARE_TEST_PLAN.md`).
+
+
+---
+
+## Silent development phase (2026-10-31 night → 2026-11-01): no sound played
+
+At the user's request, **no test in this phase used the speaker or microphone.** All evidence below is *Measured – SIMULATED channel*, *fake audio* or *unit test*.
+
+### New: fake-audio harness — `tests/fake_audio.py`, `tests/test_acoustic_path_silent.py` (6 tests)
+Fake speakers stream "played" samples in scaled real time into the fake microphones of every node, including their own (like a real laptop). This runs the **real acoustic code path**: `AcousticChannel`, half-duplex handling, carrier sensing with band energy, the speaker fallback, and `tools/frame_test.py`.
+
+**Bugs found and fixed through it:**
+1. **The post-transmission mute wasn't scaled** with the engine's time scale (test-only effect).
+2. **Real design flaw, half-duplex:**
+   - *Old design:* the receiver discarded microphone audio while transmitting and for 0.15 s afterwards.
+   - *What went wrong:* the other node's reply (SACK, or a resend right after a SACK) could start inside that window and lose its preamble, so the whole frame was missed and an extra timeout followed. This happened in about 1 of 3 runs.
+   - *Why hardware tests missed it:* the single-laptop hardware tests use a shared microphone with muting switched off.
+   - *Redesign:* the microphone is never switched off. Our own frames are ignored by source address; a corrupted frame whose preamble was detected while we were transmitting is treated as our own echo; and carrier sense ignores energy measured during and 0.3 s after our own transmission.
+   - *Result:* **5/5 consecutive runs of all 6 tests pass** (previously intermittent).
+3. **`tools/frame_test.py` runs correctly** on fake audio (13/13 frames, 3-fragment message reassembled). The two silent hardware runs of this tool remain unexplained; the tool logic itself is fine.
+
+### M7 — discovery, routing, multi-hop — `tests/test_routing.py` (6 tests, *SIMULATED* with a range model: 1 – 2 – 3)
+| DoD | Check | Result |
+|---|---|---|
+| — | 1 → 3 with no route (out of range) → honestly FAILED, nothing delivered | pass |
+| C15 | Route 3 via 2: delivered, origin 1, `hops = 2`; node 2 relays but shows no message; every DATA frame at node 3 has link src 2, origin 1, final 3, TTL 3 | pass |
+| C15 | 84-byte message relayed with Selective Repeat on both hops | pass |
+| C15 | Routing loop (1 → 2 → 1 …) to a non-existent node: dropped by TTL after exactly 3 forwards | pass |
+| E2 | Encrypted message relayed: node 2 never decrypts (no `message_rx`, no `security_reject`), only ciphertext on air; node 3 decrypts | pass |
+| C14 | Discovery: node 1 lists only node 2; node 2 lists 1 and 3 | pass |
+
+**UI end-to-end with 3 engine processes** (node 3 started with `--hears 2`): the route is added through the Overview controls; node 3's own control link reports `message_rx` with origin 1 and 2 hops. The sender shows "✓ Handed to relay node 2 (hop ACK; end-to-end not confirmed)", an honest label because there is no end-to-end ACK.
+
+### M8 — NS-2 (OPTIONAL / PENDING) — `ns2/`
+- `shoutlan_topology.tcl` (lab-style: 4 nodes, bottleneck relay link, TCP/FTP + UDP/CBR, trace + nam) is **written but NOT RUN**: NS-2 isn't installed (needs the user's sudo password). **No simulation results exist.**
+- `analysis.awk` is verified against a **hand-written** 15-line trace with hand-computed answers (`tests/test_ns2_awk.py`): flow 1 → 2 packets, 2080 B, 166.40 kbit/s, 50.00 ms; flow 2 → 80.00 ms, 1 drop.
+
+### UI fixes found by reviewing screenshots
+- **Chat bubbles cut long messages** to their first line (Qt wrapped-label height). Fixed by giving each label an explicit width and height.
+- **Topology:** the relayed node was drawn off-screen and overlapping. Replaced with a left-to-right chain: this laptop → heard neighbours → nodes reached via a relay (dashed orange), with a legend.
+
+### UI automation — `tools/ui_smoke_test.py` → **32/32** (final run on the finished code: `ui_smoke_20261101_005933.json`)
+- New checks: route shown in the table; node 3 (out of range) receives the relayed message; honest relay status.
+- One run (`ui_smoke_20261101_002903`) failed 2 checks (relay within 120 s, ping summary within 40 s). Both passed on the immediate rerun (`…003250`), and no UI handler was slow. These were real-time limits on simulated exchanges, so the limits were widened to 180 s / 90 s.
+
+### Full silent suite
+| Python | Result |
+|---|---|
+| 3.13.4 (`.venv`) | **99 passed** |
+| 3.14.2 (`.venv314`, system packages + cryptography/pytest) | **99 passed** |
+| 3.11 / 3.12 | not installed → **untested** |

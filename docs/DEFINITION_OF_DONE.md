@@ -122,3 +122,68 @@ This applies only if you confirm the NS-2 deliverable is needed; otherwise G1–
 | H7 | Air-time figures in the docs match the frame format (11 B overhead, 35 B / 5.6 s + preamble for a full frame) and are confirmed by measured airtime on the link |
 | H5 | A fresh clone + `pip install -r requirements.txt` + README steps works on a second Windows laptop (your test) |
 | H6 | Code comments explain which network concept each module/function implements |
+
+
+---
+
+# FINAL STATUS (end of the silent development phase, 2026-11-01)
+
+Evidence key:
+- **L** = real sound, single-laptop loopback;
+- **S** = automated silent / SIMULATED / fake-audio tests (99 pytest tests on Python 3.13.4 and 3.14.2, 32-check UI automation);
+- **pending** = needs a hardware session (`docs/HARDWARE_TEST_PLAN.md`).
+
+Since the user paused all audio work, nothing new has been verified with sound. Hardware results from earlier sessions are kept as recorded.
+
+| # | Status | Evidence / note |
+|---|---|---|
+| A1 starts without errors | **Verified complete** | S: engine (simulated + acoustic) and UI on 3.13 and 3.14; L: `engine_acoustic_*` |
+| A2 TCP connect, real errors, reconnect | **Verified complete** | S: `test_control.py`, UI checks |
+| A3, A3a–A3d control link | **Verified complete** | S: 8 control tests, stress test |
+| A4 every control does something real | **Verified complete** | S: UI automation (32 checks incl. routing) |
+| A5 missing device → clear error | **Verified complete** | 4 bad-device runs (no sound played) |
+| A6 no unhandled exceptions in full demo | **Not implemented (not yet run)** | pending: two-laptop rehearsal (T10) |
+| A7 both paths labelled | **Verified complete** | screenshots |
+| B1 calibration | **Verified complete** | L: M1 + M6 calibration runs |
+| B2 preamble detection / no false detections | **Partially complete** | L (M1): 20/20, 0 false in 60 s. Not re-run after the audio-path changes (H1) |
+| B3 BER ≤ 1 % | **Partially complete** | L: 0.00–0.14 % in M1; 0 % in 8 exclusive-speaker A/B trials; degraded runs in M6 traced to shared-mode playback. Persistent engine path still open (H1–H4) |
+| B4 HELLO frame ≥ 9/10 | **Partially complete** | L: 13/13 twice (M2), 7/13 later (shared playback). Two laptops pending (T1) |
+| B5 node ignores its own transmissions | **Partially complete** | S: fake-audio half-duplex test (own frames and echo never reported); redesigned to keep the mic on. Real two-laptop check pending |
+| C1 frame build/parse, malformed rejected | **Verified complete** | S |
+| C2 CRC check value + error detection | **Verified complete** | S: exhaustive 1-bit, 2-bit and burst ≤ 16 |
+| C3 parity vs CRC | **Verified complete** (unit test) | S. There is no separate UI button; explained in the docs |
+| C4 3-frame reassembly | **Verified complete** | S + L (M2, M3) |
+| C5 lost ACK → exactly-once | **Verified complete** (protocol) | L (M3 6/6) + S + fake-audio. Two laptops pending (T4) |
+| C6 corrupted frame → CRC fail, retransmit | **Verified complete** (protocol) | L + S |
+| C7 max retries → FAILED | **Verified complete** | L + S |
+| C8 20-char message ≥ 9/10 between two laptops | **Blocked** | needs the second laptop (T3) |
+| C9–C9d Selective Repeat | **Verified complete** (protocol) | S (sim + fake acoustic); L: `--m6` 4/4 twice; never resent an acknowledged frame. Two laptops pending (T6) |
+| C10 CSMA defers when busy | **Verified complete** | L (loopback CSMA scenario passed 3×); S (sim + fake acoustic band energy) |
+| C11 ALOHA backoff | **Partially complete** | S verified; not yet exercised over sound |
+| C12 ALOHA simulation vs theory | **Verified complete** | S (±0.03 at G = 0.5 / 1.0); chart labelled "Simulation" |
+| C13 acoustic ping | **Verified complete** | L: 3/3, RTT 4.68–4.71 s; S: UI |
+| C14 discovery lists only real nodes | **Partially complete** | S (incl. range model); two laptops pending (T2) |
+| C15 multi-hop relay, TTL | **Partially complete** | S: 3-engine tests, routing loop stopped by TTL, encrypted relay, UI end-to-end with 3 engine processes. Real 3-laptop test: no third laptop |
+| D1 UI responsive | **Verified complete** | S: max stall 4–27 ms in normal runs. One unexplained 1.36 s stall, not reproduced since (TESTING §M5) |
+| D2 capture keeps running | **Verified complete** | L: 0 mic overflows in every acoustic run |
+| D3 thread-safety stress | **Verified complete** | S |
+| D4 clean shutdown | **Verified complete** | S |
+| E1, E1a, E1b crypto, nonces, replay | **Verified complete** | S |
+| E2 ciphertext on air | **Verified complete** | L + S + UI |
+| E3 overhead measured | **Verified complete** | L: 6.8 s → 14.5 s for 12 B |
+| E4 key handling | **Verified complete** | S; `secret.key` never committed |
+| E5 threat model | **Verified complete** | `docs/THREAT_MODEL.md` |
+| F1 syllabus items demonstrable | **Partially complete** | `docs/SYLLABUS_MAPPING.md` + `DEMO_SCRIPT.md` written; rehearsal pending |
+| F2 plain explanations | **Verified complete** | Protocols page |
+| F3 layer view | **Verified complete** | Packet monitor detail |
+| F4 metrics labelled by source | **Verified complete** | "Measured – acoustic / SIMULATED channel", "Simulation" |
+| G1 NS-2 runs | **Blocked** (optional) | NS-2 not installed; needs the user's sudo in WSL |
+| G2 topology script produces traces | **Partially complete** | `ns2/shoutlan_topology.tcl` written, **not run** |
+| G3 AWK metrics from real traces | **Partially complete** | `analysis.awk` verified on a hand-written trace only |
+| H1 tests pass on 3.13 (3.14 separately) | **Verified complete** | 99/99 on 3.13.4 and on 3.14.2. 3.11/3.12 **untested** |
+| H2 SIMULATED labelled everywhere | **Verified complete** | top bar, metrics, logs, topology |
+| H3 no fake data | **Verified complete** | code review; counters only from engine events |
+| H4 docs present | **Verified complete** | README, ARCHITECTURE, SYLLABUS_MAPPING, TESTING, DEMO_SCRIPT, DoD, THREAT_MODEL, SCOPE, HARDWARE_TEST_PLAN |
+| H5 fresh install on the second laptop | **Not implemented (not yet run)** | T11 |
+| H6 code comments explain the concepts | **Verified complete** | review |
+| H7 airtime figures match | **Verified complete** | 35-byte frame: airtime 5.75 s vs measured play duration 5.76 s (L) |
