@@ -9,8 +9,9 @@ import type { CmdReply, Command, ConnState, EngineEvent, FrameInfo, Status, Tran
  *
  * The air model is deliberately repeatable, because the pitch is:
  *   quiet room                -> every frame arrives
- *   generated noise, no shield -> try 1 is lost, try 2's receipt is damaged, try 3 lands
- *   generated noise + shield   -> first try lands, a few bits repaired
+ *   generated clicks, no shield -> isolated flipped bits: tries 1-3 fail, try 4 lands
+ *   generated hiss, no shield   -> try 1's receipt is damaged, try 2 lands
+ *   generated noise + shield    -> first try lands, a few bits repaired (clicks most)
  * With `autopilot` it plays that story in a loop until someone touches a control. */
 
 const NODE = 1;
@@ -26,7 +27,8 @@ const MAX_PAYLOAD = 24;
 const TYPES: Record<string, number> = { DATA: 1, ACK: 2, PING: 4, PONG: 5, HELLO: 6 };
 const F_LAST = 1;
 const F_FIRST = 8;
-const SHIELD_INFO = { code: "Hamming(7,4)", rate: 0.571, filter_hz: [2000, 4000] as [number, number] };
+const SHIELD_INFO = { code: "Hamming(7,4)", rate: 0.571, filter_hz: [900, 4500] as [number, number], decoder: "soft decision", interleaving: true, airtime_factor: 1.75 };
+type Kind = "clicks" | "hiss";
 const IDLE_BEFORE_AUTOPILOT_MS = 30_000;
 
 class Stopped extends Error {}
@@ -85,7 +87,7 @@ export class MockTransport implements Transport {
   private lastTouch = 0;
 
   private shield = false;
-  private noise = { on: false, level: 0.6 };
+  private noise: { on: boolean; level: number; kind: Kind } = { on: false, level: 0.25, kind: "clicks" };
   private volume = 0.5;
   private seq = 0;
   private peerSeq = 40;
@@ -147,7 +149,7 @@ export class MockTransport implements Transport {
         this.setShield(c.value);
         return { ok: true };
       case "set_noise":
-        this.setNoise(c.on, c.level);
+        this.setNoise(c.on, c.level ?? (this.noise.level || 0.25), c.kind);
         return { ok: true };
       case "set_volume":
         this.volume = Math.max(0, Math.min(1, c.value));
@@ -229,7 +231,7 @@ export class MockTransport implements Transport {
     return r2(this.airtime(11, this.shield).seconds + 1.7);
   }
   private noisy() {
-    return this.noise.on && this.noise.level >= 0.25;
+    return this.noise.on && this.noise.level >= 0.1;
   }
 
   private setShield(value: boolean) {
@@ -240,11 +242,11 @@ export class MockTransport implements Transport {
     });
   }
 
-  private setNoise(on: boolean, level: number) {
-    this.noise = { on, level: Math.max(0, Math.min(1, level)) };
+  private setNoise(on: boolean, level: number, kind?: string) {
+    this.noise = { on, level: Math.max(0, Math.min(1, level)), kind: kind === "hiss" || kind === "clicks" ? kind : this.noise.kind };
     this.emit("noise_set", {
-      on, level: this.noise.level,
-      text: on ? `SIMULATED generated noise ON at level ${this.noise.level.toFixed(2)}` : "SIMULATED generated noise OFF",
+      on, level: this.noise.level, kind: this.noise.kind,
+      text: on ? `SIMULATED generated noise ON (${this.noise.kind}) at level ${this.noise.level.toFixed(2)}` : "SIMULATED generated noise OFF",
     });
   }
 
@@ -252,7 +254,7 @@ export class MockTransport implements Transport {
   private async transmit(f: MockFrame, retry: number, msgId: number | null, shield = this.shield) {
     const raw = build(f);
     const { bits, seconds } = this.airtime(raw.length, shield);
-    this.emit("tx_start", { seq: f.seq, type: f.type, airtime: r2(seconds) });
+    this.emit("tx_start", { seq: f.seq, type: f.type, airtime: r2(seconds), shield });
     this.air = { kind: "tx", start: performance.now(), dur: seconds * 1000 };
     await this.sleep(seconds * 1000);
     this.air = null;
@@ -278,20 +280,26 @@ export class MockTransport implements Transport {
 
     const nbits = clean.length * 8;
     const noisy = this.noisy();
-    const conf = Array.from({ length: nbits }, () => r2(noisy ? rand(0.66, 0.97) : rand(0.88, 0.99)));
+    const clicks = noisy && this.noise.kind === "clicks";
+    // hiss lowers every bit a little; a click leaves the rest clean and ruins single bits
+    const conf = Array.from({ length: nbits }, () => r2(noisy && !clicks ? rand(0.66, 0.97) : rand(0.88, 0.99)));
     const pick = (n: number, from: number) => {
-      const set = new Set<number>();
-      while (set.size < n) set.add(Math.floor(rand(from, nbits)));
-      return [...set].sort((a, b) => a - b);
+      // isolated positions: no two within a byte of each other
+      const out: number[] = [];
+      for (let guard = 0; out.length < n && guard < 400; guard++) {
+        const i = Math.floor(rand(from, nbits));
+        if (out.every((j) => Math.abs(j - i) > 8)) out.push(i);
+      }
+      return out.sort((a, b) => a - b);
     };
-    if (noisy) for (const i of pick(5, 0)) conf[i] = r2(rand(0.55, 0.62));
+    if (noisy && !clicks) for (const i of pick(5, 0)) conf[i] = r2(rand(0.55, 0.62));
     const snr = r2(noisy ? 22 - this.noise.level * 19 + rand(-1, 1) : rand(23, 27));
     const common = { score: r2(rand(0.72, 0.9)), shield, snr_db: snr };
     this.heard = Date.now() / 1000;
 
     if (outcome === "damaged") {
       const raw = clean.slice();
-      const flipped = pick(f.payload.length ? 3 : 2, f.payload.length ? 72 : 16);
+      const flipped = pick(clicks ? (f.payload.length ? 3 : 2) : 1, f.payload.length ? 72 : 16);
       for (const i of flipped) {
         raw[i >> 3] ^= 0x80 >> (i & 7);
         conf[i] = r2(rand(0.5, 0.56));
@@ -307,21 +315,21 @@ export class MockTransport implements Transport {
       return;
     }
 
-    const repaired = shield && noisy ? pick(Math.round(rand(2, 5)), 8) : [];
+    const repaired = shield && noisy ? pick(Math.round(clicks ? rand(2, 4) : rand(0, 1.4)), 8) : [];
     for (const i of repaired) conf[i] = r2(rand(0.5, 0.58));
+    // the decoder also fixes check bits, which are counted but have no place in the decoded frame
+    const fixed = repaired.length + (shield && noisy ? Math.round(clicks ? rand(1, 2) : rand(0, 1)) : 0);
     const crc = hex16((clean[clean.length - 2] << 8) | clean[clean.length - 1]);
     this.counters.frames_rx_ok++;
     if (f.type === "ACK") this.counters.acks_rx++;
     if (shield) this.counters.shield_frames_rx++;
-    if (repaired.length) {
-      this.counters.bits_repaired += repaired.length;
-      this.counters.frames_repaired++;
-    }
+    this.counters.bits_repaired += fixed;
+    if (repaired.length) this.counters.frames_repaired++;
     const forMe = f.dst === NODE || f.dst === 255;
     this.emit("frame_rx", {
       ...common, ok: true, frame: describe(f), raw: hex(clean), confidence: r2(conf.reduce((a, b) => a + b, 0) / nbits), for_me: forMe,
-      bits_repaired: repaired.length, repaired_at: repaired, crc_rx: crc, crc_calc: crc, bit_conf: conf,
-      text: `Received ${f.type} seq ${f.seq} from node ${f.src} - CRC OK` + (repaired.length ? ` (Noise Shield repaired ${repaired.length} bits)` : ""),
+      bits_repaired: fixed, repaired_at: repaired, crc_rx: crc, crc_calc: crc, bit_conf: conf,
+      text: `Received ${f.type} seq ${f.seq} from node ${f.src} - CRC OK` + (fixed ? ` (Noise Shield repaired ${fixed} bits)` : ""),
     });
   }
 
@@ -353,14 +361,15 @@ export class MockTransport implements Transport {
         for (let attempt = 0; attempt <= 5 && !acked; attempt++) {
           if (attempt) {
             this.counters.retransmissions++;
-            this.emit("retransmit", { seq: frame.seq, attempt, msg_id: msgId, text: `Retransmitting frame seq ${frame.seq} (attempt ${attempt + 1})` });
+            this.emit("retransmit", { seq: frame.seq, attempt: attempt + 1, msg_id: msgId, text: `Retransmitting frame seq ${frame.seq} (attempt ${attempt + 1})` });
           }
           const shield = this.shield;
           await this.transmit(frame, attempt, msgId, shield);
           const waitFrom = performance.now();
           const rto = this.rto() * 1000;
           // the repeatable air: what the room does to a plain frame under generated noise
-          const fate = !this.noisy() || shield ? "ok" : attempt === 0 ? "lost" : attempt === 1 ? "receipt-damaged" : "ok";
+          const plan = this.noise.kind === "clicks" ? ["lost", "receipt-damaged", "lost"] : ["receipt-damaged"];
+          const fate = !this.noisy() || shield ? "ok" : plan[attempt] ?? "ok";
           if (fate !== "lost") {
             await this.sleep(280);
             await this.receive({ type: "ACK", flags: 0, src: dst, dst: NODE, seq: frame.seq, payload: new Uint8Array() }, fate === "ok" ? "ok" : "damaged", shield);
@@ -371,7 +380,7 @@ export class MockTransport implements Transport {
           } else {
             await this.sleep(Math.max(150, rto - (performance.now() - waitFrom)));
             this.counters.timeouts++;
-            this.emit("timeout", { seq: frame.seq, msg_id: msgId, attempt, waited: r2(rto / 1000), text: `No ACK for seq ${frame.seq} after ${(rto / 1000).toFixed(1)} s - timeout` });
+            this.emit("timeout", { seq: frame.seq, msg_id: msgId, attempt: attempt + 1, waited: r2(rto / 1000), text: `No ACK for seq ${frame.seq} after ${(rto / 1000).toFixed(1)} s - timeout` });
             await this.sleep(500);
           }
         }
@@ -395,7 +404,7 @@ export class MockTransport implements Transport {
       for (const part of this.pieces(text)) {
         const frame: MockFrame = { type: "DATA", flags: part.flags, src: PEER, dst: NODE, seq: this.nextPeerSeq(), payload: part.payload };
         const shield = this.shield;
-        if (this.noisy() && !shield) {
+        for (let bad = this.noisy() && !shield ? (this.noise.kind === "clicks" ? 2 : 1) : 0; bad > 0; bad--) {
           await this.receive(frame, "damaged", shield);
           await this.sleep(this.rto() * 1000); // the peer waits for a receipt that never comes, then sends again
         }
@@ -430,7 +439,7 @@ export class MockTransport implements Transport {
       await this.peerMessage("Loud and clear");
       // 2. noise: damaged frames, the seal check, timeouts, resends
       await this.quiet(2600);
-      this.setNoise(true, 0.6);
+      this.setNoise(true, 0.25, "clicks");
       await this.quiet(2200);
       await this.sendMessage("Can you hear me?", PEER);
       await this.quiet(1600);
@@ -443,7 +452,7 @@ export class MockTransport implements Transport {
       await this.quiet(1400);
       await this.peerMessage("Got it");
       await this.quiet(5000);
-      this.setNoise(false, 0.6);
+      this.setNoise(false, 0.25);
       await this.quiet(900);
       this.setShield(false);
       await this.quiet(3500);
@@ -457,14 +466,16 @@ export class MockTransport implements Transport {
     const bins = new Array<number>(BINS);
     const step = (F_HI - F_LO) / BINS;
     const bin = (hz: number) => Math.max(0, Math.min(BINS - 1, Math.floor((hz - F_LO) / step)));
+    const click = this.noise.on && this.noise.kind === "clicks" && Math.random() < 0.16 + this.noise.level * 0.5 ? 20 + this.noise.level * 26 : 0;
     for (let i = 0; i < BINS; i++) {
       const f = F_LO + (i + 0.5) * step;
       let db = -76 + rand(0, 6);
       if (f < 1300) db += 12 * (1 - (f - F_LO) / 800) + rand(0, 4); // the room's own rumble
-      if (this.noise.on) {
+      if (this.noise.on && this.noise.kind === "hiss") {
         const edge = Math.min(1, Math.max(0, (f - 1500) / 400)) * Math.min(1, Math.max(0, (4700 - f) / 400));
-        db += edge * (this.noise.level * 40 + rand(-4, 4));
+        db += edge * (12 + this.noise.level * 34 + rand(-4, 4));
       }
+      if (click) db += click + rand(-4, 4); // a click is short and wide: every bin jumps at once
       bins[i] = db;
     }
     const b0 = bin(FREQ0);

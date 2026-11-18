@@ -508,11 +508,11 @@ button.sl-tool:hover, a.sl-tool:hover { background: var(--glass-hover); }
 /* ── the narrator ────────────────────────────────────────────────────────── */
 .sl-say {
   position: absolute;
-  left: 5%;
-  right: 5%;
-  top: 48.5%;
+  left: 4%;
+  right: 4%;
+  top: 46.5%;
   display: grid;
-  grid-template-columns: auto auto;
+  grid-template-columns: auto minmax(0, auto);
   justify-content: center;
   align-items: center;
   column-gap: calc(16 * var(--u));
@@ -529,7 +529,7 @@ button.sl-tool:hover, a.sl-tool:hover { background: var(--glass-hover); }
   animation: sl-pop 0.5s var(--ease-spring) backwards;
 }
 .sl-say-mark svg { width: 46%; height: 46%; }
-.sl-say-plain { font-size: var(--t-say); line-height: 1.12; letter-spacing: var(--track-tight); animation: sl-wipe 0.7s var(--ease-out) 0.05s backwards; }
+.sl-say-plain { font-size: var(--t-say); line-height: 1.12; letter-spacing: var(--track-tight); text-wrap: balance; animation: sl-rise 0.5s var(--ease-out) backwards; }
 .sl-say-tech {
   grid-column: 1 / -1;
   text-align: center;
@@ -549,13 +549,13 @@ button.sl-tool:hover, a.sl-tool:hover { background: var(--glass-hover); }
 .sl-say.is-wait .sl-say-mark svg { animation: sl-breathe 1.2s var(--ease) infinite; }
 
 /* ── the equaliser's words ───────────────────────────────────────────────── */
-.sl-eq-head { position: absolute; left: 5.5%; top: calc(71.5% - 46 * var(--u)); display: flex; align-items: center; gap: calc(8 * var(--u)); }
-.sl-eq-key { position: absolute; top: calc(89.5% + 9 * var(--u)); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: calc(3 * var(--u)); white-space: nowrap; }
+.sl-eq-head { position: absolute; left: 5.5%; top: calc(74% - 34 * var(--u)); display: flex; align-items: center; gap: calc(8 * var(--u)); }
+.sl-eq-key { position: absolute; top: calc(90.5% + 8 * var(--u)); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: calc(3 * var(--u)); white-space: nowrap; }
 .sl-eq-key b { font-size: var(--t-caps); font-weight: var(--w-semibold); letter-spacing: 0.1em; text-transform: uppercase; }
 .sl-eq-key span { font-size: var(--t-caps); color: var(--ink-faint); }
 .sl-eq-key.is-0 b { color: var(--tone0); }
 .sl-eq-key.is-1 b { color: var(--tone1); }
-.sl-eq-end { position: absolute; top: calc(89.5% + 9 * var(--u)); font-size: var(--t-caps); color: var(--ink-faint); }
+.sl-eq-end { position: absolute; top: calc(90.5% + 8 * var(--u)); font-size: var(--t-caps); color: var(--ink-faint); }
 .sl-eq-end.is-lo { left: 5.5%; }
 .sl-eq-end.is-hi { right: 5.5%; }
 
@@ -680,22 +680,22 @@ button.sl-tool:hover, a.sl-tool:hover { background: var(--glass-hover); }
 .sl-shield {
   position: relative;
   flex: none;
-  padding: var(--pad);
+  padding: calc(22 * var(--u)) var(--pad) calc(20 * var(--u));
   border-radius: var(--r-card);
   background: var(--paper);
   color: var(--paper-ink);
   box-shadow: var(--paper-shadow);
   display: flex;
   flex-direction: column;
-  gap: calc(13 * var(--u));
+  gap: calc(11 * var(--u));
   transition: box-shadow 0.6s var(--ease);
 }
 .sl-shield.is-on { box-shadow: var(--paper-shadow), 0 0 0 calc(3 * var(--u)) var(--good), 0 0 calc(70 * var(--u)) var(--good-soft); }
 .sl-shield .sl-eyebrow { color: var(--paper-label); }
 .sl-shield-top { display: flex; align-items: flex-start; justify-content: space-between; gap: calc(12 * var(--u)); }
 .sl-shield-title { margin-top: calc(7 * var(--u)); font-size: var(--t-title); line-height: 1.12; font-weight: var(--w-regular); letter-spacing: var(--track-tight); }
-.sl-shield-say { font-size: var(--t-small); line-height: 1.45; font-weight: var(--w-regular); color: var(--paper-label); min-height: calc(4.35 * var(--t-small)); }
-.sl-shield-foot { display: flex; flex-direction: column; gap: calc(10 * var(--u)); padding-top: calc(13 * var(--u)); border-top: 1px solid var(--paper-rule); }
+.sl-shield-say { font-size: var(--t-small); line-height: 1.4; font-weight: var(--w-regular); color: var(--paper-label); min-height: calc(2.8 * var(--t-small)); }
+.sl-shield-foot { display: flex; flex-direction: column; gap: calc(8 * var(--u)); padding-top: calc(11 * var(--u)); border-top: 1px solid var(--paper-rule); }
 .sl-shield-num { display: flex; align-items: baseline; gap: calc(10 * var(--u)); }
 .sl-shield-num b { display: block; font-size: calc(46 * var(--u)); line-height: 0.9; font-weight: var(--w-light); letter-spacing: var(--track-tight); font-variant-numeric: tabular-nums; animation: sl-count 0.5s var(--ease-spring) backwards; }
 .sl-shield.is-on .sl-shield-num b { color: var(--good-ink); }
@@ -705,25 +705,35 @@ button.sl-tool:hover, a.sl-tool:hover { background: var(--glass-hover); }
 .sl-shield-tech span { display: block; margin-bottom: calc(3 * var(--u)); }
 
 /* ── generated noise ─────────────────────────────────────────────────────── */
-.sl-noise { flex: none; padding: calc(20 * var(--u)) var(--pad); display: flex; flex-direction: column; gap: calc(10 * var(--u)); transition: border-color var(--dur) var(--ease); }
+.sl-noise { flex: none; padding: calc(16 * var(--u)) var(--pad) calc(15 * var(--u)); display: flex; flex-direction: column; gap: calc(9 * var(--u)); transition: border-color var(--dur) var(--ease); }
 .sl-noise.is-on { border-color: var(--static-soft); }
 .sl-noise-top { display: flex; align-items: flex-start; justify-content: space-between; gap: calc(12 * var(--u)); }
 .sl-noise-title { margin-top: calc(6 * var(--u)); font-size: calc(18 * var(--u)); font-weight: var(--w-regular); letter-spacing: var(--track-tight); line-height: 1.15; }
+.sl-seg { display: grid; grid-template-columns: 1fr 1fr; gap: calc(4 * var(--u)); padding: calc(4 * var(--u)); border-radius: calc(14 * var(--u)); background: var(--well); border: 1px solid var(--glass-edge); }
+.sl-seg button { display: flex; align-items: center; gap: calc(8 * var(--u)); padding: calc(5 * var(--u)) calc(10 * var(--u)); border-radius: var(--r-item); text-align: left; color: var(--ink-soft); transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease); }
+.sl-seg button svg { flex: none; width: calc(15 * var(--u)); height: calc(15 * var(--u)); min-width: 13px; min-height: 13px; }
+.sl-seg button span { display: flex; flex-direction: column; gap: calc(2 * var(--u)); min-width: 0; }
+.sl-seg b { font-size: var(--t-small); font-weight: var(--w-medium); line-height: 1.1; }
+.sl-seg small { font-size: calc(var(--t-caps) * 0.95); color: var(--ink-faint); white-space: nowrap; line-height: 1.1; }
+.sl-seg button:hover:not(:disabled):not(.is-on) { background: var(--glass-hover); }
+.sl-seg button.is-on { background: var(--paper); color: var(--paper-ink); }
+.sl-seg button.is-on small { color: var(--paper-label); }
+.sl-seg button:disabled { opacity: 0.45; cursor: default; }
 .sl-slider { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: calc(12 * var(--u)); font-size: var(--t-caps); font-weight: var(--w-medium); letter-spacing: var(--track-caps); text-transform: uppercase; color: var(--ink-faint); }
 .sl-slider b { min-width: 3.2em; text-align: right; font-weight: var(--w-medium); color: var(--ink); font-variant-numeric: tabular-nums; }
 .sl-tool.is-slider input { margin-top: calc(2 * var(--u)); }
 
 /* ── counters: VOLTA's side stats, dotted ring marks and all ─────────────── */
-.sl-stats { flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: calc(6 * var(--u)); padding: calc(6 * var(--u)) var(--pad) 0; min-height: 0; }
+.sl-stats { flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: calc(4 * var(--u)); padding: 0 var(--pad); min-height: 0; }
 .sl-stat { display: flex; align-items: center; gap: calc(13 * var(--u)); }
-.sl-stat-mark { flex: none; display: grid; place-items: center; width: calc(36 * var(--u)); height: calc(36 * var(--u)); min-width: 30px; min-height: 30px; border-radius: 50%; border: 1px dashed var(--ink-mark); color: var(--ink-soft); }
+.sl-stat-mark { flex: none; display: grid; place-items: center; width: calc(32 * var(--u)); height: calc(32 * var(--u)); min-width: 30px; min-height: 30px; border-radius: 50%; border: 1px dashed var(--ink-mark); color: var(--ink-soft); }
 .sl-stat-mark svg { width: 46%; height: 46%; }
 .sl-stat.is-bad .sl-stat-mark { color: var(--bad); border-color: var(--bad-soft); }
 .sl-stat.is-good .sl-stat-mark { color: var(--good); border-color: var(--good-soft); }
 .sl-stat dl { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: calc(4 * var(--u)); }
 .sl-stat dt { font-size: var(--t-body); font-weight: var(--w-regular); line-height: 1.1; }
 .sl-stat dd { font-size: calc(var(--t-caps) * 0.95); font-weight: var(--w-medium); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); line-height: 1; }
-.sl-stat > b { font-size: calc(30 * var(--u)); font-weight: var(--w-light); letter-spacing: var(--track-tight); font-variant-numeric: tabular-nums; line-height: 1; animation: sl-count 0.5s var(--ease-spring) backwards; }
+.sl-stat > b { font-size: calc(27 * var(--u)); font-weight: var(--w-light); letter-spacing: var(--track-tight); font-variant-numeric: tabular-nums; line-height: 1; animation: sl-count 0.5s var(--ease-spring) backwards; }
 
 /* ── drawers: a frame opened up, and the log ─────────────────────────────── */
 .sl-drawer {

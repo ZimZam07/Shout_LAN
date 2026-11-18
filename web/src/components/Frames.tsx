@@ -131,7 +131,7 @@ function Bits({ f, bytes }: { f: FrameRec; bytes: number[] | null }) {
         <li><i className="sl-key is-1" /> high beep = 1</li>
         <li><i className="sl-key is-0" /> low beep = 0</li>
         <li><i className="sl-key is-weak" /> weak bit, barely heard ({weak})</li>
-        <li><i className="sl-key is-repaired" /> repaired by the shield ({repaired.size})</li>
+        <li><i className="sl-key is-repaired" /> repaired by the shield ({repaired.size}{f.bitsRepaired > repaired.size ? `, plus ${f.bitsRepaired - repaired.size} check bits` : ""})</li>
       </ul>
     </>
   );
@@ -169,7 +169,7 @@ export function FrameDetail() {
   if (f.airtime !== undefined) facts.push(["on air", `${f.airtime.toFixed(2)} s`]);
   if (f.bitsOnAir !== undefined) facts.push(["bits on air", String(f.bitsOnAir)]);
   if (bytes) facts.push(["frame", `${bytes.length} bytes`]);
-  if (f.snr !== undefined) facts.push(["signal vs noise", `${f.snr.toFixed(1)} dB`]);
+  if (f.snr !== undefined) facts.push(["tone contrast", `${f.snr.toFixed(1)} dB`]);
   if (f.score !== undefined) facts.push(["chirp match", f.score.toFixed(2)]);
   facts.push(["time", new Date(f.time * 1000).toLocaleTimeString([], { hour12: false })]);
 

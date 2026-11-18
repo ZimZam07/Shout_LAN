@@ -6,7 +6,11 @@ export type Mode = "acoustic" | "pair" | "simulated";
 export interface ShieldInfo {
   code?: string;
   rate?: number;
+  /** the receive band-pass used to find the start chirp, for both formats */
   filter_hz?: [number, number];
+  airtime_factor?: number;
+  decoder?: unknown;
+  interleaving?: unknown;
 }
 
 export interface Status {
@@ -36,7 +40,8 @@ export interface Status {
   /** false when this engine build has no set_shield / set_noise (see Deviations). */
   shield_available?: boolean;
   noise_available?: boolean;
-  noise?: { on?: boolean; level?: number };
+  /** `kind` is absent on engines with one kind of generated noise. */
+  noise?: { on?: boolean; level?: number; kind?: string };
   mode?: Mode;
   peer?: number | null;
   http_port?: number;
@@ -85,7 +90,7 @@ export type Command =
   | { cmd: "hello" }
   | { cmd: "set_volume"; value: number }
   | { cmd: "set_shield"; value: boolean }
-  | { cmd: "set_noise"; on: boolean; level: number }
+  | { cmd: "set_noise"; on: boolean; level?: number; kind?: string }
   | { cmd: "clear" };
 
 export interface CmdReply {

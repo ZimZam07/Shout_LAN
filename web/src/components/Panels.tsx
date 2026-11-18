@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { AlertCircle, ArrowUp, AudioLines, Check, CheckCheck, Clock, PackageCheck, RotateCw, ShieldCheck, ShieldOff, Trash2, type LucideIcon } from "lucide-react";
+import { AlertCircle, ArrowUp, AudioLines, Check, CheckCheck, Clock, PackageCheck, RotateCw, ShieldCheck, ShieldOff, Sparkle, Trash2, type LucideIcon } from "lucide-react";
 import { command, tryWord, useStore, type Msg } from "../lib/store";
 
 const MAX_CHARS = 60;
@@ -153,7 +153,7 @@ export function ShieldCard() {
   const known = status?.shield !== undefined && status.shield_available !== false;
   const si = status?.shield_info;
   const repaired = status?.stats?.counters?.bits_repaired;
-  const what = [si?.code, si?.rate !== undefined ? `rate ${si.rate.toFixed(2)}` : undefined, si?.filter_hz ? `band-pass ${si.filter_hz[0]}–${si.filter_hz[1]} Hz` : undefined].filter(Boolean).join(" · ");
+  const what = [si?.code, si?.rate !== undefined ? `rate ${si.rate.toFixed(2)}` : undefined, si?.airtime_factor ? `${si.airtime_factor}× air time` : undefined].filter(Boolean).join(" · ");
   return (
     <section className={`sl-shield${on ? " is-on" : ""}`} aria-label="Noise Shield">
       <div className="sl-shield-top">
@@ -190,6 +190,10 @@ export function ShieldCard() {
 }
 
 // ── the interference generator ──────────────────────────────────────────────
+const KINDS: { id: string; name: string; say: string; Icon: LucideIcon }[] = [
+  { id: "clicks", name: "Clicks", say: "sharp bursts", Icon: Sparkle },
+  { id: "hiss", name: "Hiss", say: "steady noise", Icon: AudioLines },
+];
 export function NoiseCard() {
   const status = useStore((s) => s.status);
   const conn = useStore((s) => s.conn);
@@ -197,21 +201,40 @@ export function NoiseCard() {
   const noise = available ? status?.noise : undefined;
   const on = noise?.on === true;
   const [level, setLevel] = useState<number | null>(null);
-  const shown = level ?? noise?.level ?? 0.5;
+  const shown = level ?? noise?.level ?? 0.25;
   const sim = status?.mode === "simulated";
+  const kind = noise?.kind; // absent on an engine with a single kind: no choice is offered
+  const busy = !noise || conn !== "live";
+  const send = (next: { on?: boolean; level?: number; kind?: string }) =>
+    // a level of 0 means "never set": leave it out and the engine uses its own default
+    void command({ cmd: "set_noise", on: next.on ?? on, ...((next.level ?? shown) > 0 ? { level: next.level ?? shown } : {}), ...((next.kind ?? kind) ? { kind: next.kind ?? kind } : {}) });
   const commit = (v: number) => {
     setLevel(null);
-    void command({ cmd: "set_noise", on, level: v });
+    send({ level: v });
   };
+  const title = kind === "clicks" ? (on ? "Clicks in the room" : "Fill the room with clicks") : kind === "hiss" ? (on ? "Hiss in the room" : "Fill the room with hiss") : on ? "The room is loud" : "Make the room loud";
   return (
     <section className={`sl-card sl-noise${on ? " is-on" : ""}`} aria-label="Generated noise">
       <div className="sl-noise-top">
         <div>
           <span className="sl-eyebrow">Generated noise</span>
-          <h2 className="sl-noise-title">{on ? "The room is loud" : "Make the room loud"}</h2>
+          <h2 className="sl-noise-title">{title}</h2>
         </div>
-        <Switch on={on} label="Generated noise" OnIcon={AudioLines} OffIcon={AudioLines} disabled={!noise || conn !== "live"} onChange={(v) => void command({ cmd: "set_noise", on: v, level: shown })} />
+        <Switch on={on} label="Generated noise" OnIcon={AudioLines} OffIcon={AudioLines} disabled={busy} onChange={(v) => send({ on: v })} />
       </div>
+      {kind !== undefined && (
+        <div className="sl-seg" role="radiogroup" aria-label="Kind of generated noise">
+          {KINDS.map(({ id, name, say, Icon }) => (
+            <button key={id} type="button" role="radio" aria-checked={kind === id} className={kind === id ? "is-on" : ""} disabled={busy} onClick={() => kind !== id && send({ kind: id })}>
+              <Icon aria-hidden strokeWidth={2} />
+              <span>
+                <b>{name}</b>
+                <small>{say}</small>
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
       <label className="sl-slider">
         <span>Level</span>
         <input
@@ -220,7 +243,7 @@ export function NoiseCard() {
           max={1}
           step={0.05}
           value={shown}
-          disabled={!noise || conn !== "live"}
+          disabled={busy}
           onChange={(e) => setLevel(Number(e.target.value))}
           onPointerUp={(e) => commit(Number((e.target as HTMLInputElement).value))}
           onKeyUp={(e) => commit(Number((e.target as HTMLInputElement).value))}
@@ -229,7 +252,7 @@ export function NoiseCard() {
         />
         <b>{Math.round(shown * 100)}%</b>
       </label>
-      <p className="sl-note">{!status ? "Waiting for the engine." : !available ? "Not available: this engine build has no interference generator yet." : sim ? "Generated noise, added to the simulated air. No real sound." : "Generated noise: this laptop's speaker really plays it into the room."}</p>
+      <p className="sl-note">{!status ? "Waiting for the engine." : !available ? "Not available: this engine build has no interference generator yet." : sim ? "Added to the simulated air. No real sound." : "Really played by this laptop's speaker."}</p>
     </section>
   );
 }

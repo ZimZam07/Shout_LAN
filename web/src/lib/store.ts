@@ -292,7 +292,7 @@ export function ingest(e: EngineEvent) {
       if (state.status && bool(e.value) !== undefined) patch.status = { ...state.status, shield: bool(e.value) };
       break;
     case "noise_set":
-      if (state.status) patch.status = { ...state.status, noise: { on: bool(e.on) ?? false, level: num(e.level) ?? state.status.noise?.level ?? 0.5 } };
+      if (state.status) patch.status = { ...state.status, noise: { on: bool(e.on) ?? false, level: num(e.level) ?? state.status.noise?.level ?? 0.25, kind: str(e.kind) ?? state.status.noise?.kind } };
       break;
     case "setting":
       if (state.status && e.name === "volume" && num(e.value) !== undefined) patch.status = { ...state.status, volume: num(e.value) };
@@ -307,9 +307,10 @@ function direct(e: EngineEvent, info: FrameInfo | undefined, me: number | undefi
   const st = state.status;
   switch (e.event) {
     case "retransmit": {
-      const attempt = num(e.attempt) ?? 1;
-      pendingRetry = { seq: num(e.seq), attempt };
-      caption({ tone: "wait", icon: "again", plain: `Sending it again. ${tryWord(attempt)}.`, tech: `retransmission · attempt ${attempt + 1} · seq ${num(e.seq) ?? "?"}` });
+      // `attempt` is which transmission this is: 2 = the second time the frame is sent
+      const attempt = Math.max(2, num(e.attempt) ?? 2);
+      pendingRetry = { seq: num(e.seq), attempt: attempt - 1 };
+      caption({ tone: "wait", icon: "again", plain: `Sending it again. ${tryWord(attempt - 1)}.`, tech: `retransmission · attempt ${attempt} · seq ${num(e.seq) ?? "?"}` });
       break;
     }
     case "tx_start": {
@@ -322,7 +323,7 @@ function direct(e: EngineEvent, info: FrameInfo | undefined, me: number | undefi
       const msg = isData ? [...state.messages].reverse().find((m) => m.dir === "out" && m.status === "sending") : undefined;
       const part = msg?.frames && msg.frames > 1 ? `part ${Math.min(msg.done + 1, msg.frames)} of ${msg.frames}` : undefined;
       // our receipts answer in the format of the frame they answer; our own frames use our switch
-      const shield = isData ? st?.shield === true : state.scene.inc?.shield ?? st?.shield === true;
+      const shield = bool(e.shield) ?? (isData ? st?.shield === true : state.scene.inc?.shield ?? st?.shield === true);
       scene({ out: { key: next(), type, seq, text: msg?.text, part, airtime, start: performance.now(), retry, shield, landed: false }, wait: null });
       const tech = `${type} frame · seq ${seq ?? "?"} · ${secs(airtime)} on air`;
       if (isData) caption({ tone: "go", icon: "send", plain: retry ? `Sending it again. ${tryWord(retry)}.` : "Sending your message as sound.", tech: retry ? `retransmission · ${tech}` : tech }, airtime * 1000 + 4000);
@@ -397,7 +398,7 @@ function direct(e: EngineEvent, info: FrameInfo | undefined, me: number | undefi
     case "shield_set": {
       const on = e.value === true;
       const si = st?.shield_info;
-      const what = [si?.code, si?.filter_hz ? `band-pass ${si.filter_hz[0]}–${si.filter_hz[1]} Hz` : undefined].filter(Boolean).join(" + ");
+      const what = [si?.code, si?.airtime_factor ? `${si.airtime_factor}× longer on air` : undefined].filter(Boolean).join(" · ");
       scene({ flash: { key: next(), kind: on ? "shield-on" : "shield-off" } });
       caption({ tone: on ? "shield" : "idle", icon: on ? "shield" : "off", plain: on ? "Shield on: parcels repair themselves." : "Shield off: parcels travel unprotected.", tech: on ? what || "forward error correction on" : "plain frames · a damaged frame must be sent again" }, 8000);
       break;
@@ -406,7 +407,9 @@ function direct(e: EngineEvent, info: FrameInfo | undefined, me: number | undefi
       const on = e.on === true;
       const sim = st?.mode === "simulated" ? "simulated " : "";
       scene({ flash: { key: next(), kind: on ? "noise-on" : "noise-off" } });
-      caption({ tone: on ? "noise" : "idle", icon: on ? "noise" : "ear", plain: on ? "Generated noise on. The room is loud." : "Generated noise off.", tech: on ? `${sim}interference generator · level ${Math.round((num(e.level) ?? 0) * 100)}%` : `${sim}interference generator stopped` }, 8000);
+      const kind = str(e.kind) ?? st?.noise?.kind;
+      const loud = kind === "clicks" ? "Generated clicks on. Sharp bursts." : kind === "hiss" ? "Generated hiss on. Steady noise." : "Generated noise on. The room is loud.";
+      caption({ tone: on ? "noise" : "idle", icon: on ? "noise" : "ear", plain: on ? loud : "Generated noise off.", tech: on ? `${sim}interference generator · ${kind ? `${kind} · ` : ""}level ${Math.round((num(e.level) ?? 0) * 100)}%` : `${sim}interference generator stopped` }, 8000);
       break;
     }
   }

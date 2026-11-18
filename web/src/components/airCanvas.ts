@@ -8,21 +8,23 @@ import type { SpectrumEvent } from "../lib/types";
  *                   bead on its lane (high beep = 1 on top, low beep = 0 below).
  *                   Beads leave this node while we transmit, and come from the
  *                   other side while we only hear them.
- *   static          specks in the air, as many as the noise in the tone band
+ *   static          specks in the air, as many as the noise in the tone band;
+ *                   when the generator plays clicks, each burst heard is a flash
  *   ripples         rings around whichever node is sounding
  *   equaliser       the 48 bins, tone bins in the tone colours, the noise level
- *                   as a dashed line, and the shield's listening band when it is on
+ *                   as a dashed line
  *
  * Nothing here allocates per frame beyond a bounded bead list, and nothing
  * goes through React, so it runs for as long as the demo does. */
 
-export const GEOM = { eqX0: 0.055, eqX1: 0.945, eqY0: 0.715, eqY1: 0.895 };
+export const GEOM = { eqX0: 0.055, eqX1: 0.945, eqY0: 0.74, eqY1: 0.905 };
 
 export interface CanvasOpts {
   freq0: number;
   freq1: number;
   shield: boolean;
-  filter?: [number, number];
+  /** "clicks" draws each heard burst as a flash; anything else is steady static */
+  noiseKind?: string;
   reduced: boolean;
   nodeR: number;
   fontPx: number;
@@ -38,6 +40,7 @@ const STALE_MS = 1200;
 
 interface Bead { lane: 0 | 1; t0: number; dir: 1 | -1; s: number }
 interface Ripple { at: "me" | "peer"; t0: number }
+interface Flash { x: number; y: number; t0: number; size: number }
 
 export function startAirCanvas(canvas: HTMLCanvasElement, getOpts: () => CanvasOpts): () => void {
   const ctx = canvas.getContext("2d");
@@ -63,6 +66,8 @@ export function startAirCanvas(canvas: HTMLCanvasElement, getOpts: () => CanvasO
   let target = new Float32Array(48);
   const beads: Bead[] = [];
   const ripples: Ripple[] = [];
+  const flashes: Flash[] = [];
+  let burst = 0;
   const specks = new Float32Array(MAX_SPECKS * 4); // x, y, born, life
   let noise = 0; // 0..1, noise in the tone band
   let noiseTarget = 0;
@@ -116,7 +121,10 @@ export function startAirCanvas(canvas: HTMLCanvasElement, getOpts: () => CanvasO
         k++;
       }
     }
-    noiseTarget = norm(k ? sum / k : s.noise_db);
+    const heard = norm(k ? sum / k : s.noise_db);
+    // a click is a sample that jumps well clear of the running noise level
+    if (o.noiseKind === "clicks" && heard - noise > 0.1) burst = Math.min(4, burst + 1 + Math.round((heard - noise) * 8));
+    noiseTarget = o.noiseKind === "clicks" ? Math.min(heard, noiseTarget + 0.02) : heard;
     levelTarget = Math.max(0, Math.min(1, s.level * 2.2));
     const now = performance.now();
     const dir = s.transmitting ? 1 : -1;
@@ -183,6 +191,32 @@ export function startAirCanvas(canvas: HTMLCanvasElement, getOpts: () => CanvasO
       ctx.fillRect(specks[j], specks[j + 1], size, size);
     }
     ctx.globalAlpha = 1;
+
+    // ── clicks: one flash per burst heard ──
+    while (burst > 0 && !o.reduced) {
+      burst--;
+      flashes.push({ x: x0 + Math.random() * (x1 - x0), y: top + Math.random() * (bottom - top), t0: now - Math.random() * 60, size: 0.7 + Math.random() * 0.7 });
+      if (flashes.length > 14) flashes.shift();
+    }
+    burst = 0;
+    for (let i = flashes.length - 1; i >= 0; i--) {
+      const f = flashes[i];
+      const p = (now - f.t0) / 280;
+      if (p >= 1) {
+        flashes.splice(i, 1);
+        continue;
+      }
+      const reach = R * f.size * (0.12 + 0.34 * Math.max(0, p));
+      ctx.strokeStyle = rgba(STATIC, 0.95 * (1 - p));
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      for (let r = 0; r < 4; r++) {
+        const ang = (Math.PI / 4) * r + f.size;
+        ctx.moveTo(f.x - Math.cos(ang) * reach, f.y - Math.sin(ang) * reach);
+        ctx.lineTo(f.x + Math.cos(ang) * reach, f.y + Math.sin(ang) * reach);
+      }
+      ctx.stroke();
+    }
 
     // ── lanes ──
     for (const lane of [0, 1] as const) {
@@ -272,13 +306,11 @@ export function startAirCanvas(canvas: HTMLCanvasElement, getOpts: () => CanvasO
     const binOf = (hz: number) => Math.max(0, Math.min(n - 1, Math.floor((hz - fLo) / step)));
     const b0 = binOf(o.freq0);
     const b1 = binOf(o.freq1);
-    const xOf = (hz: number) => ex0 + ((hz - fLo) / (fHi - fLo)) * (ex1 - ex0);
     for (let i = 0; i < n; i++) {
       const t = stale ? 0 : target[i];
       bars[i] += (t - bars[i]) * k(t > bars[i] ? 0.03 : 0.008);
       peaks[i] = Math.max(bars[i], peaks[i] - dt * 0.0006);
-      const f = fLo + (i + 0.5) * step;
-      const outside = o.filter && (f < o.filter[0] || f > o.filter[1]) ? 1 - 0.62 * shieldMix : 1;
+      const outside = 1;
       const bh = Math.max(1.5, bars[i] * eh);
       const x = ex0 + i * bw + bw * 0.22;
       const tone = i === b0 ? TONE0 : i === b1 ? TONE1 : null;
@@ -310,22 +342,6 @@ export function startAirCanvas(canvas: HTMLCanvasElement, getOpts: () => CanvasO
       ctx.fillStyle = rgba(STATIC, 0.92);
       ctx.textAlign = "right";
       ctx.fillText("NOISE LEVEL", ex1, ny - o.fontPx * 0.95);
-    }
-    if (o.filter && shieldMix > 0.02) {
-      const fx0 = xOf(Math.max(fLo, o.filter[0]));
-      const fx1 = xOf(Math.min(fHi, o.filter[1]));
-      const ty = ey0 - o.fontPx * 0.9;
-      ctx.strokeStyle = rgba(GOOD, 0.85 * shieldMix);
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(fx0, ey1);
-      ctx.lineTo(fx0, ty);
-      ctx.lineTo(fx0 + (fx1 - fx0) * shieldMix, ty);
-      if (shieldMix > 0.98) ctx.lineTo(fx1, ey1);
-      ctx.stroke();
-      ctx.fillStyle = rgba(GOOD, shieldMix);
-      ctx.textAlign = "left";
-      ctx.fillText("THE SHIELD LISTENS ONLY HERE", fx1 + o.fontPx, ty);
     }
   };
   raf = requestAnimationFrame(frame);

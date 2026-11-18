@@ -167,7 +167,7 @@ export function Stage() {
   opts.current.freq0 = freq0;
   opts.current.freq1 = freq1;
   opts.current.shield = status?.shield === true;
-  opts.current.filter = status?.shield_info?.filter_hz;
+  opts.current.noiseKind = status?.noise?.on ? status.noise.kind : undefined;
   opts.current.reduced = reduced;
 
   useEffect(() => {
@@ -222,7 +222,7 @@ export function Stage() {
         {mode === "acoustic" && <span className="sl-tag">Real sound</span>}
         {status?.noise?.on && (
           <span className="sl-tag is-static">
-            <AudioLines aria-hidden strokeWidth={2} /> Generated noise on
+            <AudioLines aria-hidden strokeWidth={2} /> Generated {status.noise.kind ?? "noise"} on
           </span>
         )}
         {status?.shield && (
