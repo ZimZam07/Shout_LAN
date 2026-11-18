@@ -10,14 +10,49 @@
   <img src="https://img.shields.io/badge/tests-143%20pytest-9CA3AF" alt="143 pytest tests pass">
 </p>
 
-SHOUT LAN is a computer network whose only cable is the air in the room. Two laptops exchange messages as sound:
-every bit is a short beep (3000 Hz for 0, 5000 Hz for 1, fifty a second) after a chirp that marks the start of a
-frame. On top of that link runs a real protocol stack, so the things that are invisible on Wi-Fi (a corrupted
-frame, a lost acknowledgement, a retransmission) can be heard in the room and watched on a dashboard.
+SHOUT LAN makes a computer network you can **see and hear**. Two laptops exchange messages as sound, with a real
+protocol stack on top, and a dashboard shows every step. It exists to teach: the ideas in a networks course that
+stay abstract on paper happen here in front of you, slowly enough to follow.
+
+## Why this exists
+
+A networks course asks you to believe in things you never get to watch. Frames, checksums, acknowledgements,
+timeouts and retransmissions are diagrams in a textbook and counters in Wireshark. On real Wi-Fi or Ethernet they
+happen in microseconds, inside a chip, and the operating system hides every failure: a frame is corrupted, caught
+and sent again thousands of times a day, and the only thing you ever see is a page that loaded.
+
+So the concepts get memorised instead of understood:
+
+- Why does a sender need an acknowledgement at all?
+- What does a checksum actually do when a bit flips?
+- Why does a lost ACK cause a duplicate, and how is it ignored?
+- What is the difference between detecting an error and correcting it?
+
+SHOUT LAN slows a network down until a person can follow it, and puts it on a medium everyone already
+understands: sound in a room.
+
+| In the course | In SHOUT LAN |
+|---|---|
+| A bit on the wire | A beep you can hear: low for 0, high for 1 |
+| A frame | A parcel that visibly crosses from one laptop to the other, for as long as the beeps last |
+| Channel noise | Actual noise in the room: clap, or switch the generator on |
+| CRC error detection | The parcel's seal: "Seal broken", with the two checksum values that failed to match |
+| ACK and timeout | A receipt that beeps back, and a deadline ring that runs out when it does not |
+| Retransmission | The same parcel going again, marked "2nd try" |
+| Forward error correction | One switch: the same noise, but the damaged bits are repaired and counted |
+
+Nothing here is a simulation of a network. The laptops have Wi-Fi and Bluetooth off and no cable; when a frame
+is damaged, it is because the room really damaged it. At fifty bits a second a "HELLO" takes three seconds to
+send, which is useless as a way to communicate and exactly right as a way to learn: every mechanism has time to
+be seen, and you can break each one on purpose and watch the protocol recover.
+
+It is written for someone with no networking background. The screen uses everyday words first (parcel, seal,
+receipt) and puts the course term beside each one, so the same view works for a first-year student and for the
+professor checking that the CRC is real.
 
 ## Try it in 30 seconds
 
-No second laptop needed, and no sound:
+No second laptop needed, and no sound. This runs both nodes on one machine over a simulated air:
 
 ```sh
 python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt
