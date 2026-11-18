@@ -131,8 +131,7 @@ class FrameReceiver:
             header, error = None, None
             for gains in self._gain_options():
                 powers = []
-                bits, conf = m.demodulate_bits(self.buffer, self.first_bit, n_head, gains,
-                                               powers=powers)
+                bits, conf = self._demodulate(n_head, gains, powers)
                 if self.shield:
                     header = whiten(fec.decode_block(bits, erase(conf, powers))[0])
                 else:
@@ -151,10 +150,11 @@ class FrameReceiver:
             return None
         for gains in self._gain_options():
             powers = []
-            bits, conf = m.demodulate_bits(self.buffer, self.first_bit, n_bits, gains, powers=powers)
+            bits, conf = self._demodulate(n_bits, gains, powers)
             raw, info = self._decode_full(bits, conf, powers)
             try:
                 frame = fr.parse(raw)
+                info["equaliser"] = "adaptive" if isinstance(gains, str) else "fixed"
                 break
             except fr.FrameError as exc:
                 frame, error = None, str(exc)
@@ -182,6 +182,14 @@ class FrameReceiver:
         yield None
         if self.gains is not None and self.modem.gains_significant(self.gains):
             yield self.gains
+        yield "adaptive"       # last resort: learn the tone levels and echoes from this frame
+
+    def _demodulate(self, n_bits, option, powers):
+        """One decode attempt with the given option from _gain_options()."""
+        m = self.modem
+        if isinstance(option, str):
+            return m.demodulate_adaptive(self.buffer, self.first_bit, n_bits, powers=powers)
+        return m.demodulate_bits(self.buffer, self.first_bit, n_bits, option, powers=powers)
 
     def _decode_full(self, bits, conf, powers=None):
         """Demodulated bits of a whole frame -> (frame bytes, details for the monitor)."""

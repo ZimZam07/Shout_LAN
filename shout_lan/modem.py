@@ -435,6 +435,86 @@ class Modem:
                             conf[bit_index] = float(newc[k])
         return bits, conf
 
+    # ------------------------------------------------------------ adaptive equaliser
+    ADAPT_TAPS = 3           # this bit + the two before it
+    ADAPT_ITERS = 5
+
+    def demodulate_adaptive(self, audio, first_bit, n_bits, powers=None):
+        """
+        Second-chance decoder for a frame whose first decode failed its check:
+        a decision-directed equaliser that LEARNS this particular speaker, room
+        and microphone from the frame itself.
+
+        Why it is needed (measured between two different laptops, docs/TESTING.md):
+        one laptop's speaker played the 3500 Hz tone about 8 dB louder than the
+        2500 Hz tone, and about half of a tone's power was still ringing during
+        the next bit. A fixed rule ("the louder tone wins, minus 15 % echo")
+        then mistakes the leftover of a loud tone for the next bit. No fixed
+        numbers suit every pair of laptops, so the receiver estimates them:
+
+          1. first guess: each tone compared with its OWN typical level
+             (so a louder tone no longer wins automatically);
+          2. from that guess, fit by least squares how strong each tone is when
+             it is on now, was on one bit ago, and two bits ago (its echo) -
+             a small channel model with ADAPT_TAPS taps per tone;
+          3. decide every bit again as whichever value explains BOTH measured
+             tone levels better, using the bits already decided for the echo
+             (decision feedback); repeat 2-3 until nothing changes.
+
+        Real modems do the same thing (a decision-feedback equaliser). The CRC
+        is still the judge: the result is only accepted if the checksum passes.
+        Returns (bits, confidences) like demodulate_bits.
+        """
+        spb = self.samples_per_bit
+        lo, hi = int(spb * self.WIN_LO), int(spb * self.WIN_HI)
+        x = np.asarray(audio[first_bit:first_bit + n_bits * spb], dtype=np.float64)
+        n_bits = min(n_bits, (len(x) - hi) // spb + 1) if len(x) >= hi else 0
+        if n_bits < 8:
+            return [], []
+        k = np.arange(len(x))
+        s0 = np.concatenate([[0], np.cumsum(x * np.exp(-2j * np.pi * self.freq0 / self.sample_rate * k))])
+        s1 = np.concatenate([[0], np.cumsum(x * np.exp(-2j * np.pi * self.freq1 / self.sample_rate * k))])
+        a = np.arange(n_bits) * spb + lo
+        b = np.arange(n_bits) * spb + hi
+        w = hi - lo
+        a0 = np.abs(s0[b] - s0[a]) / w            # tone amplitudes per bit slot
+        a1 = np.abs(s1[b] - s1[a]) / w
+        if powers is not None:
+            powers.extend((a0 * a0 + a1 * a1).tolist())
+        taps = self.ADAPT_TAPS
+
+        def features(on):
+            """Columns: tone on now, on 1 bit ago, on 2 bits ago, constant (noise floor)."""
+            cols = [np.concatenate([np.zeros(j), on[:n_bits - j]]) for j in range(taps)]
+            return np.stack(cols + [np.ones(n_bits)], axis=1)
+
+        level0 = np.percentile(a0, 75) + 1e-30
+        level1 = np.percentile(a1, 75) + 1e-30
+        d = (a1 / level1 > a0 / level0).astype(np.float64)
+        margin = np.abs(a1 / level1 - a0 / level0)
+        for _ in range(self.ADAPT_ITERS):
+            f0, f1 = features(1.0 - d), features(d)
+            w0 = np.linalg.lstsq(f0, a0, rcond=None)[0]
+            w1 = np.linalg.lstsq(f1, a1, rcond=None)[0]
+            if w0[0] <= 0 or w1[0] <= 0:
+                break                              # no usable model (e.g. all bits equal)
+            n0 = max(float(np.std(a0 - f0 @ w0)), 1e-30)
+            n1 = max(float(np.std(a1 - f1 @ w1)), 1e-30)
+            new = np.zeros(n_bits)
+            margin = np.zeros(n_bits)
+            for i in range(n_bits):
+                echo1 = w1[-1] + sum(w1[j] * new[i - j] for j in range(1, taps) if i - j >= 0)
+                echo0 = w0[-1] + sum(w0[j] * (1.0 - new[i - j]) for j in range(1, taps) if i - j >= 0)
+                e1 = ((a1[i] - w1[0] - echo1) / n1) ** 2 + ((a0[i] - echo0) / n0) ** 2   # bit = 1
+                e0 = ((a1[i] - echo1) / n1) ** 2 + ((a0[i] - w0[0] - echo0) / n0) ** 2   # bit = 0
+                new[i] = 1.0 if e1 < e0 else 0.0
+                margin[i] = abs(e1 - e0) / (e1 + e0 + 1e-30)
+            same = bool((new == d).all())
+            d = new
+            if same:
+                break
+        return [int(v) for v in d], [float(min(1.0, v)) for v in margin]
+
     def tone_snr_db(self, audio, first_bit, n_bits, gains=None):
         """
         Signal-to-noise estimate for one received frame, in dB: in every bit
