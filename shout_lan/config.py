@@ -35,7 +35,7 @@ DETECT_BAND = (900, 4500)    # Hz
 
 # Interference generator (demonstration only, always labelled "generated"):
 # default level 0..1 (1 = as loud as our tones). Chosen by measurement, TESTING.md.
-NOISE_DEFAULT_LEVEL = 0.5
+NOISE_DEFAULT_LEVEL = 0.25
 
 TX_VOLUME = 0.5              # 0.0 - 1.0, amplitude of generated tones
 
