@@ -23,11 +23,14 @@ lock = threading.Lock()
 
 # ---- what to do this time -------------------------------------------------
 TASK = [
-    ("procs", {}),                                        # which python processes exist right now
-    ("kill_nodes", {}),                                   # stop every shout.py / run_engine.py process
-    ("restart", {"stacks_after": 25}),                    # start the code on disk; dump thread stacks after 25 s
-    ("sleep", 30),
-    ("procs", {}),
+    ("kill_nodes", {}),                                   # stop every running node
+    ("restart", {"extra": ["--peer", "1"]}),              # start the code now on disk
+    ("sleep", 8),
+    ("send", {"dst": 1, "text": "HELLO", "wait": 70}),    # three short messages to the Mac
+    ("sleep", 3),
+    ("send", {"dst": 1, "text": "HELLO", "wait": 70}),
+    ("sleep", 3),
+    ("send", {"dst": 1, "text": "HELLO", "wait": 70}),
 ]
 # ---------------------------------------------------------------------------
 
