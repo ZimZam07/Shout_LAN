@@ -22,6 +22,20 @@ PREAMBLE_TIME = 0.100        # seconds
 PREAMBLE_F_START = 1000      # Hz
 PREAMBLE_F_END = 4000        # Hz
 GAP_TIME = 0.010             # short silence between the preamble and the first bit
+# Noise Shield frames announce themselves with the SAME chirp played backwards
+# (pitch sliding DOWN from PREAMBLE_F_END to PREAMBLE_F_START). An up-chirp and a
+# down-chirp hardly correlate, so the receiver can tell the two formats apart.
+
+# Receive filter for frame detection: the microphone audio is band-pass filtered
+# to the band the chirp uses before searching for it. Measured on the MacBook
+# (docs/TESTING.md, "Dashboard link work"): 94 % of the microphone's idle noise
+# power is below 300 Hz, so without this filter that rumble counted against the
+# chirp and real frames scored only 0.23-0.41.
+DETECT_BAND = (900, 4500)    # Hz
+
+# Interference generator (demonstration only, always labelled "generated"):
+# default level 0..1 (1 = as loud as our tones). Chosen by measurement, TESTING.md.
+NOISE_DEFAULT_LEVEL = 0.25
 
 TX_VOLUME = 0.5              # 0.0 - 1.0, amplitude of generated tones
 

@@ -21,7 +21,7 @@ import time
 
 import numpy as np
 
-from shout_lan import arq, calibration, config, frame as fr, mac
+from shout_lan import arq, calibration, config, fec, frame as fr, mac
 from shout_lan.crc import flip_bits
 from shout_lan.modem import Modem
 from shout_lan.receiver import FrameReceiver
@@ -44,7 +44,12 @@ class Engine:
         self.modem = modem or Modem()
         self.time_scale = time_scale            # < 1 only for fast automated tests
         self.security = security                # shout_lan.security.Security, or None
-        self.receiver = FrameReceiver(self.modem)
+        self.receiver = FrameReceiver(self.modem, on_preamble=self._on_preamble)
+        # Noise Shield: forward error correction for the frames THIS node sends.
+        # Receivers decode both formats automatically (different preamble chirps)
+        # and answer in the format of the frame they answer.
+        self.shield = False
+        self._reply_shield = False              # format of the frame being handled (rx thread)
         self.stats = Stats("Measured - acoustic" if channel.kind == "acoustic"
                            else "Measured - SIMULATED channel")
 
@@ -168,11 +173,14 @@ class Engine:
             return {n: dict(v) for n, v in self.nodes.items()}
 
     # ------------------------------------------------------------ sending frames
-    def transmit(self, frame, retry=0, msg_id=None, wait=True, priority=1):
+    def transmit(self, frame, retry=0, msg_id=None, wait=True, priority=1, shield=None):
         """
         Queue a frame for the speaker. With wait=True this returns only when the
         sound has finished playing (the ARQ timer must start AFTER sending).
+        shield: send in the Noise Shield format (None = this node's setting).
         """
+        if shield is None:
+            shield = self.shield
         raw = fr.build(frame)
         injected = None
         if wait and frame.ftype not in (fr.ACK, fr.SACK, fr.PONG):
@@ -183,10 +191,10 @@ class Engine:
             self.stats.add("injected_events")
         done = threading.Event()
         item = {"frame": frame, "raw": raw, "retry": retry, "msg_id": msg_id,
-                "injected": injected, "done": done}
+                "injected": injected, "done": done, "shield": bool(shield)}
         self.tx_queue.put((priority, next(self._order), item))
         if wait:
-            limit = self.modem.airtime(len(raw) * 8) * 3 + 10
+            limit = self.modem.airtime(fec.coded_bits(len(raw))) * 3 + 10
             done.wait(timeout=limit)
 
     def _tx_loop(self):
@@ -206,10 +214,12 @@ class Engine:
                     self.tx_ended = time.time()
                 item["done"].set()
                 continue
-            frame, raw = item["frame"], item["raw"]
-            samples = self.modem.modulate_bytes(raw)
+            frame, raw, shield = item["frame"], item["raw"], item["shield"]
+            bits = self.modem.frame_bits(raw, shield)
+            samples = self.modem.modulate(bits, shield)
             airtime = len(samples) / config.SAMPLE_RATE
-            self.emit("tx_start", seq=frame.seq, type=frame.type_name, airtime=round(airtime, 2))
+            self.emit("tx_start", seq=frame.seq, type=frame.type_name, airtime=round(airtime, 2),
+                      shield=shield)
             self.tx_started = time.time()
             self.transmitting = True
             started = time.time()
@@ -226,6 +236,8 @@ class Engine:
                 item["done"].set()
                 continue
             self.stats.add("frames_tx")
+            if shield:
+                self.stats.add("shield_frames_tx")
             if frame.ftype in fr.DATA_TYPES:
                 self.stats.add("data_frames_tx")
             if frame.ftype in (fr.ACK, fr.SACK):
@@ -234,10 +246,12 @@ class Engine:
             self.emit("frame_tx", frame=info, raw=raw.hex(" "), bytes=len(raw),
                       airtime=round(airtime, 2), duration=round(time.time() - started, 2),
                       retry=item["retry"], msg_id=item["msg_id"], injected=item["injected"],
+                      shield=shield, bits_on_air=len(bits),
                       lost_in_simulation=getattr(self.channel, "last_lost", False),
                       mic_overflows=int(getattr(self.channel, "overflows", 0) or 0),
                       speaker_underflows=int(getattr(self.channel, "underflows", 0) or 0),
                       text=f"Sent {frame.type_name} seq {frame.seq} to node {frame.dst}"
+                           + (f" with Noise Shield ({fec.NAME}, {len(bits)} bits on air)" if shield else "")
                            + (f" (retry {item['retry']})" if item["retry"] else "")
                            + (f" - {item['injected']}" if item["injected"] else ""))
             item["done"].set()
@@ -272,28 +286,74 @@ class Engine:
         t = result.get("detected_at", 0.0)
         return half_duplex and (self.transmitting or self.tx_started <= t <= self.tx_ended + 0.05)
 
+    def _on_preamble(self, score, shield, detected_at):
+        """The receiver found a frame start (called on the rx thread)."""
+        if self._own_window(detected_at):
+            return                                    # the start of our own frame
+        self.emit("preamble", score=round(score, 2), shield=shield,
+                  text=f"Hearing a {'Noise Shield' if shield else 'plain'} frame "
+                       f"(preamble score {score:.2f})...")
+
+    def _own_window(self, t):
+        """True if time t falls inside our own transmission (we hear our own speaker)."""
+        if self.channel.kind != "acoustic":
+            return False                              # simulated channels don't echo our frames
+        return self.transmitting or self.tx_started <= t <= self.tx_ended + 0.05
+
+    @staticmethod
+    def _rx_fields(result):
+        """Physical-layer / shield details of one received frame, for the packet monitor."""
+        out = {"shield": bool(result.get("shield")),
+               "bits_repaired": int(result.get("bits_repaired", 0)),
+               "repaired_at": list(result.get("repaired_at", []))[:64],
+               "bit_conf": result.get("bit_conf", []),
+               "snr_db": result.get("snr_db")}
+        for k in ("crc_rx", "crc_calc"):
+            if k in result:
+                out[k] = result[k]
+        return out
+
     def _handle(self, result):
         if not result["ok"] and self._own_echo(result):
             return                                    # our own transmission, heard by our mic
+        extra = self._rx_fields(result)
+        shield_txt = " [Noise Shield]" if extra["shield"] else ""
         if not result["ok"]:
             self.stats.add("crc_failures")
+            damaged = result.get("damaged_frame")
+            if damaged is not None:
+                extra["frame"] = dict(damaged.describe(), damaged=True)
             self.emit("frame_rx", ok=False, error=result["error"], raw=result["raw"].hex(" "),
-                      score=round(result["score"], 2),
-                      text=f"Frame rejected: {result['error']}")
+                      score=round(result["score"], 2), **extra,
+                      text=f"Frame rejected{shield_txt}: {result['error']}"
+                           + (f" ({extra['bits_repaired']} bits repaired, not enough)"
+                              if extra["bits_repaired"] else ""))
             return
         f = result["frame"]
         if f.src == self.node_id:
             return                                    # our own echo
         self.stats.add("frames_rx_ok")
+        if extra["shield"]:
+            self.stats.add("shield_frames_rx")
+            if extra["bits_repaired"]:
+                self.stats.add("bits_repaired", extra["bits_repaired"])
+            if extra["repaired_at"]:
+                # a DATA bit was corrected: without the shield this frame would have
+                # failed its CRC (corrections in parity bits alone don't count)
+                self.stats.add("frames_repaired")
         self._heard(f.src, result["score"])
         for_me = f.dst in (self.node_id, fr.BROADCAST)
         self.emit("frame_rx", ok=True, frame=f.describe(), raw=result["raw"].hex(" "),
                   score=round(result["score"], 2), confidence=round(result["confidence"], 2),
-                  for_me=for_me,
-                  text=f"Received {f.type_name} seq {f.seq} from node {f.src} - CRC OK"
+                  for_me=for_me, **extra,
+                  text=f"Received {f.type_name} seq {f.seq} from node {f.src}{shield_txt} - CRC OK"
+                       + (f" after the shield repaired {extra['bits_repaired']} bit(s)"
+                          if extra["bits_repaired"] else "")
                        + ("" if for_me else f" (for node {f.dst}, ignored)"))
         if not for_me:
             return
+        # replies (ACK, SACK, PONG, HELLO answer) go out in the format of this frame
+        self._reply_shield = extra["shield"]
         if f.ftype in (fr.ACK, fr.SACK):
             self.stats.add("acks_rx")
             self.ack_queue.put(f)
@@ -303,12 +363,12 @@ class Engine:
             self._on_sr_data(f)
         elif f.ftype == fr.PING:
             self.transmit(fr.Frame(fr.PONG, self.node_id, f.src, seq=f.seq, payload=f.payload),
-                          wait=False, priority=0)
+                          wait=False, priority=0, shield=self._reply_shield)
         elif f.ftype == fr.PONG:
             self.pong_queue.put(f)
         elif f.ftype == fr.HELLO and f.flags & fr.F_POLL:
             self.transmit(fr.Frame(fr.HELLO, self.node_id, f.src, seq=self.next_seq()),
-                          wait=False, priority=0)
+                          wait=False, priority=0, shield=self._reply_shield)
 
     def _send_ack(self, f):
         if self._take_injection("drop_next_ack"):
@@ -316,7 +376,8 @@ class Engine:
             self.emit("ack_dropped", seq=f.seq,
                       text=f"ACK for seq {f.seq} NOT sent (injected ACK loss)")
             return
-        self.transmit(fr.Frame(fr.ACK, self.node_id, f.src, seq=f.seq), wait=False, priority=0)
+        self.transmit(fr.Frame(fr.ACK, self.node_id, f.src, seq=f.seq), wait=False, priority=0,
+                      shield=self._reply_shield)
 
     def _on_data(self, f):
         rcv = self.sw_receivers.setdefault(f.src, arq.StopAndWaitReceiver())
@@ -426,7 +487,8 @@ class Engine:
                 self.emit("sack_dropped", text="SACK NOT sent (injected SACK loss)")
                 return
             self.transmit(fr.Frame(fr.SACK, self.node_id, f.src, seq=ref, payload=bytes([bitmap]),
-                                   flags=fr.F_FIRST if cumulative else 0), wait=False, priority=0)
+                                   flags=fr.F_FIRST if cumulative else 0), wait=False, priority=0,
+                          shield=self._reply_shield)
             got = [(ref + i) % 256 for i in range(8) if bitmap >> i & 1]
             self.emit("sack_tx", ref=ref, bitmap=bitmap,
                       text=f"SACK to node {f.src}: everything before seq {ref} delivered"
@@ -618,7 +680,8 @@ class Engine:
         """
         dst, count = job["dst"], job["count"]
         ping_id = next(self.ping_ids) % 256
-        air = self.modem.airtime((fr.OVERHEAD + 2) * 8)
+        n = fr.OVERHEAD + 2
+        air = self.modem.airtime(fec.coded_bits(n) if self.shield else n * 8)
         timeout = (2 * air + 3.0) * self.time_scale
         rtts = []
         self.emit("ping_start", dst=dst, count=count,
@@ -713,6 +776,60 @@ class Engine:
         self.emit("setting", name="tones", value=[freq0, freq1],
                   text=f"BFSK tones set to {freq0}/{freq1} Hz (set the SAME values on every laptop)")
 
+    # ------------------------------------------------------------ Noise Shield + interference
+    @property
+    def shield_info(self):
+        """What the Noise Shield really is (shown in the UI)."""
+        return {"code": fec.NAME, "rate": round(fec.RATE, 3),
+                "decoder": "soft decision (nearest valid codeword, weighted by bit confidence)",
+                "interleaving": "per block: header (6 bytes) and body, sent column by column",
+                "preamble": "down-chirp (plain frames use an up-chirp)",
+                "filter_hz": list(config.DETECT_BAND),
+                "filter_use": "frame detection, both formats",
+                "airtime_factor": 14 / 8}
+
+    def set_shield(self, value):
+        self.shield = bool(value)
+        self.emit("shield_set", value=self.shield,
+                  text=(f"Noise Shield ON: frames from node {self.node_id} are now sent with "
+                        f"{fec.NAME} error correction + interleaving (1.75x airtime), announced by "
+                        f"a down-chirp; replies come back in the same format")
+                  if self.shield else
+                  f"Noise Shield OFF: node {self.node_id} sends plain frames (CRC detects errors, "
+                  f"ARQ retransmits)")
+
+    def reply_extra_air(self):
+        """
+        Extra seconds a shielded ACK/SACK takes on air compared with a plain one.
+        The retransmission timer learns waiting times in plain-frame terms; when
+        the shield is on, the ARQ code adds this so it does not time out while
+        the (longer) coded ACK is still arriving.
+        """
+        if not self.shield:
+            return 0.0
+        n = fr.OVERHEAD + 1                       # a SACK carries 1 payload byte
+        return self.modem.airtime(fec.coded_bits(n)) - self.modem.airtime(n * 8)
+
+    @property
+    def noise(self):
+        """The interference generator: {"on": bool, "level": 0..1}."""
+        state = getattr(self.channel, "noise_state", None)
+        return state() if state else {"on": False, "level": 0.0}
+
+    def set_noise(self, on, level=None):
+        """Switch the GENERATED interference on/off (level 0..1, 1 = as loud as our tones)."""
+        if not hasattr(self.channel, "set_noise"):
+            raise ValueError("the interference generator is not available on this channel")
+        if level is None:
+            level = self.noise["level"] or config.NOISE_DEFAULT_LEVEL
+        level = max(0.0, min(1.0, float(level)))
+        self.channel.set_noise(bool(on), level)
+        label = self.channel.noise_label
+        self.emit("noise_set", on=bool(on), level=level,
+                  text=(f"Interference generator ON at level {level:.2f}: {label} "
+                        f"(band-limited noise over the tone band)") if on else
+                       f"Interference generator OFF ({label} stopped)")
+
     def reset_stats(self):
         self.stats.reset()
         self.emit("setting", name="stats", value="reset", text="Statistics reset")
@@ -733,6 +850,7 @@ class Engine:
                 "noise_floor": getattr(self, "noise_floor", None),
                 "encryption_available": getattr(self, "security", None) is not None,
                 "speaker_mode": self._speaker_mode(),
+                "shield": self.shield, "shield_info": self.shield_info, "noise": self.noise,
                 "routes": {str(k): v for k, v in self.routes.items()}}
 
     def _speaker_mode(self):

@@ -475,3 +475,70 @@ Fake speakers stream "played" samples in scaled real time into the fake micropho
 | 3.13.4 (`.venv`) | **99 passed** |
 | 3.14.2 (`.venv314`, system packages + cryptography/pytest) | **99 passed** |
 | 3.11 / 3.12 | not installed → **untested** |
+
+---
+
+## Dashboard link work (2026-11-18, MacBook Air, macOS): preamble fix, Noise Shield, interference generator
+
+Volume is the macOS output volume, read at the start and end of every run (`audio_io.system_output_volume`). Runs where it changed during the run were discarded. Transmit volume 0.5, tones 2500/3500 Hz, 50 bit/s, mic 0 / speaker 1 (built-in).
+Labels: **[air 60 %]** real sound at demo volume, **[air 22 %]** real sound at the quiet development volume, **[offline]** decoding saved real recordings (noise mixed in digitally where stated), **[sim]** SIMULATED channel / fake audio.
+
+### Weak preamble detection on the MacBook: cause and fix
+- **Symptom:** chirp detected in only 6/10 trials (scores 0.23-0.41, threshold 0.35).
+- **Cause [offline]:** 94 % of the built-in mic's idle noise power is below 300 Hz (`room_noise_30s`: 93.6 % below 300 Hz, 0.2 % in 2-3 kHz). The received chirp was about as loud as that rumble in RMS, and the normalised cross-correlation divides by ALL the energy in the window, so the rumble halved every score. In-band SNR was 20-30 dB.
+- **Fix:** band-pass 900-4500 Hz (4th-order Butterworth, `config.DETECT_BAND`) on the microphone audio before the chirp search, done chunk by chunk with filter state (`receiver.py`). The filter's 12-sample delay is measured on the clean chirp and removed from the timing.
+- **Same recordings, old vs new detector [offline]:** `bits_20261118_175449` 6/10 → 10/10 detected; `bits_..._180703` 2/20 → 20/20; `bits_..._181154` (22 %) 1/6 → 6/6. True-frame scores went from 0.23-0.41 to 0.53-0.58.
+- **False detections [offline]:** 0 in 30 s of room noise, 30 s of music played in the room and 30 s of speech (`say`). Best false scores: 0.15 / 0.19 / 0.15 for both chirps (threshold 0.35); 0 in 10 s of generated band noise (unit test).
+
+### Bit errors after detection: echo, not noise
+- Most errors were a 3500 Hz bit right after a 2500 Hz bit: the 2500 Hz tone keeps ringing into the next slot. A band-pass before the Goertzel step changed nothing (235 vs 230 errors).
+- **The preamble-based tone equaliser hurt here [offline]:** gain errors up to 32 dB (the chirp passes each tone for under 2 ms), 3× more bit errors. It is now tried only if the CRC fails and the tones look more than 10 dB apart.
+- **New decision [offline, 80 trials / 20 480 bits]:** measure 50-98 % of each slot instead of 40-95 %, and subtract 15 % of the previous slot's tone power as echo. Bit errors 2.13 % → 0.66 %.
+
+### Plain link, end result
+| Run | Result |
+|---|---|
+| `loopback_20261118_185152` **[air 60 %]** | **20/20 detected, BER 5/5120 = 0.098 %** |
+| `arq_20261118_185257` (`--quick`, 2 engines, loopback hub) **[air 60 %]** | **3/3** (single run) |
+| `loopback_20261118_183030` **[air 35 %]** | 10/10 detected, BER 0.98 % (the old decoder on the same audio: 2.0 %) |
+| `arq_20261118_182816` **[air 22 %]** | 0/3: about 1 % bit errors at this volume break too many 176-bit frames and ACKs |
+| `loopback_20261118_183744` **[air 60 %]** | DISCARDED: volume changed 60 → 44 during the run, and there were loud room sounds (peaks above full scale) |
+
+**Lowest reliable volume:** at 22-35 % the plain link runs at about 1 % BER, which is not reliable. At 60 % it is clean. One run hung inside the audio library (no progress for 7 min) and was killed; the immediate rerun was fine. Cause unknown.
+
+### Noise Shield as built
+- Hamming(7,4) with soft-decision decoding. Interleaved per block: the header block (bytes 0-5, 12 codewords) and the body block, each sent column by column.
+- Format signalled by a down-chirp (plain frames use the up-chirp); the receiver decodes both automatically.
+- Replies (ACK, SACK, PONG, HELLO answer) go out in the format of the frame they answer.
+- Airtime: a 16-byte frame is 2.67 s plain vs 4.59 s shielded; a 35-byte frame is 5.71 s vs 9.91 s.
+
+### Interference generator
+- Band-limited Gaussian noise (2-4 kHz). Level 1.0 = the RMS of our tones at transmit volume 0.5.
+- While the generator is on, one mixer thread owns the speaker stream and writes 1024-sample blocks back to back. Frames are added at consecutive sample positions, so their timing cannot jump.
+- Mixer timing **[air 15 %]:** 286 writes, longest interval between writes 27 ms, samples written = wall time, 0 underflow flags.
+- A frame sent through the mixer with the generator on was decoded on air.
+- SIMULATED air: generator noise ×5 (`SIM_NOISE_SCALE`), because the software air has no echo. Plain frames failed at level ~1.5 in software vs ~0.3 through real sound.
+
+### Shield OFF vs ON under generated noise (16-byte DATA frame)
+**[offline]:** real frames recorded at 22 % (`frames22_a`, 12 per format) with the generator's own recorded noise mixed in. 48 decodes per point. About 4 of each row's "missed" plain frames are a recording artefact (one truncated recording).
+
+| level | plain OK | plain CRC/header reject | plain missed | shield OK | bits repaired |
+|---|---|---|---|---|---|
+| 0.20 | 33/48 | 11 | 4 | 48/48 | 20 |
+| 0.25 | 27/48 | 15 | 6 | **48/48** | 43 |
+| 0.30 | 34/48 | 7 | 7 | 47/48 | 50 |
+| 0.35 | 25/48 | 15 | 8 | 43/48 | 64 |
+| 0.40 | 22/48 | 10 | 16 | 42/48 | 73 |
+
+**[air 60 %]** `shield_20261118_185556`, level 0.25, 20 frames per format, alternating:
+
+| Format | OK | Rejected | Not detected | Bits repaired |
+|---|---|---|---|---|
+| plain | 15/20 | 5 | 0 | – |
+| shield | 19/20 | 1 (two errors in one header codeword) | 0 | 1 |
+
+0 underflows. Adding more recorded generator noise to that same 60 % recording **[offline]**: level 0.4 → plain 13/20, shield 18/20; level 0.5 → plain 10/20, shield 17/20.
+
+**Speech as the interferer [offline]:** recorded speech mixed in at the same overall loudness as level-0.3 generator noise: plain 19/24, shield 23/24. All plain losses were missed preambles, not CRC failures. Louder speech beat both formats by hiding the preamble. The shield does little against speech, which is mostly below 2 kHz.
+
+**Default level: 0.25.**

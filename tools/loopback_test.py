@@ -26,7 +26,8 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from shout_lan import calibration, config                     # noqa: E402
-from shout_lan.audio_io import Microphone, default_devices, record_while_playing  # noqa: E402
+from shout_lan.audio_io import (Microphone, default_devices, record_while_playing,  # noqa: E402
+                                system_output_volume)
 from shout_lan.modem import Modem                              # noqa: E402
 
 RESULTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "results")
@@ -42,6 +43,8 @@ def save(name, data):
 
 def bit_trials(args, modem, mic, spk):
     rng = np.random.default_rng(args.seed)
+    vol_start = system_output_volume()
+    print(f"system output volume at start: {vol_start}")
     trials = []
     saved_audio = []
     total_bits = total_errors = detected = 0
@@ -63,17 +66,23 @@ def bit_trials(args, modem, mic, spk):
         errors = sum(a != b for a, b in zip(got, bits)) + (len(bits) - len(got))
         total_bits += len(bits)
         total_errors += errors
+        start = found[0] - len(modem.preamble_wave) - modem.gap_samples
+        level = float(np.sqrt(np.mean(np.square(audio[start:found[0] + len(bits) * modem.samples_per_bit]))))
         trials.append({"trial": n, "preamble": True, "score": round(found[1], 3),
                        "errors": errors, "min_confidence": round(min(conf), 3),
-                       "overflows": m.overflows})
+                       "rx_rms": round(level, 4), "overflows": m.overflows})
         print(f"trial {n:2d}: preamble score {found[1]:.2f}  bit errors {errors:3d}/{len(bits)}"
-              f"  min confidence {min(conf):.2f}")
+              f"  min confidence {min(conf):.2f}  received RMS {level:.4f}")
         time.sleep(0.2)
+    vol_end = system_output_volume()
+    print(f"system output volume at end: {vol_end}"
+          + ("" if vol_start == vol_end else "  ** CHANGED DURING THE RUN: results invalid **"))
     ber = total_errors / max(total_bits, 1)
     summary = {"kind": "Measured - acoustic (single-laptop loopback)",
                "mic": mic, "speaker": spk, "exclusive": not args.shared,
                "freq0": modem.freq0, "freq1": modem.freq1, "bit_time": modem.bit_time,
-               "volume": modem.volume, "bits_per_trial": args.bits,
+               "volume": modem.volume, "system_volume_start": vol_start,
+               "system_volume_end": vol_end, "bits_per_trial": args.bits,
                "trials": args.trials, "preambles_detected": detected,
                "total_bits": total_bits, "bit_errors": total_errors, "ber": ber,
                "details": trials}
