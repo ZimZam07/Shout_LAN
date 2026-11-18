@@ -1,0 +1,35 @@
+21:28:37 [engine_started] Node 2 started on the Acoustic link (sound)
+Encryption: AES-256-GCM key loaded from secret.key
+  node 2: dashboard http://127.0.0.1:8082  control 127.0.0.1:5000  (Acoustic link (sound))
+READY mode=acoustic node2=http://127.0.0.1:8082
+21:28:46 [message_status] Message #1 to node 1 queued (5 bytes, 1 frame(s))
+21:28:46 [message_status] Sending message #1 with Stop-and-Wait + CSMA (listen before talk)
+21:28:49 [frame_tx] Sent DATA seq 207 to node 1
+21:28:50 [preamble] Hearing a plain frame (preamble score 0.42)...
+21:28:51 [frame_rx] Frame rejected: CRC mismatch (received 0x36E0, calculated 0xF224)
+21:28:53 [timeout] No ACK for seq 207 after 4.7 s - timeout
+21:28:53 [retransmit] Retransmitting frame seq 207 (attempt 2)
+21:28:56 [frame_tx] Sent DATA seq 207 to node 1 (retry 1)
+21:28:57 [preamble] Hearing a plain frame (preamble score 0.41)...
+21:28:59 [frame_rx] Received ACK seq 207 from node 1 - CRC OK
+21:28:59 [message_progress] Frame 1/1 acknowledged (seq 207)
+21:28:59 [message_status] Message #1 DELIVERED to node 1 in 12.6 s (every frame acknowledged)
+21:29:0221:29:02  [message_status][message_status]  Message #2 to node 1 queued (5 bytes, 1 frame(s))Sending message #2 with Stop-and-Wait + CSMA (listen before talk)
+
+21:29:04 [frame_tx] Sent DATA seq 208 to node 1
+21:29:05 [preamble] Hearing a plain frame (preamble score 0.43)...
+21:29:07 [frame_rx] Frame rejected: bad sync byte 0x78
+21:29:09 [timeout] No ACK for seq 208 after 4.7 s - timeout
+21:29:09 [retransmit] Retransmitting frame seq 208 (attempt 2)
+21:29:12 [frame_tx] Sent DATA seq 208 to node 1 (retry 1)
+21:29:14 [preamble] Hearing a plain frame (preamble score 0.41)...
+21:29:16 [frame_rx] Received ACK seq 208 from node 1 - CRC OK
+21:29:16 [message_progress] Frame 1/1 acknowledged (seq 208)
+21:29:16 [message_status] Message #2 DELIVERED to node 1 in 13.8 s (every frame acknowledged)
+21:29:1921:29:19  [message_status][message_status]  Message #3 to node 1 queued (5 bytes, 1 frame(s))Sending message #3 with Stop-and-Wait + CSMA (listen before talk)
+
+21:29:21 [frame_tx] Sent DATA seq 209 to node 1
+21:29:22 [preamble] Hearing a plain frame (preamble score 0.42)...
+21:29:24 [frame_rx] Received ACK seq 209 from node 1 - CRC OK
+21:29:24 [message_progress] Frame 1/1 acknowledged (seq 209)
+21:29:24 [message_status] Message #3 DELIVERED to node 1 in 5.2 s (every frame acknowledged)
