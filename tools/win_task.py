@@ -23,16 +23,15 @@ lock = threading.Lock()
 
 # ---- what to do this time -------------------------------------------------
 TASK = [
-    ("cmd", {"cmd": "set_shield", "value": False}),       # plain frames only: this run measures the plain link
+    ("cmd", {"cmd": "set_shield", "value": False}),
     ("cmd", {"cmd": "set_noise", "on": False}),
     ("sleep", 2),
-    ("send", {"dst": 1, "text": "HELLO", "wait": 70}),
-    ("sleep", 3),
-    ("send", {"dst": 1, "text": "HELLO", "wait": 70}),
-    ("sleep", 3),
-    ("send", {"dst": 1, "text": "HELLO", "wait": 70}),
-    ("sleep", 3),
-    ("send", {"dst": 1, "text": "HELLO", "wait": 70}),
+    ("cmd", {"cmd": "calibrate"}),                        # plays one test tone per frequency, 1-6 kHz
+    ("sleep", 10),
+    ("cmd", {"cmd": "calibrate"}),
+    ("sleep", 10),
+    ("cmd", {"cmd": "calibrate"}),
+    ("sleep", 10),
 ]
 # ---------------------------------------------------------------------------
 
