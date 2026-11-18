@@ -67,6 +67,8 @@ def parse_args(argv=None):
     p.add_argument("--key", default="secret.key",
                    help="AES-256 key file (made by tools/gen_key.py); encryption is off without it")
     p.add_argument("--no-browser", action="store_true", help="do not open the browser")
+    p.add_argument("--peer", type=int, default=None,
+                   help="the other laptop's node id: the dashboard's default destination")
     args = p.parse_args(argv)
     two = args.pair or args.simulated
     if not 1 <= args.node <= (253 if two else 254):
@@ -149,7 +151,7 @@ def launch(args, time_scale=1.0, log=None):
         else:
             http_port = args.http + i if args.http else 0
         control_port = args.port + i if args.port else 0
-        peer = channels[1 - i][0] if two else None
+        peer = channels[1 - i][0] if two else args.peer
         bridge = WebBridge(engine, http_port, mode=mode, peer=peer, tap=tap,
                            on_shutdown=run.stop_event.set)
         control = ControlServer(engine, port=control_port, command_handler=bridge.command_handler)
