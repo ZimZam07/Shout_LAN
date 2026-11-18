@@ -475,3 +475,247 @@ Fake speakers stream "played" samples in scaled real time into the fake micropho
 | 3.13.4 (`.venv`) | **99 passed** |
 | 3.14.2 (`.venv314`, system packages + cryptography/pytest) | **99 passed** |
 | 3.11 / 3.12 | not installed → **untested** |
+
+---
+
+## Dashboard link work (2026-11-18, MacBook Air, macOS): preamble fix, Noise Shield, interference generator
+
+Volume is the macOS output volume, read at the start and end of every run (`audio_io.system_output_volume`). Runs where it changed during the run were discarded. Transmit volume 0.5, tones 2500/3500 Hz, 50 bit/s, mic 0 / speaker 1 (built-in).
+Labels: **[air 60 %]** real sound at demo volume, **[air 22 %]** real sound at the quiet development volume, **[offline]** decoding saved real recordings (noise mixed in digitally where stated), **[sim]** SIMULATED channel / fake audio.
+
+### Weak preamble detection on the MacBook: cause and fix
+- **Symptom:** chirp detected in only 6/10 trials (scores 0.23-0.41, threshold 0.35).
+- **Cause [offline]:** 94 % of the built-in mic's idle noise power is below 300 Hz (`room_noise_30s`: 93.6 % below 300 Hz, 0.2 % in 2-3 kHz). The received chirp was about as loud as that rumble in RMS, and the normalised cross-correlation divides by ALL the energy in the window, so the rumble halved every score. In-band SNR was 20-30 dB.
+- **Fix:** band-pass 900-4500 Hz (4th-order Butterworth, `config.DETECT_BAND`) on the microphone audio before the chirp search, done chunk by chunk with filter state (`receiver.py`). The filter's 12-sample delay is measured on the clean chirp and removed from the timing.
+- **Same recordings, old vs new detector [offline]:** `bits_20261118_175449` 6/10 → 10/10 detected; `bits_..._180703` 2/20 → 20/20; `bits_..._181154` (22 %) 1/6 → 6/6. True-frame scores went from 0.23-0.41 to 0.53-0.58.
+- **False detections [offline]:** 0 in 30 s of room noise, 30 s of music played in the room and 30 s of speech (`say`). Best false scores: 0.15 / 0.19 / 0.15 for both chirps (threshold 0.35); 0 in 10 s of generated band noise (unit test).
+
+### Bit errors after detection: echo, not noise
+- Most errors were a 3500 Hz bit right after a 2500 Hz bit: the 2500 Hz tone keeps ringing into the next slot. A band-pass before the Goertzel step changed nothing (235 vs 230 errors).
+- **The preamble-based tone equaliser hurt here [offline]:** gain errors up to 32 dB (the chirp passes each tone for under 2 ms), 3× more bit errors. It is now tried only if the CRC fails and the tones look more than 10 dB apart.
+- **New decision [offline, 80 trials / 20 480 bits]:** measure 50-98 % of each slot instead of 40-95 %, and subtract 15 % of the previous slot's tone power as echo. Bit errors 2.13 % → 0.66 %.
+
+### Plain link, end result
+| Run | Result |
+|---|---|
+| `loopback_20261118_185152` **[air 60 %]** | **20/20 detected, BER 5/5120 = 0.098 %** |
+| `arq_20261118_185257` (`--quick`, 2 engines, loopback hub) **[air 60 %]** | **3/3** (single run) |
+| `loopback_20261118_183030` **[air 35 %]** | 10/10 detected, BER 0.98 % (the old decoder on the same audio: 2.0 %) |
+| `arq_20261118_182816` **[air 22 %]** | 0/3: about 1 % bit errors at this volume break too many 176-bit frames and ACKs |
+| `loopback_20261118_183744` **[air 60 %]** | DISCARDED: volume changed 60 → 44 during the run, and there were loud room sounds (peaks above full scale) |
+
+**Lowest reliable volume:** at 22-35 % the plain link runs at about 1 % BER, which is not reliable. At 60 % it is clean. One run hung inside the audio library (no progress for 7 min) and was killed; the immediate rerun was fine. Cause unknown.
+
+### Noise Shield as built
+- Hamming(7,4) with soft-decision decoding. Interleaved per block: the header block (bytes 0-5, 12 codewords) and the body block, each sent column by column.
+- Format signalled by a down-chirp (plain frames use the up-chirp); the receiver decodes both automatically.
+- Replies (ACK, SACK, PONG, HELLO answer) go out in the format of the frame they answer.
+- Airtime: a 16-byte frame is 2.67 s plain vs 4.59 s shielded; a 35-byte frame is 5.71 s vs 9.91 s.
+
+### Interference generator
+- Band-limited Gaussian noise (2-4 kHz). Level 1.0 = the RMS of our tones at transmit volume 0.5.
+- While the generator is on, one mixer thread owns the speaker stream and writes 1024-sample blocks back to back. Frames are added at consecutive sample positions, so their timing cannot jump.
+- Mixer timing **[air 15 %]:** 286 writes, longest interval between writes 27 ms, samples written = wall time, 0 underflow flags.
+- A frame sent through the mixer with the generator on was decoded on air.
+- SIMULATED air: generator noise ×5 (`SIM_NOISE_SCALE`), because the software air has no echo. Plain frames failed at level ~1.5 in software vs ~0.3 through real sound.
+
+### Shield OFF vs ON under generated noise (16-byte DATA frame)
+**[offline]:** real frames recorded at 22 % (`frames22_a`, 12 per format) with the generator's own recorded noise mixed in. 48 decodes per point. About 4 of each row's "missed" plain frames are a recording artefact (one truncated recording).
+
+| level | plain OK | plain CRC/header reject | plain missed | shield OK | bits repaired |
+|---|---|---|---|---|---|
+| 0.20 | 33/48 | 11 | 4 | 48/48 | 20 |
+| 0.25 | 27/48 | 15 | 6 | **48/48** | 43 |
+| 0.30 | 34/48 | 7 | 7 | 47/48 | 50 |
+| 0.35 | 25/48 | 15 | 8 | 43/48 | 64 |
+| 0.40 | 22/48 | 10 | 16 | 42/48 | 73 |
+
+**[air 60 %]** `shield_20261118_185556`, level 0.25, 20 frames per format, alternating:
+
+| Format | OK | Rejected | Not detected | Bits repaired |
+|---|---|---|---|---|
+| plain | 15/20 | 5 | 0 | – |
+| shield | 19/20 | 1 (two errors in one header codeword) | 0 | 1 |
+
+0 underflows. Adding more recorded generator noise to that same 60 % recording **[offline]**: level 0.4 → plain 13/20, shield 18/20; level 0.5 → plain 10/20, shield 17/20.
+
+**Speech as the interferer [offline]:** recorded speech mixed in at the same overall loudness as level-0.3 generator noise: plain 19/24, shield 23/24. All plain losses were missed preambles, not CRC failures. Louder speech beat both formats by hiding the preamble. The shield does little against speech, which is mostly below 2 kHz.
+
+**Default level: 0.25.**
+
+### Clicks: impulsive generated noise (2026-11-18, OFFLINE MIXING ONLY, no sound played)
+Purpose: a generated noise that plain frames almost never survive, while the Noise Shield repairs it. It is chosen to suit forward error correction with interleaving, and is presented that way.
+
+**Method [offline]**
+- Synthetic click trains (`audio_io.ClickGenerator`) were mixed into REAL loopback recordings of random bits: `bits_20261118_185152` at 60 % and `bits_20261118_181012` at 50 %. 40 recordings, 3 click phases each, so 120 decodes per row.
+- Before mixing, each click train was passed through a channel response measured from that recording's own preamble (Wiener deconvolution), so it also gets the room echo.
+- Plain frame: OK only if every bit of the frame decodes right.
+- Shielded frame: decoded with the receiver's soft Hamming decoder (with erasures) per codeword, using that frame size's interleaver geometry. For a linear code the decision does not depend on which codeword was sent.
+- A missed preamble counts as a failure for both formats.
+
+**Design steps (all offline)**
+- **Per-burst flip probability:** a burst that knows nothing about the data flips a bit at most about half the time, because FSK compares the two tones and the burst lands on the sent tone half the time. One 18 ms full-scale single-tone burst flipped at least one bit in 48 % of cases.
+- **Burst span:** with the room echo and the echo canceller, a burst damaged 1-4 adjacent bits.
+- **Burst kind:** single-tone bursts beat two-tone and narrow-band-noise bursts (0.48 vs about 0.35 vs about 0.03 per burst).
+- **Interval geometry:** the interleaver sends codeword `t mod n` at on-air bit t (n = 12 for the header; 10, 12, 20, 32, 58 for the bodies of 11-, 12-, 16-, 22- and 35-byte frames). With an even interval, bursts tile the codewords in pairs. Among 22-29 bit times, 26 (520 ms) gave the best shield result:
+
+  | Interval (bit times) | Shielded DATA 16 B OK (of 80) |
+  |---|---|
+  | 23 | 60 |
+  | 25 | 66 |
+  | 26 | 73 |
+  | 27 | 61 |
+  | 29 | 72 |
+
+  Shorter intervals (11-17) broke the shield (at most 32/40 shielded decodes OK).
+- **Erasures (new, shield receiver):** a bit slot more than 4× louder than the frame's median is marked erased, and the decoder ignores it. A Hamming codeword can fill in 2 erased bits.
+  - Effect at the chosen setting: shielded DATA 91 → 103 of 120.
+  - With no generated noise: 120/120 both with and without erasures.
+  - Hiss at level 0.25 on real recorded frames: shield still 48/48.
+- **Echo-canceller cap: rejected.** Capping the canceller so a burst cannot spill into the next bit raised the clean-channel errors from 124 to 175-208 of 22 016 bits.
+
+**Chosen setting:** `CLICK_LEN` 864 samples (18 ms), `CLICK_INTERVAL` 26 bits (520 ms), level 0.8 (burst peak 0.8 of full scale), erasure factor 4.
+
+**Result: 120 decodes per cell [offline]**
+
+| Frame | Plain OK | Plain failed (rejected or missed) | Shielded OK first time |
+|---|---|---|---|
+| ACK, 11 bytes | 22 | **82 %** | **106 (88 %)** |
+| DATA, 16 bytes | 10 | **92 %** | **103 (86 %)** |
+
+7 of 120 decodes per row (6 %) lost the preamble to a burst, for both formats.
+
+**Same setting, real receiver, real recorded DATA frames [offline]:**
+- Full `FrameReceiver` (detection, header, soft decoding with erasures, CRC) on the 22 % recordings `frames22_a`, 4 click phases each.
+- Plain: 4/44 OK, 40 rejected by CRC (91 % failed).
+- Shield: 45/48 OK (94 %), 3 preambles missed, 235 bits repaired, 208 erased.
+
+**Exchange estimate:**
+- Plain DATA+ACK per attempt: (10/120)·(22/120) ≈ 1.5 %, so about 9 % of messages are delivered within the 6 attempts.
+- Shielded exchange first time: about 76 %; within 6 attempts it is practically always delivered.
+
+**Targets:**
+- Plain ≥ 90 % failed: met for DATA (92 %), not quite for ACK (82 %).
+- Shield ≥ 90 % OK first time: 86-88 % on the 50-60 % recordings, 94 % on the real-receiver DATA check.
+- Raising the level or shortening the interval makes plain fail more, but shield collisions and preamble misses grow faster (level 1.0: shield 75 %).
+
+**Simulated air [sim]:** clicks are not scaled. Plain ACK 5/40 OK, DATA 1/40; shield 40/40 for both.
+
+**Not verified:** clicks on real sound. The coordinator does the on-air confirmation.
+
+**Per-transmission shield [sim] (`test_shield_switched_on_while_a_plain_message_is_stuck_gets_it_through`):**
+- The engine now reads the shield setting when each frame actually goes on air, not when it was queued.
+- Before this change, a retry waiting in carrier sense kept the old format.
+- The test: a message is stuck as plain frames under clicks, the shield is switched on at the first timeout, every later DATA transmission is shielded, and the message is delivered.
+
+---
+
+## Windows node 2: start-up hang and transmit-path check (2026-11-18 evening)
+
+*Measured – acoustic, Windows laptop alone (speaker to its own microphone), Windows volume 70 %, other audio apps closed.*
+
+### Problem 1: the node hung at start-up (`running: false`, `speaker_mode: "closed"`)
+- **Where:** a thread stack dump (`results/win_task_200516.json`) showed the main thread waiting in the blocking warm-up `stream.write` of `Speaker._open_stream`, inside `channel.start()`.
+- **Not two competing nodes:** each "pair" of `shout.py` PIDs in that file was one node. The venv's `.venv\Scripts\python.exe` is a launcher that starts the real interpreter as a child with the same command line (checked with parent PIDs).
+- **Not a new code change:** the warm-up write and the open order were the same in `e3cb3f1`, which started.
+- **Reproduced in a standalone script** that opens the devices the way `AcousticChannel.start()` did. The stream reported "active", but `write_available` went 1024 → 0 and never recovered: the device never took samples.
+
+| Open sequence (exclusive mode) | Hung (no playback after 10 s) |
+|---|---|
+| microphone, then speaker immediately (the old order) | **8 / 26** |
+| microphone, 1–3 s pause, then speaker | 0 / 11 |
+| speaker first, then microphone | 0 / 11 |
+| speaker only | 0 / 2 |
+
+- **Fix:**
+  1. `AcousticChannel.start()` and `AcousticLoopbackHub.attach()` open the **speaker first**, then the microphone.
+  2. `Speaker._open_stream()` writes the warm-up silence only as fast as the device takes it, with a 2 s deadline. A stream that never starts playing is aborted with an `AudioError`.
+  3. `Speaker.open()` retries exclusive mode 3 times, then falls back to shared mode with the existing visible warning. If shared mode also fails, the `AudioError` reaches `shout.py`, which prints one `ERROR:` line and exits instead of serving a page in front of a dead engine.
+  4. New silent tests: `tests/test_speaker_start.py` (3 tests, fake stream).
+- **After:** 6 / 6 consecutive `shout.py --node 2` starts printed `engine_started` and READY, with `running: true` and `speaker_mode: "exclusive"`.
+- A second node on the same ports was already refused (`cannot open dashboard port ...`, the bridge does not use `SO_REUSEADDR` on Windows), so no change was needed there.
+
+### Problem 2: frames from this laptop arrive corrupted in the first byte
+- **Hypothesis tested:** "the persistent stream idles between frames and drops or inserts a buffer when it restarts".
+- **Runs, current code:**
+
+| Run | Result |
+|---|---|
+| `loopback_20261118_202310` (fresh stream per trial) | preambles **10/10**, **19/2560 = 0.74 % BER** |
+| `arq_20261118_202443` (persistent stream, `--quick`) | **3/3**; 4 of 11 transmissions were rejected (2 bad sync byte 0x6E, 2 CRC), all recovered by ARQ |
+| `arq_20261118_203040` (same, repeat) | **3/3**; no rejections other than the scenario's injected corruption |
+
+  - 0 speaker underflows and 0 microphone overflows in both arq runs.
+- **Timing:** each transmitted waveform was cross-correlated against the recording in 8-bit windows. The lag stayed within about 1 sample through every frame. No persistent jump appeared, so no buffer was lost or inserted, and the hypothesis is **not supported** on this laptop. The occasional outliers were single windows that snapped back, which is correlation ambiguity on repetitive bit patterns.
+- **What the errors are:** inter-symbol interference.
+  - The first frame byte on air is the same for every frame, because the scrambler seed is fixed: bits `0 0 0 1 0 0 1 0`.
+  - Bits 3 and 6 are lone 3500 Hz bits after runs of 2500 Hz. They had about 0 dB margin on **every** frame, and failed frames were the ones where they tipped below 0 dB. This explains "the same position fails on every frame" without any timing fault.
+  - Across all bits of `arq_20261118_202443`:
+
+| Sent tone | After N bits of the other tone | Median margin | Bits below 0 dB |
+|---|---|---|---|
+| 2500 Hz | any | 13.5–23 dB | **0** of 859 |
+| 3500 Hz | 0 | 13.7 dB | 0 |
+| 3500 Hz | 1–2 | 4.4–5.0 dB | 10 |
+| 3500 Hz | 3–4+ | **−0.5 to 0.8 dB** | **45** |
+
+  - The steady 2500 and 3500 Hz levels are equal (−0.5 dB), so 3500 Hz is not simply weaker. The 2500 Hz tone keeps ringing after it stops, and more so after long runs.
+  - Within one bit slot, a lone 3500 Hz bit only reaches parity with the lingering 2500 Hz tone near the end of the slot. The fresh-stream loopback shows the same one-sided pattern, milder because random bits have shorter runs.
+- **Receiver settings replayed offline** on the same recordings (no sound):
+
+| Setting | `arq_..._202443` frames clean | `loopback_..._202310` bit errors | `arq_..._203040` frames clean | October 2000/3000 Hz recording `arq_20261031_203726` |
+|---|---|---|---|---|
+| `ECHO_CANCEL` 0.15, `WIN_LO` 0.5 (current) | 8 / 11 | 19 / 2560 | 8 / 8 | 31 / 44 |
+| `ECHO_CANCEL` 0.30, `WIN_LO` 0.7 | 11 / 11 | 5 / 2560 | 8 / 8 | **25 / 44** |
+| `ECHO_CANCEL` 0.45, `WIN_LO` 0.5 | 9 / 11 | 2 / 2560 | 8 / 8 | **3 / 44** |
+
+  - Stronger echo cancelling clearly helps this laptop's current recordings, but makes an older recording worse.
+  - The receiver code is shared with the Mac, so the defaults were **not changed**. This needs checking against recordings made on the Mac's microphone first.
+- **Not done:**
+  - The candidate fix "keep the mixer writing silence between frames" was not applied: the mechanism it targets (buffer loss while idle) was not observed.
+  - The Mac side, including the Windows → Mac link, could not be measured from this laptop.
+
+---
+
+## Two-laptop session: MacBook (node 1) and Windows laptop (node 2), 2026-11-18
+
+*Measured – acoustic, two laptops*, about 30-50 cm apart in a quiet room. Mac output volume 90-100 %, Windows 70 %. Logs: `results/win_task_*.json`, `results/win_events.jsonl`, `results/tone_trial_*.json`. These were the first frames this project ever exchanged between two different machines.
+
+### What went wrong, in order, and what fixed it
+
+| # | Symptom | Cause (how it was established) | Fix |
+|---|---|---|---|
+| 1 | The Mac sent a frame 6 times; the Windows laptop received the first and answered, but the Mac never detected the ACK | The ACK started the instant the Mac's frame ended. The Mac's own sound runs about 0.4 s longer than its `play()` call, so the reply landed on its tail (Mac microphone spectrum log) | 0.35 s turnaround gap before any reply (`TURNAROUND_GAP`, the SIFS idea); the retransmission timer allows for it |
+| 2 | The Windows node served its web page but the engine never started | Opening the exclusive speaker right after the exclusive microphone sometimes left the speaker stream stuck (stack dump; 8 hangs in 26 standalone tries, 0 in 11 with the order swapped). Found and fixed on the Windows laptop | Open the speaker first; the warm-up write has a deadline and falls back to a clear error |
+| 3 | The Mac detected every Windows frame but rejected all of them in the first byte | Not a timing slip (lag constant to about 1 sample). At the Mac's microphone the Windows speaker's 3500 Hz tone was about 8 dB louder than 2500 Hz and about half of it was still ringing in the next bit (least-squares fit against frames of known content) | Adaptive decision-feedback equaliser as a second-chance decode (`Modem.demodulate_adaptive`): on a recording of 5 real frames the receiver went from 0 to 4 decoded; bit errors on 4 frames of known content went from 35-75 per frame to 0 |
+| 4 | Plain frames Windows -> Mac still only 3 of 15 | With 15 frames of known content: the 3500 Hz tone's on/off contrast at the Mac was about 0 dB in most frames (it never switched off), 2500 Hz 7-15 dB. A tone sweep from the Windows speaker confirmed it: 3500 Hz dropped only 4 dB in the 15-25 ms after it stopped, 2500 Hz 8 dB, while 3250 and 4000 Hz dropped 20 dB | New default tones 3000 / 5000 Hz from the tone trial below |
+
+### Tone trial (`tools/tone_trial.py`): frames decoded per direction, 6 probes each way per pair
+
+| Tones | Mac hearing Windows | Windows hearing Mac |
+|---|---|---|
+| **3000 / 5000 Hz** | 6 / 6 (11-12 dB) | 6 / 6 (13-15 dB) |
+| 3250 / 4000 Hz | 6 / 6 (11-18 dB) | 6 / 6 (11-14 dB) |
+| 1750 / 2750 Hz | 5 / 5 and 6 / 6 (12-20 dB) | 6 / 6 and 5 / 6 (13-17 dB) |
+| 1750 / 3250 Hz | 6 / 6 (15-19 dB) | 6 / 6 (7-10 dB) |
+| 2750 / 4000 Hz | 5 / 5 (12-18 dB) | 4 / 6 |
+| 2500 / 3500 Hz (old default) | 3 / 6 (6-9 dB) | 5 / 5 (13-16 dB) |
+
+The dB figure is the tone contrast of the decoded frames. Each cell is 5-6 frames, so differences between the good pairs are not significant; the old default is clearly the worst.
+
+### After the change to 3000 / 5000 Hz
+
+| Test | Result |
+|---|---|
+| Windows -> Mac, 3 plain messages | 3 / 3 delivered. The Mac decoded 5 of 5 DATA frames. 2 of 5 ACKs were rejected at the Windows laptop (contrast 8-9 dB) and recovered by retransmission |
+| Mac -> Windows, 5 plain messages, no noise | 5 / 5 delivered: 3 first try, 1 on the 2nd, 1 on the 3rd (8 transmissions) |
+| Mac -> Windows, clicks 0.8 from the Mac, shield OFF, 3 messages | 1 delivered (on the 6th and last try), 2 failed; 18 transmissions |
+| Mac -> Windows, clicks 0.8 from the Mac, shield ON, 4 messages | 3 delivered (2 first try), 1 not delivered within the test's wait; 9 transmissions, 10 bits repaired |
+
+### Not verified / open
+
+- The Mac -> Windows direction is the weaker one on these tones (about 2 frames in 3 with no noise). Not investigated further.
+- The click comparison is 3 and 4 messages: enough to show the direction of the effect, not a rate.
+- With the generator on, the laptop playing the clicks hears them right next to its own microphone while it waits for the reply. How much that costs was not measured separately.
+- The tone choice depends on the two laptops and their position. It was measured once, in one room.
+- Nothing was tested with people talking close to the laptops, except by accident: speech right at the Mac's microphone clipped it during one early exchange.

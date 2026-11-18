@@ -13,6 +13,10 @@ Commands (UI -> engine), one JSON object per line:
     {"cmd": "set_protocol", "value": "sr"}            sw = Stop-and-Wait, sr = Selective Repeat
     {"cmd": "set_mac", "value": "csma"}               csma / aloha / none
     {"cmd": "set_route", "dst": 3, "via": 2}          reach node 3 through node 2 (via null = remove)
+    {"cmd": "set_shield", "value": true}              Noise Shield (error correction) for frames we send
+    {"cmd": "set_noise", "on": true, "level": 0.8, "kind": "clicks"}
+                                                      GENERATED interference from this laptop's speaker
+                                                      (kind "hiss" or "clicks"; level/kind optional)
     {"cmd": "calibrate"}
     {"cmd": "reset_stats"}
     {"cmd": "shutdown"}
@@ -52,6 +56,12 @@ def make_command_handler(engine, on_shutdown):
             engine.set_volume(float(cmd["value"]))
         elif name == "set_tones":
             engine.set_tones(cmd["freq0"], cmd["freq1"])
+        elif name == "set_shield":
+            engine.set_shield(bool(cmd.get("value", True)))
+        elif name == "set_noise":
+            engine.set_noise(bool(cmd.get("on", True)),
+                             None if cmd.get("level") is None else float(cmd["level"]),
+                             cmd.get("kind"))            # "hiss" / "clicks"; omitted = keep current
         elif name == "calibrate":
             engine.calibrate()
         elif name == "reset_stats":

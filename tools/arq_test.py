@@ -24,7 +24,7 @@ from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from shout_lan.audio_io import default_devices                      # noqa: E402
+from shout_lan.audio_io import default_devices, system_output_volume  # noqa: E402
 from shout_lan.channel import AcousticLoopbackHub, LoopbackAcousticChannel  # noqa: E402
 from shout_lan.engine import Engine                                  # noqa: E402
 
@@ -114,6 +114,8 @@ def main():
     args = p.parse_args()
 
     mic, spk = default_devices()
+    vol_start = system_output_volume()
+    print(f"system output volume at start: {vol_start}")
     hub = AcousticLoopbackHub(mic, spk, record=args.save_audio)
     from shout_lan.security import Security
     import os as _os
@@ -268,12 +270,16 @@ def main():
         np.save(rec_path, np.concatenate(hub.recording))
         print("raw audio saved:", rec_path)
     passed = sum(r["passed"] for r in results)
+    vol_end = system_output_volume()
+    print(f"system output volume at end: {vol_end}"
+          + ("" if vol_start == vol_end else "  ** CHANGED DURING THE RUN: results invalid **"))
     print(f"\n{passed}/{len(results)} scenarios passed")
     print("RTO after test:", round(a.timer.timeout(), 2), "s;  frame RTT:", a.stats.snapshot()["rtt"])
     os.makedirs(RESULTS_DIR, exist_ok=True)
     path = os.path.join(RESULTS_DIR, f"arq_{datetime.now():%Y%m%d_%H%M%S}.json")
     with open(path, "w") as f:
         json.dump({"kind": "Measured - acoustic (single-laptop loopback, 2 engines)",
+                   "system_volume_start": vol_start, "system_volume_end": vol_end,
                    "results": results, "stats_node1": a.stats.snapshot(),
                    "stats_node2": b.stats.snapshot(), "events": log.events}, f, indent=1)
     print("saved:", path)

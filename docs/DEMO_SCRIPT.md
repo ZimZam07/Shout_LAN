@@ -1,40 +1,57 @@
-# SHOUT LAN — Professor Demonstration Script (two laptops)
+# SHOUT LAN — Demo runbook (two laptops)
 
-Total ≈ 15–20 minutes. Laptop A = node 1, laptop B = node 2. Both have the project, the same `secret.key`, and have passed `docs/HARDWARE_TEST_PLAN.md` §0.
+About 8 minutes. The Mac is node 1, the Windows laptop is node 2. Everything runs with Wi-Fi and Bluetooth switched off.
 
-## Before the professor arrives (10 min)
-1. On **both** laptops, close every program that can play sound (browser tabs, Teams, music). Windows volume ~70 %, fixed.
-2. Place the laptops 0.5–1 m apart, speakers facing each other, in a quiet spot.
-3. On both: `.venv\Scripts\python run_ui.py`, then **Connect & Audio**:
-   - Node ID 1 (A) / 2 (B);
-   - **Acoustic link (sound)**; leave the devices as pre-selected (WASAPI); Exclusive mic mode ✓;
-   - **Start engine**.
-   - Check the chip says *"Engine running … on the acoustic link"* and the mic meter shows "speaker **exclusive**". If it says SHARED, close the other audio app, then Stop/Start the engine.
-4. On A: **Calibrate**. Note the recommended tones (from `python tools/loopback_test.py --calibrate`, or the default 2500/3500). Set the **same** tones on both laptops with **Apply tones**.
-5. Optional, also on A: `.venv\Scripts\python monitor_client.py` in a terminal (second TCP client).
-6. Backup if the room is too noisy: on ONE laptop start node 1 and node 2 as SIMULATED engines (ports 5001/5002) and say clearly that it is the simulated channel.
+## Before anyone is watching (10 minutes)
 
-## Live demonstration
-| Step | Do | Professor sees | Concept |
+1. **Place the laptops** 30-50 cm apart, speakers facing each other, on a firm surface. Once it works, do not move them: the sound path between two laptops changes with their position.
+2. **Close every other program that plays sound** on both (browser tabs with video or music, Teams, Spotify).
+3. **Set the volume and leave it:** Mac 100 %, Windows 70 %. Never change it while a frame is in the air.
+4. **Start both nodes:** double-click `start_mac.command` on the Mac and `start_windows.bat` on the Windows laptop. Each opens its dashboard (`http://127.0.0.1:8081` on the Mac, `http://127.0.0.1:8082` on Windows). Click "Open the console".
+5. **Check the Windows laptop says the speaker is exclusive.** If the start window prints a warning about SHARED mode, another program is using the sound card: close it and start again.
+6. **Send three plain messages each way** (type `HELLO`, send). They should show "Delivered". One resend now and then is normal.
+7. **Press Tools -> Clear** on both dashboards so the audience starts with a clean screen.
+
+If plain messages keep failing in this room, the two tone frequencies do not suit it. Run the tone trial on both laptops at the same time (about 7 minutes, see the end of this page), then set the winning pair.
+
+## The demo
+
+| Step | Do | What the audience sees and hears | What to say |
 |---|---|---|---|
-| 1 | Point at the top bar | "Local control link (TCP): connected 127.0.0.1:5000" and "Acoustic link (sound)" | TCP is local only; laptops talk only by sound |
-| 2 | A: **Overview → Discover** | A beeps; B answers; node 2 appears with "heard N s ago"; topology line | Broadcast discovery; only nodes actually heard are listed |
-| 3 | A: **Messages** → to node 2, "HELLO WORLD" → Send | A beeps the frame; B shows the message; A shows "✓ Delivered (ACK received)" only after B's ACK beep | Framing, CRC, ACK |
-| 4 | A: **Packet Monitor** → click the DATA row | Layers: application data, network header (origin/final/TTL), data-link header, CRC verified, airtime | Encapsulation, OSI layers |
-| 5 | A: **Corrupt next DATA frame**, send "CRC TEST" | B logs `CRC mismatch` (red); A logs timeout → retransmission → delivered | Error detection + ARQ |
-| 6 | B: **Drop next ACK**, A sends "ACK TEST" | A retransmits; B: "Duplicate … not delivered twice"; the message appears **once** | Lost ACK, duplicates, exactly-once |
-| 7 | A: **Protocols** → Selective Repeat; Monitor: frame 2 → **Lose this frame**; send a ~90-character message | A sends 4 frames, frame 2 "NOT sent (injected)"; B "buffered out of order"; one SACK; **only frame 2** resent | Sliding window, Selective Repeat, SACK |
-| 8 | **Protocols** → CSMA; send from A, and from B while A is still beeping | B logs "CSMA: channel BUSY … deferring" | Carrier sense |
-| 9 | **Protocols** → Pure ALOHA; **Run simulation** | Chart: simulated points on the theory curves (max 18.4 % / 36.8 %), labelled *Simulation* | ALOHA throughput |
-| 10 | A: Messages → tick **Encrypt (AES-GCM)**, send "SECRET" | 🔒 on both; monitor shows ciphertext (ENC) and the extra frame | AES-GCM, security cost |
-| 11 | A: **Ping this node ×4** | Replies with RTT; summary min/avg/max, loss % | ICMP-like ping, RTT |
-| 12 | **Performance** page | Measured counters labelled "Measured – acoustic", RTT chart, delivery ratio, goodput | Performance metrics |
-| 13 | (3rd laptop, or SIMULATED) Overview → route "3 via 2", send to 3 | Node 3 shows "2 hops"; relay logs "Relaying … TTL 4 → 3" | Routing, forwarding, TTL |
-| 14 | Show `monitor_client.py` printing the same events | Two TCP clients served at once | Multithreaded socket server |
-| 15 | (If NS-2 is required) `ns2/` topology + AWK metrics | Trace-based throughput/delay/drops | NS-2 (separate simulation) |
+| 1 | Show Wi-Fi and Bluetooth are off on both laptops | | "No Wi-Fi, no Bluetooth, no cable. The only thing between these laptops is air." |
+| 2 | Mac: type `HELLO`, send | The Mac beeps for about 3 s; a parcel crosses the screen; the Windows laptop beeps back for about 2 s; "Delivered" with two ticks | "Each beep is one bit: low is 0, high is 1. The short reply is the receipt. Only when the receipt is heard does it say delivered." |
+| 3 | Click the parcel in the strip at the bottom | The frame's layers, its bytes, its checksum | "The text is wrapped in addresses and a checksum, exactly like a frame on Ethernet or Wi-Fi." |
+| 4 | Mac: switch **Generated noise** on (Clicks) | Sharp clicks from the Mac's speaker; flashes on the stage | "Now the room is noisy. This is real sound from the speaker, not a simulation." |
+| 5 | Mac: send `CAN YOU HEAR ME` | Parcels arrive damaged on the Windows screen: "Seal broken", two different checksum values. The Mac's deadline ring runs out; "2nd try", "3rd try" | "A click flipped a bit. The receiver recalculated the checksum, it did not match, so it threw the frame away and stayed silent. The sender heard no receipt, so it is sending again." |
+| 6 | While it is still retrying: Mac: switch **Noise Shield** on | The next try goes out as a shielded parcel and is delivered; "bits repaired" counts up | "Same noise. The shield adds spare bits, so the receiver repairs the damage instead of throwing the frame away. That is forward error correction: Hamming(7,4)." |
+| 7 | Send one more message with the shield on | Delivered, usually first try | "It costs airtime: a shielded frame takes about 1.75 times as long." |
+| 8 | Noise off, shield off | | Take questions |
+
+Point at the **Windows** screen in step 5: the damaged parcel and the mismatching checksums show on the laptop that receives the frame. The sender only knows that no receipt came.
+
+## Honest answers to likely questions
+
+- **"Does the shield beat any noise?"** No. Hamming(7,4) repairs one flipped bit in every 7. It handles short bursts like clicks. Strong steady noise, or noise that hides the start-of-frame chirp, still beats it, and then the frame is resent as before.
+- **"Why did that message need a second try without any noise?"** The room itself is a noisy channel: echo and reflections damage some frames. The checksum catches them and the protocol resends. That is the point of the project.
+- **"Why 50 bits a second?"** Laptop speakers and room echo. Each tone must die away before the next bit, which limits the rate.
+- **"Is the noise real?"** Yes, the laptop plays it through its speaker. It is labelled "generated" on screen because we switch it on ourselves so the demo is repeatable.
 
 ## If something goes wrong
-- **Frames keep failing CRC:** move the laptops closer, check the "speaker exclusive" note, re-run Calibrate and apply the same tones on both laptops.
-- **"Speaker in SHARED mode":** another program is using audio. Close it, then Stop engine / Start engine.
-- **No ACK ever arrives:** B's engine may not be running, or the tones differ. Check B's Connect page.
-- **Fallback:** the SIMULATED channel demo (clearly labelled) shows every protocol feature without sound.
+
+| Problem | Do |
+|---|---|
+| A message shows "Not delivered" with no noise on | Send it again. If it keeps happening, move the laptops a little closer and check both volumes |
+| The Windows start window shows `ERROR:` | Read the line: it names the cause (sound card in use, port in use). Close other audio programs and double-click the start file again |
+| The dashboard says the engine is disconnected | The start window was closed. Double-click the start file again and reload the page |
+| The room is too loud for anything to work | Backup 1: on the Mac alone, run `.venv/bin/python shout.py --node 1 --pair` (two nodes sharing the Mac's speaker and microphone, still real sound). Backup 2: `--simulated` instead of `--pair` (no sound, labelled SIMULATED everywhere) |
+
+## Tone trial (only if plain messages fail in a new room)
+
+Run at the same time on both laptops, with both nodes already started:
+
+```
+Mac:      .venv/bin/python tools/tone_trial.py --port 8081 --role b --minutes 7
+Windows:  .venv\Scripts\python tools\tone_trial.py --port 8082 --role a --minutes 7
+```
+
+Each prints, per pair of tones, how many frames it decoded. Pick the pair with the most frames decoded on BOTH laptops, then start both nodes with it, for example `shout.py --node 1 --peer 2 --f0 3000 --f1 5000` (and the same `--f0 --f1` on the other laptop). The default 3000 / 5000 Hz was chosen this way on 2026-11-18.

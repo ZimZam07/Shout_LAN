@@ -11,7 +11,7 @@ This is the same "digital data over an analogue signal" idea as a modem.
 """
 
 import numpy as np
-from scipy.signal import fftconvolve, lfilter
+from scipy.signal import butter, fftconvolve, lfilter, sosfilt
 
 from shout_lan import config
 
@@ -108,25 +108,57 @@ class Modem:
 
         self.samples_per_bit = int(round(sample_rate * bit_time))
         self.gap_samples = int(round(sample_rate * config.GAP_TIME))
-        self.preamble_wave = self._make_preamble()
+        self.preamble_wave = self._make_preamble()                  # plain frames: up-chirp
+        self.shield_preamble_wave = self._make_preamble(down=True)  # Noise Shield frames: down-chirp
+        # receive filter used before frame detection (see config.DETECT_BAND)
+        self.detect_sos = butter(4, config.DETECT_BAND, btype="band", fs=sample_rate, output="sos")
+        self.detect_delay = 0
+        self.detect_delay = self._filter_delay()
 
     # ------------------------------------------------------------ sender side
-    def _make_preamble(self):
+    def _make_preamble(self, down=False):
         """
         A linear chirp (pitch slides from PREAMBLE_F_START to PREAMBLE_F_END).
         A chirp is used because it looks very different from speech, noise
         and our own BFSK tones, so the receiver can find it reliably and very
-        precisely in time.
+        precisely in time. down=True gives the same chirp sliding downwards:
+        it marks a Noise Shield (error-corrected) frame.
         """
         n = int(round(self.sample_rate * config.PREAMBLE_TIME))
         t = np.arange(n) / self.sample_rate
         f0, f1 = config.PREAMBLE_F_START, config.PREAMBLE_F_END
+        if down:
+            f0, f1 = f1, f0
         k = (f1 - f0) / config.PREAMBLE_TIME
         wave = np.sin(2 * np.pi * (f0 * t + 0.5 * k * t * t))
         wave *= np.hanning(n) ** 0.25     # soft start/end so the speaker doesn't "click"
         return wave.astype(np.float32)
 
-    def modulate(self, bits):
+    def _filter_delay(self):
+        """
+        The detection band-pass filter delays the signal slightly (about a
+        quarter of a millisecond). Measure that delay once on the clean chirp
+        so the frame start can be placed back exactly where it really is.
+        """
+        pad = 2000
+        probe = np.concatenate([np.zeros(pad), self.preamble_wave, np.zeros(pad)]).astype(np.float64)
+        return int(np.argmax(self.preamble_scores(probe))) - pad
+
+    def detect_filter(self, audio, zi=None):
+        """
+        Band-pass receive filter used for frame detection. With `zi` (the
+        filter's memory) the audio can be filtered chunk by chunk as it
+        arrives from the microphone. Returns (filtered_audio, new_zi).
+        """
+        audio = np.asarray(audio, dtype=np.float64)
+        if zi is None:
+            return sosfilt(self.detect_sos, audio), None
+        return sosfilt(self.detect_sos, audio, zi=zi)
+
+    def new_filter_state(self):
+        return np.zeros((self.detect_sos.shape[0], 2))
+
+    def modulate(self, bits, shield=False):
         """
         Bits -> audio samples ready for the speaker.
 
@@ -149,42 +181,85 @@ class Modem:
 
         gap = np.zeros(self.gap_samples)
         tail = np.zeros(self.samples_per_bit * 2)
-        signal = np.concatenate([self.preamble_wave, gap, tones, tail])
+        preamble = self.shield_preamble_wave if shield else self.preamble_wave
+        signal = np.concatenate([preamble, gap, tones, tail])
         return (signal * self.volume).astype(np.float32)
 
-    def modulate_bytes(self, data):
-        """Frame bytes -> scrambled -> bits -> sound. Used for every transmission."""
-        return self.modulate(bytes_to_bits(whiten(data)))
+    def frame_bits(self, data, shield=False):
+        """
+        Frame bytes -> the bits that go on air.
+          plain : scrambled bytes, 8 bits per byte
+          shield: scrambled bytes, then Hamming(7,4) + interleaving (fec.py),
+                  14 bits per byte
+        """
+        from shout_lan import fec
+        scrambled = whiten(data)
+        return fec.encode_frame(scrambled) if shield else bytes_to_bits(scrambled)
+
+    def modulate_bytes(self, data, shield=False):
+        """Frame bytes -> scrambled -> (coded) bits -> sound. Used for every transmission."""
+        return self.modulate(self.frame_bits(data, shield), shield)
 
     def airtime(self, n_bits):
         """Seconds of sound needed to send n_bits (preamble + gap + bits)."""
         return config.PREAMBLE_TIME + config.GAP_TIME + n_bits * self.bit_time
 
     # ------------------------------------------------------------ receiver side
-    def preamble_scores(self, audio):
+    def preamble_scores(self, audio, shield=False, filtered=False):
         """
-        Normalised cross-correlation between the audio and the known preamble.
+        Normalised cross-correlation between the audio and the known preamble
+        (the up-chirp, or with shield=True the down-chirp).
         Output value k (0..1) says how much audio[k : k+len(preamble)] looks
         like the preamble. Normalising by the audio energy means a loud noise
         does NOT automatically look like a preamble.
+        The audio is first band-pass filtered to the chirp's band (receive
+        filter) unless the caller already did that (filtered=True): energy
+        outside that band can never be part of a preamble, so it must not
+        count in the normalisation.
         """
-        tmpl = self.preamble_wave.astype(np.float64)
+        tmpl = (self.shield_preamble_wave if shield else self.preamble_wave).astype(np.float64)
         n = len(tmpl)
         audio = np.asarray(audio, dtype=np.float64)
         if len(audio) < n:
             return np.zeros(0)
+        if not filtered:
+            audio = self.detect_filter(audio)[0]
         corr = fftconvolve(audio, tmpl[::-1], mode="valid")
         energy = np.cumsum(np.concatenate([[0.0], audio * audio]))
         window_energy = energy[n:] - energy[:-n]
         denom = np.sqrt(np.maximum(window_energy, 1e-12)) * np.linalg.norm(tmpl)
         return np.abs(corr) / denom
 
-    def find_preamble(self, audio, start=0):
+    def find_preamble(self, audio, start=0, shield=False, filtered=False):
         """
         Search for the next frame start at or after sample `start`.
         Returns (index_of_first_bit, score) or None if no preamble is found.
         """
-        scores = self.preamble_scores(audio[start:])
+        found = self._find(self.preamble_scores(audio[start:], shield, filtered))
+        return None if found is None else (start + found[0], found[1])
+
+    def find_frame_start(self, audio, start=0, filtered=False):
+        """
+        Search for EITHER preamble: plain up-chirp or Noise Shield down-chirp.
+        Returns (index_of_first_bit, score, shield) for the earlier one, or None.
+        This is how every receiver decodes both frame formats with no setting.
+        """
+        audio = np.asarray(audio[start:], dtype=np.float64)
+        if not filtered:
+            audio = self.detect_filter(audio)[0]
+        best = None
+        n = len(self.preamble_wave)
+        for shield in (False, True):
+            found = self._find(self.preamble_scores(audio, shield, filtered=True))
+            if found is None:
+                continue
+            if (best is None or found[0] < best[0] - n
+                    or (abs(found[0] - best[0]) <= n and found[1] > best[1])):
+                best = (found[0], found[1], shield)
+        return None if best is None else (start + best[0], best[1], best[2])
+
+    def _find(self, scores):
+        """First threshold crossing -> exact peak -> index of the first bit (or None)."""
         if len(scores) == 0:
             return None
         above = np.nonzero(scores > self.threshold)[0]
@@ -199,7 +274,8 @@ class Modem:
             return None
         region = scores[first:first + len(self.preamble_wave)]
         peak = first + int(np.argmax(region))
-        first_bit = start + peak + len(self.preamble_wave) + self.gap_samples
+        # (the receive filter delayed the audio by detect_delay samples: undo that)
+        first_bit = peak - self.detect_delay + len(self.preamble_wave) + self.gap_samples
         return first_bit, float(scores[peak])
 
     def estimate_gains(self, audio, first_bit):
@@ -236,14 +312,38 @@ class Modem:
     # TESTING.md M6), so it is not reliable enough to enable.
     TRACKING_DEFAULT = False
 
-    def demodulate_bits(self, audio, first_bit, n_bits, gains=None, track=None, trace=None):
+    # Bit decision settings, chosen by re-decoding 80 real loopback recordings
+    # (20 480 bits) from the MacBook (docs/TESTING.md, "Dashboard link work"):
+    #   window 40-95 %, no echo cancel  -> 2.13 % bit errors
+    #   window 50-98 %, echo cancel 0.15 -> 0.66 %
+    # Most errors were a 3500 Hz bit right after a 2500 Hz bit: the 2500 Hz
+    # tone keeps ringing in the room into the next slot.
+    WIN_LO = 0.50            # measure each slot from 50 % ...
+    WIN_HI = 0.98            # ... to 98 % of its length
+    ECHO_CANCEL = 0.15       # fraction of the previous slot's tone power treated as echo    # The preamble-based tone equaliser (estimate_gains) is NOT reliable on the
+    # MacBook: the chirp passes each tone frequency for under 2 ms, and a brief
+    # multipath notch at that moment gave gain errors of up to 32 dB, turning
+    # good frames into bad ones. The receiver therefore decodes WITHOUT it first
+    # and only tries the equalised decision when the CRC fails and the tones
+    # look more than EQUALISE_MIN_DB apart (receiver.py).
+    EQUALISE_MIN_DB = 10.0
+
+    def gains_significant(self, gains):
+        g0, g1 = gains
+        return abs(10 * np.log10(max(g1, 1e-12) / max(g0, 1e-12))) >= self.EQUALISE_MIN_DB
+
+    def demodulate_bits(self, audio, first_bit, n_bits, gains=None, track=None, trace=None,
+                        powers=None):
         """
         Decide each bit by comparing tone strengths inside that bit's time slot.
 
-        - Only the LATER part of each slot is measured (40% .. 95%): the start
-          of a slot still contains the echo of the previous bit.
-        - Each tone's power is divided by its channel gain (from the preamble),
-          so a tone that the speaker plays weakly is not always out-voted.
+        - Only the LATER part of each slot is measured (WIN_LO .. WIN_HI): the
+          start of a slot still contains the echo of the previous bit, and a
+          fraction (ECHO_CANCEL) of the previous slot's tone power is
+          subtracted as the remaining echo.
+        - If one tone arrives much weaker (> EQUALISE_MIN_DB), each tone's power
+          is divided by its channel gain (from the preamble), so the weak tone
+          is not always out-voted.
         - Symbol-timing recovery (track=True): Windows' audio path sometimes
           inserts or drops a few milliseconds of sound in the middle of a
           frame (TESTING.md M6), which shifts every later bit. After every 4
@@ -261,8 +361,11 @@ class Modem:
         if track is None:
             track = self.TRACKING_DEFAULT
         spb = self.samples_per_bit
-        lo = int(spb * 0.40)
-        hi = int(spb * 0.95)
+        # the experimental timing tracker was tuned with the original 40-95 % window
+        # and no echo cancellation (TESTING.md M6), so it keeps those settings
+        lo = int(spb * (0.40 if track else self.WIN_LO))
+        hi = int(spb * (0.95 if track else self.WIN_HI))
+        echo_cancel = 0.0 if track else self.ECHO_CANCEL
         length = hi - lo
         g0, g1 = gains if gains else (1.0, 1.0)
         limit = self.TRACK_LIMIT_BITS * spb if track else 0
@@ -292,8 +395,18 @@ class Modem:
             if begin + hi > len(x) or begin + lo < 0:
                 break                                   # not enough audio yet
             p0, p1 = measure([begin])
-            bits.append(1 if p1[0] > p0[0] else 0)
-            conf.append(float(confidence(p0, p1)[0]))
+            if echo_cancel and begin - spb + lo >= 0:
+                # echo cancellation: part of what each tone measured in the previous
+                # slot is still ringing in the room now - subtract that estimate
+                q0, q1 = measure([begin - spb])
+                d0 = p0[0] - echo_cancel * q0[0]
+                d1 = p1[0] - echo_cancel * q1[0]
+            else:
+                d0, d1 = p0[0], p1[0]
+            bits.append(1 if d1 > d0 else 0)
+            conf.append(float(min(1.0, abs(d1 - d0) / (p1[0] + p0[0] + 1e-20))))
+            if powers is not None:
+                powers.append(float(p0[0] + p1[0]))      # total tone power in this slot
             if track and (i + 1) % self.TRACK_GROUP == 0:
                 group = np.arange(i + 1 - self.TRACK_GROUP, i + 1)
                 shifts = np.arange(-self.TRACK_RANGE, self.TRACK_RANGE + 1, self.TRACK_STEP)
@@ -321,6 +434,110 @@ class Modem:
                             bits[bit_index] = 1 if p1[k] > p0[k] else 0
                             conf[bit_index] = float(newc[k])
         return bits, conf
+
+    # ------------------------------------------------------------ adaptive equaliser
+    ADAPT_TAPS = 3           # this bit + the two before it
+    ADAPT_ITERS = 5
+
+    def demodulate_adaptive(self, audio, first_bit, n_bits, powers=None):
+        """
+        Second-chance decoder for a frame whose first decode failed its check:
+        a decision-directed equaliser that LEARNS this particular speaker, room
+        and microphone from the frame itself.
+
+        Why it is needed (measured between two different laptops, docs/TESTING.md):
+        one laptop's speaker played the 3500 Hz tone about 8 dB louder than the
+        2500 Hz tone, and about half of a tone's power was still ringing during
+        the next bit. A fixed rule ("the louder tone wins, minus 15 % echo")
+        then mistakes the leftover of a loud tone for the next bit. No fixed
+        numbers suit every pair of laptops, so the receiver estimates them:
+
+          1. first guess: each tone compared with its OWN typical level
+             (so a louder tone no longer wins automatically);
+          2. from that guess, fit by least squares how strong each tone is when
+             it is on now, was on one bit ago, and two bits ago (its echo) -
+             a small channel model with ADAPT_TAPS taps per tone;
+          3. decide every bit again as whichever value explains BOTH measured
+             tone levels better, using the bits already decided for the echo
+             (decision feedback); repeat 2-3 until nothing changes.
+
+        Real modems do the same thing (a decision-feedback equaliser). The CRC
+        is still the judge: the result is only accepted if the checksum passes.
+        Returns (bits, confidences) like demodulate_bits.
+        """
+        spb = self.samples_per_bit
+        lo, hi = int(spb * self.WIN_LO), int(spb * self.WIN_HI)
+        x = np.asarray(audio[first_bit:first_bit + n_bits * spb], dtype=np.float64)
+        n_bits = min(n_bits, (len(x) - hi) // spb + 1) if len(x) >= hi else 0
+        if n_bits < 8:
+            return [], []
+        k = np.arange(len(x))
+        s0 = np.concatenate([[0], np.cumsum(x * np.exp(-2j * np.pi * self.freq0 / self.sample_rate * k))])
+        s1 = np.concatenate([[0], np.cumsum(x * np.exp(-2j * np.pi * self.freq1 / self.sample_rate * k))])
+        a = np.arange(n_bits) * spb + lo
+        b = np.arange(n_bits) * spb + hi
+        w = hi - lo
+        a0 = np.abs(s0[b] - s0[a]) / w            # tone amplitudes per bit slot
+        a1 = np.abs(s1[b] - s1[a]) / w
+        if powers is not None:
+            powers.extend((a0 * a0 + a1 * a1).tolist())
+        taps = self.ADAPT_TAPS
+
+        def features(on):
+            """Columns: tone on now, on 1 bit ago, on 2 bits ago, constant (noise floor)."""
+            cols = [np.concatenate([np.zeros(j), on[:n_bits - j]]) for j in range(taps)]
+            return np.stack(cols + [np.ones(n_bits)], axis=1)
+
+        level0 = np.percentile(a0, 75) + 1e-30
+        level1 = np.percentile(a1, 75) + 1e-30
+        d = (a1 / level1 > a0 / level0).astype(np.float64)
+        margin = np.abs(a1 / level1 - a0 / level0)
+        for _ in range(self.ADAPT_ITERS):
+            f0, f1 = features(1.0 - d), features(d)
+            w0 = np.linalg.lstsq(f0, a0, rcond=None)[0]
+            w1 = np.linalg.lstsq(f1, a1, rcond=None)[0]
+            if w0[0] <= 0 or w1[0] <= 0:
+                break                              # no usable model (e.g. all bits equal)
+            n0 = max(float(np.std(a0 - f0 @ w0)), 1e-30)
+            n1 = max(float(np.std(a1 - f1 @ w1)), 1e-30)
+            new = np.zeros(n_bits)
+            margin = np.zeros(n_bits)
+            for i in range(n_bits):
+                echo1 = w1[-1] + sum(w1[j] * new[i - j] for j in range(1, taps) if i - j >= 0)
+                echo0 = w0[-1] + sum(w0[j] * (1.0 - new[i - j]) for j in range(1, taps) if i - j >= 0)
+                e1 = ((a1[i] - w1[0] - echo1) / n1) ** 2 + ((a0[i] - echo0) / n0) ** 2   # bit = 1
+                e0 = ((a1[i] - echo1) / n1) ** 2 + ((a0[i] - w0[0] - echo0) / n0) ** 2   # bit = 0
+                new[i] = 1.0 if e1 < e0 else 0.0
+                margin[i] = abs(e1 - e0) / (e1 + e0 + 1e-30)
+            same = bool((new == d).all())
+            d = new
+            if same:
+                break
+        return [int(v) for v in d], [float(min(1.0, v)) for v in margin]
+
+    def tone_snr_db(self, audio, first_bit, n_bits, gains=None):
+        """
+        Signal-to-noise estimate for one received frame, in dB: in every bit
+        slot one tone was sent (signal) and the other was not (what is
+        measured there is noise + echo). Average power of the stronger tone
+        over the average power of the weaker one.
+        """
+        spb = self.samples_per_bit
+        lo, hi = int(spb * 0.40), int(spb * 0.95)
+        g0, g1 = gains if gains else (1.0, 1.0)
+        win, lose = [], []
+        for i in range(n_bits):
+            a = first_bit + i * spb
+            block = np.asarray(audio[a + lo:a + hi], dtype=np.float64)
+            if len(block) < hi - lo:
+                break
+            p0 = goertzel_power(block, self.freq0, self.sample_rate) / g0
+            p1 = goertzel_power(block, self.freq1, self.sample_rate) / g1
+            win.append(max(p0, p1))
+            lose.append(min(p0, p1))
+        if not win:
+            return None
+        return float(10 * np.log10(max(np.mean(win), 1e-20) / max(np.mean(lose), 1e-20)))
 
     def samples_needed(self, n_bits):
         """Audio samples after the first-bit index needed to decode n_bits."""

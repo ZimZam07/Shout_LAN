@@ -1,0 +1,270 @@
+20:56:36 [engine_started] Node 2 started on the Acoustic link (sound)
+Encryption: AES-256-GCM key loaded from secret.key
+  node 2: dashboard http://127.0.0.1:8082  control 127.0.0.1:5000  (Acoustic link (sound))
+READY mode=acoustic node2=http://127.0.0.1:8082
+20:56:4620:56:46  [message_status] [message_status] Sending message #1 with Stop-and-Wait + CSMA (listen before talk)
+Message #1 to node 1 queued (5 bytes, 1 frame(s))
+20:56:48 [frame_tx] Sent DATA seq 248 to node 1
+20:56:53 [timeout] No ACK for seq 248 after 4.7 s - timeout
+20:56:53 [retransmit] Retransmitting frame seq 248 (attempt 2)
+20:56:56 [frame_tx] Sent DATA seq 248 to node 1 (retry 1)
+20:56:56 [preamble] Hearing a plain frame (preamble score 0.48)...
+20:56:58 [frame_rx] Received ACK seq 248 from node 1 - CRC OK
+20:56:58 [message_progress] Frame 1/1 acknowledged (seq 248)
+20:56:58 [message_status] Message #1 DELIVERED to node 1 in 12.6 s (every frame acknowledged)
+20:57:01 [message_status] Sending message #2 with Stop-and-Wait + CSMA (listen before talk)
+20:57:01 [message_status] Message #2 to node 1 queued (5 bytes, 1 frame(s))
+20:57:04 [frame_tx] Sent DATA seq 249 to node 1
+20:57:09 [timeout] No ACK for seq 249 after 4.7 s - timeout
+20:57:09 [retransmit] Retransmitting frame seq 249 (attempt 2)
+20:57:11 [frame_tx] Sent DATA seq 249 to node 1 (retry 1)
+20:57:16 [timeout] No ACK for seq 249 after 4.7 s - timeout
+20:57:16 [retransmit] Retransmitting frame seq 249 (attempt 3)
+20:57:19 [frame_tx] Sent DATA seq 249 to node 1 (retry 2)
+20:57:23 [timeout] No ACK for seq 249 after 4.7 s - timeout
+20:57:23 [retransmit] Retransmitting frame seq 249 (attempt 4)
+20:57:24 [shield_set] Noise Shield ON: frames from node 2 are now sent with Hamming(7,4) error correction + interleaving (1.75x airtime), announced by a down-chirp; replies come back in the same format
+20:57:26 [frame_tx] Sent DATA seq 249 to node 1 (retry 3)
+20:57:32 [timeout] No ACK for seq 249 after 6.2 s - timeout
+20:57:32 [retransmit] Retransmitting frame seq 249 (attempt 5)
+20:57:37 [frame_tx] Sent DATA seq 249 to node 1 with Noise Shield (Hamming(7,4), 224 bits on air) (retry 4)
+20:57:38 [preamble] Hearing a Noise Shield frame (preamble score 0.50)...
+20:57:41 [frame_rx] Received ACK seq 249 from node 1 [Noise Shield] - CRC OK
+20:57:41 [message_progress] Frame 1/1 acknowledged (seq 249)
+20:57:41 [message_status] Message #2 DELIVERED to node 1 in 39.2 s (every frame acknowledged)
+20:57:44 [message_status] 20:57:44 [message_status]Message #3 to node 1 queued (5 bytes, 1 frame(s)) 
+Sending message #3 with Stop-and-Wait + CSMA (listen before talk)
+20:57:44 [channel_busy] CSMA: channel BUSY (sound in our band 27 dB above the noise floor) - deferring DATA seq 250 for 0.5 s
+20:57:44 [channel_idle] Channel idle - transmitting now
+20:57:49 [frame_tx] Sent DATA seq 250 to node 1 with Noise Shield (Hamming(7,4), 224 bits on air)
+20:57:50 [preamble] Hearing a Noise Shield frame (preamble score 0.50)...
+20:57:53 [frame_rx] Received ACK seq 250 from node 1 [Noise Shield] - CRC OK
+20:57:53 [message_progress] Frame 1/1 acknowledged (seq 250)
+20:57:53 [message_status] Message #3 DELIVERED to node 1 in 8.9 s (every frame acknowledged)
+20:59:58 [shield_set] Noise Shield OFF: node 2 sends plain frames (CRC detects errors, ARQ retransmits)
+20:59:58 [noise_set] Interference generator OFF (clicks; generated noise from this laptop's speaker stopped)
+21:00:0021:00:00  [message_status][message_status]  Sending message #4 with Stop-and-Wait + CSMA (listen before talk)Message #4 to node 1 queued (5 bytes, 1 frame(s))
+
+21:00:02 [frame_tx] Sent DATA seq 251 to node 1
+21:00:09 [timeout] No ACK for seq 251 after 6.5 s - timeout
+21:00:09 [retransmit] Retransmitting frame seq 251 (attempt 2)
+21:00:11 [frame_tx] Sent DATA seq 251 to node 1 (retry 1)
+21:00:18 [timeout] No ACK for seq 251 after 6.5 s - timeout
+21:00:18 [retransmit] Retransmitting frame seq 251 (attempt 3)
+21:00:20 [frame_tx] Sent DATA seq 251 to node 1 (retry 2)
+21:00:27 [timeout] No ACK for seq 251 after 6.5 s - timeout
+21:00:27 [retransmit] Retransmitting frame seq 251 (attempt 4)
+21:00:30 [frame_tx] Sent DATA seq 251 to node 1 (retry 3)
+21:00:36 [timeout] No ACK for seq 251 after 6.5 s - timeout
+21:00:36 [retransmit] Retransmitting frame seq 251 (attempt 5)
+21:00:39 [frame_tx] Sent DATA seq 251 to node 1 (retry 4)
+21:00:45 [timeout] No ACK for seq 251 after 6.5 s - timeout
+21:00:45 [retransmit] Retransmitting frame seq 251 (attempt 6)
+21:00:48 [frame_tx] Sent DATA seq 251 to node 1 (retry 5)
+21:00:54 [timeout] No ACK for seq 251 after 6.5 s - timeout
+21:00:54 [message_status] Message #4 FAILED: no ACK after 5 retries
+21:00:5721:00:57 [message_status]  [message_status]Sending message #5 with Stop-and-Wait + CSMA (listen before talk) 
+Message #5 to node 1 queued (5 bytes, 1 frame(s))
+21:01:00 [frame_tx] Sent DATA seq 252 to node 1
+21:01:07 [timeout] No ACK for seq 252 after 6.5 s - timeout
+21:01:07 [retransmit] Retransmitting frame seq 252 (attempt 2)
+21:01:09 [frame_tx] Sent DATA seq 252 to node 1 (retry 1)
+21:01:16 [timeout] No ACK for seq 252 after 6.5 s - timeout
+21:01:16 [retransmit] Retransmitting frame seq 252 (attempt 3)
+21:01:18 [frame_tx] Sent DATA seq 252 to node 1 (retry 2)
+21:01:19 [preamble] Hearing a plain frame (preamble score 0.47)...
+21:01:21 [frame_rx] Received ACK seq 252 from node 1 - CRC OK
+21:01:21 [message_progress] Frame 1/1 acknowledged (seq 252)
+21:01:21 [message_status] Message #5 DELIVERED to node 1 in 23.3 s (every frame acknowledged)
+21:01:24 [message_status] Sending message #6 with Stop-and-Wait + CSMA (listen before talk)
+21:01:24 [message_status] Message #6 to node 1 queued (5 bytes, 1 frame(s))
+21:01:27 [frame_tx] Sent DATA seq 253 to node 1
+21:01:27 [preamble] Hearing a plain frame (preamble score 0.51)...
+21:01:29 [frame_rx] Received ACK seq 253 from node 1 - CRC OK
+21:01:29 [message_progress] Frame 1/1 acknowledged (seq 253)
+21:01:29 [message_status] Message #6 DELIVERED to node 1 in 5.1 s (every frame acknowledged)
+21:01:32 [message_status] Message #7 to node 1 queued (5 bytes, 1 frame(s))
+21:01:32 [message_status] Sending message #7 with Stop-and-Wait + CSMA (listen before talk)
+21:01:35 [frame_tx] Sent DATA seq 254 to node 1
+21:01:41 [timeout] No ACK for seq 254 after 5.6 s - timeout
+21:01:41 [retransmit] Retransmitting frame seq 254 (attempt 2)
+21:01:43 [frame_tx] Sent DATA seq 254 to node 1 (retry 1)
+21:01:49 [timeout] No ACK for seq 254 after 5.6 s - timeout
+21:01:49 [retransmit] Retransmitting frame seq 254 (attempt 3)
+21:01:51 [frame_tx] Sent DATA seq 254 to node 1 (retry 2)
+21:01:57 [timeout] No ACK for seq 254 after 5.6 s - timeout
+21:01:57 [retransmit] Retransmitting frame seq 254 (attempt 4)
+21:02:00 [frame_tx] Sent DATA seq 254 to node 1 (retry 3)
+21:02:05 [timeout] No ACK for seq 254 after 5.6 s - timeout
+21:02:05 [retransmit] Retransmitting frame seq 254 (attempt 5)
+21:02:08 [frame_tx] Sent DATA seq 254 to node 1 (retry 4)
+21:02:09 [preamble] Hearing a plain frame (preamble score 0.48)...
+21:02:10 [frame_rx] Received ACK seq 254 from node 1 - CRC OK
+21:02:10 [message_progress] Frame 1/1 acknowledged (seq 254)
+21:02:10 [message_status] Message #7 DELIVERED to node 1 in 38.0 s (every frame acknowledged)
+21:05:55 [shield_set] Noise Shield OFF: node 2 sends plain frames (CRC detects errors, ARQ retransmits)
+21:05:55 [noise_set] Interference generator OFF (clicks; generated noise from this laptop's speaker stopped)
+21:05:57 [calibration_start] Calibrating: measuring room noise for 1 s, then playing a tone sweep
+21:06:03 [calibration] Calibration done: noise floor RMS 0.0075; detector-bin SNR at 2500 Hz = 53.4 dB, 3500 Hz = 53.6 dB
+21:06:07 [calibration_start] Calibrating: measuring room noise for 1 s, then playing a tone sweep
+21:06:13 [calibration] Calibration done: noise floor RMS 0.0016; detector-bin SNR at 2500 Hz = 73.0 dB, 3500 Hz = 79.4 dB
+21:06:17 [calibration_start] Calibrating: measuring room noise for 1 s, then playing a tone sweep
+21:06:23 [calibration] Calibration done: noise floor RMS 0.0005; detector-bin SNR at 2500 Hz = 76.7 dB, 3500 Hz = 83.4 dB
+21:12:30 [preamble] Hearing a plain frame (preamble score 0.45)...
+21:12:31 [frame_rx] Frame rejected: bad sync byte 0x1A
+21:12:38 [preamble] Hearing a plain frame (preamble score 0.51)...
+21:12:40 [frame_rx] Frame rejected: CRC mismatch (received 0xE434, calculated 0xA572)
+21:12:46 [preamble] Hearing a plain frame (preamble score 0.46)...
+21:12:47 [frame_rx] Frame rejected: bad sync byte 0x5A
+21:13:27 [shield_set] Noise Shield OFF: node 2 sends plain frames (CRC detects errors, ARQ retransmits)
+21:13:27 [noise_set] Interference generator OFF (clicks; generated noise from this laptop's speaker stopped)
+21:13:27 [setting] Medium access set to No access control
+21:13:30 [preamble] Hearing a plain frame (preamble score 0.45)...
+21:13:31 [frame_rx] Frame rejected: bad sync byte 0x88
+21:13:38 [preamble] Hearing a plain frame (preamble score 0.47)...
+21:13:39 [frame_rx] Frame rejected: bad sync byte 0x88
+21:13:46 [preamble] Hearing a plain frame (preamble score 0.47)...
+21:13:47 [frame_rx] Frame rejected: bad sync byte 0xD8
+21:14:00 [setting] BFSK tones set to 1750/2750 Hz (set the SAME values on every laptop)
+21:14:09 [frame_tx] Sent HELLO seq 255 to node 255
+21:14:10 [preamble] Hearing a plain frame (preamble score 0.47)...
+21:14:12 [frame_rx] Received HELLO seq 99 from node 1 - CRC OK
+21:14:17 [frame_tx] Sent HELLO seq 0 to node 255
+21:14:18 [preamble] Hearing a plain frame (preamble score 0.51)...
+21:14:20 [frame_rx] Received HELLO seq 100 from node 1 - CRC OK
+21:14:25 [frame_tx] Sent HELLO seq 1 to node 255
+21:14:26 [preamble] Hearing a plain frame (preamble score 0.51)...
+21:14:28 [frame_rx] Received HELLO seq 101 from node 1 - CRC OK
+21:14:30 [preamble] Hearing a plain frame (preamble score 0.52)...
+21:14:32 [frame_rx] Received HELLO seq 102 from node 1 - CRC OK
+21:14:34 [frame_tx] Sent HELLO seq 2 to node 1
+21:14:38 [preamble] Hearing a plain frame (preamble score 0.52)...
+21:14:40 [frame_rx] Received HELLO seq 103 from node 1 - CRC OK
+21:14:42 [frame_tx] Sent HELLO seq 3 to node 1
+21:14:46 [preamble] Hearing a plain frame (preamble score 0.51)...
+21:14:48 [frame_rx] Received HELLO seq 104 from node 1 - CRC OK
+21:14:50 [frame_tx] Sent HELLO seq 4 to node 1
+21:15:00 [setting] BFSK tones set to 1750/3250 Hz (set the SAME values on every laptop)
+21:15:09 [frame_tx] Sent HELLO seq 5 to node 255
+21:15:10 [preamble] Hearing a plain frame (preamble score 0.46)...
+21:15:12 [frame_rx] Received HELLO seq 105 from node 1 - CRC OK
+21:15:17 [frame_tx] Sent HELLO seq 6 to node 255
+21:15:18 [preamble] Hearing a plain frame (preamble score 0.49)...
+21:15:20 [frame_rx] Received HELLO seq 106 from node 1 - CRC OK
+21:15:25 [frame_tx] Sent HELLO seq 7 to node 255
+21:15:26 [preamble] Hearing a plain frame (preamble score 0.50)...
+21:15:28 [frame_rx] Received HELLO seq 107 from node 1 - CRC OK
+21:15:30 [preamble] Hearing a plain frame (preamble score 0.50)...
+21:15:34 [frame_rx] Received HELLO seq 108 from node 1 - CRC OK
+21:15:36 [frame_tx] Sent HELLO seq 8 to node 1
+21:15:38 [preamble] Hearing a plain frame (preamble score 0.50)...
+21:15:40 [frame_rx] Received HELLO seq 109 from node 1 - CRC OK
+21:15:42 [frame_tx] Sent HELLO seq 9 to node 1
+21:15:46 [preamble] Hearing a plain frame (preamble score 0.51)...
+21:15:48 [frame_rx] Received HELLO seq 110 from node 1 - CRC OK
+21:15:50 [frame_tx] Sent HELLO seq 10 to node 1
+21:16:00 [setting] BFSK tones set to 3000/5000 Hz (set the SAME values on every laptop)
+21:16:09 [frame_tx] Sent HELLO seq 11 to node 255
+21:16:10 [preamble] Hearing a plain frame (preamble score 0.47)...
+21:16:12 [frame_rx] Received HELLO seq 111 from node 1 - CRC OK
+21:16:17 [frame_tx] Sent HELLO seq 12 to node 255
+21:16:18 [preamble] Hearing a plain frame (preamble score 0.49)...
+21:16:20 [frame_rx] Received HELLO seq 112 from node 1 - CRC OK
+21:16:25 [frame_tx] Sent HELLO seq 13 to node 255
+21:16:26 [preamble] Hearing a plain frame (preamble score 0.48)...
+21:16:28 [frame_rx] Received HELLO seq 113 from node 1 - CRC OK
+21:16:30 [preamble] Hearing a plain frame (preamble score 0.46)...
+21:16:32 [frame_rx] Received HELLO seq 114 from node 1 - CRC OK
+21:16:34 [frame_tx] Sent HELLO seq 14 to node 1
+21:16:38 [preamble] Hearing a plain frame (preamble score 0.49)...
+21:16:40 [frame_rx] Received HELLO seq 115 from node 1 - CRC OK
+21:16:42 [frame_tx] Sent HELLO seq 15 to node 1
+21:16:46 [preamble] Hearing a plain frame (preamble score 0.50)...
+21:16:48 [frame_rx] Received HELLO seq 116 from node 1 - CRC OK
+21:16:50 [frame_tx] Sent HELLO seq 16 to node 1
+21:17:00 [setting] BFSK tones set to 2500/3500 Hz (set the SAME values on every laptop)
+21:17:09 [frame_tx] Sent HELLO seq 17 to node 255
+21:17:10 [preamble] Hearing a plain frame (preamble score 0.46)...
+21:17:12 [frame_rx] Received HELLO seq 117 from node 1 - CRC OK
+21:17:17 [frame_tx] Sent HELLO seq 18 to node 255
+21:17:18 [preamble] Hearing a plain frame (preamble score 0.50)...
+21:17:20 [frame_rx] Received HELLO seq 118 from node 1 - CRC OK
+21:17:25 [frame_tx] Sent HELLO seq 19 to node 255
+21:17:30 [preamble] Hearing a plain frame (preamble score 0.46)...
+21:17:32 [frame_rx] Received HELLO seq 119 from node 1 - CRC OK
+21:17:34 [frame_tx] Sent HELLO seq 20 to node 1
+21:17:38 [preamble] Hearing a plain frame (preamble score 0.50)...
+21:17:40 [frame_rx] Received HELLO seq 120 from node 1 - CRC OK
+21:17:42 [frame_tx] Sent HELLO seq 21 to node 1
+21:17:46 [preamble] Hearing a plain frame (preamble score 0.52)...
+21:17:48 [frame_rx] Received HELLO seq 121 from node 1 - CRC OK
+21:17:50 [frame_tx] Sent HELLO seq 22 to node 1
+21:18:00 [setting] BFSK tones set to 2750/4000 Hz (set the SAME values on every laptop)
+21:18:09 [frame_tx] Sent HELLO seq 23 to node 255
+21:18:10 [preamble] Hearing a plain frame (preamble score 0.51)...
+21:18:12 [frame_rx] Received HELLO seq 122 from node 1 - CRC OK
+21:18:17 [frame_tx] Sent HELLO seq 24 to node 255
+21:18:18 [preamble] Hearing a plain frame (preamble score 0.51)...
+21:18:20 [frame_rx] Received HELLO seq 123 from node 1 - CRC OK
+21:18:25 [frame_tx] Sent HELLO seq 25 to node 255
+21:18:26 [preamble] Hearing a plain frame (preamble score 0.46)...
+21:18:28 [frame_rx] Frame rejected: CRC mismatch (received 0x08DD, calculated 0x3BED)
+21:18:30 [preamble] Hearing a plain frame (preamble score 0.49)...
+21:18:32 [frame_rx] Frame rejected: CRC mismatch (received 0x1783, calculated 0x1782)
+21:18:38 [preamble] Hearing a plain frame (preamble score 0.53)...
+21:18:40 [frame_rx] Received HELLO seq 126 from node 1 - CRC OK
+21:18:42 [frame_tx] Sent HELLO seq 26 to node 1
+21:18:46 [preamble] Hearing a plain frame (preamble score 0.53)...
+21:18:48 [frame_rx] Received HELLO seq 127 from node 1 - CRC OK
+21:18:50 [frame_tx] Sent HELLO seq 27 to node 1
+21:19:00 [setting] BFSK tones set to 3250/4000 Hz (set the SAME values on every laptop)
+21:19:09 [frame_tx] Sent HELLO seq 28 to node 255
+21:19:10 [preamble] Hearing a plain frame (preamble score 0.49)...
+21:19:12 [frame_rx] Received HELLO seq 128 from node 1 - CRC OK
+21:19:17 [frame_tx] Sent HELLO seq 29 to node 255
+21:19:18 [preamble] Hearing a plain frame (preamble score 0.51)...
+21:19:20 [frame_rx] Received HELLO seq 129 from node 1 - CRC OK
+21:19:25 [frame_tx] Sent HELLO seq 30 to node 255
+21:19:26 [preamble] Hearing a plain frame (preamble score 0.52)...
+21:19:28 [frame_rx] Received HELLO seq 130 from node 1 - CRC OK
+21:19:30 [preamble] Hearing a plain frame (preamble score 0.49)...
+21:19:32 [frame_rx] Received HELLO seq 131 from node 1 - CRC OK
+21:19:34 [frame_tx] Sent HELLO seq 31 to node 1
+21:19:38 [preamble] Hearing a plain frame (preamble score 0.51)...
+21:19:40 [frame_rx] Received HELLO seq 132 from node 1 - CRC OK
+21:19:42 [frame_tx] Sent HELLO seq 32 to node 1
+21:19:46 [preamble] Hearing a plain frame (preamble score 0.48)...
+21:19:48 [frame_rx] Received HELLO seq 133 from node 1 - CRC OK
+21:19:50 [frame_tx] Sent HELLO seq 33 to node 1
+21:20:00 [setting] BFSK tones set to 1750/2750 Hz (set the SAME values on every laptop)
+21:20:09 [frame_tx] Sent HELLO seq 34 to node 255
+21:20:10 [preamble] Hearing a plain frame (preamble score 0.46)...
+21:20:12 [frame_rx] Received HELLO seq 134 from node 1 - CRC OK
+21:20:17 [frame_tx] Sent HELLO seq 35 to node 255
+21:20:18 [preamble] Hearing a plain frame (preamble score 0.50)...
+21:20:20 [frame_rx] Received HELLO seq 135 from node 1 - CRC OK
+21:20:25 [frame_tx] Sent HELLO seq 36 to node 255
+21:20:26 [preamble] Hearing a plain frame (preamble score 0.53)...
+21:20:27 [frame_rx] Frame rejected: bad sync byte 0x77
+21:20:30 [preamble] Hearing a plain frame (preamble score 0.51)...
+21:20:32 [frame_rx] Received HELLO seq 137 from node 1 - CRC OK
+21:20:34 [frame_tx] Sent HELLO seq 37 to node 1
+21:20:38 [preamble] Hearing a plain frame (preamble score 0.52)...
+21:20:40 [frame_rx] Received HELLO seq 138 from node 1 - CRC OK
+21:20:42 [frame_tx] Sent HELLO seq 38 to node 1
+21:20:46 [preamble] Hearing a plain frame (preamble score 0.51)...
+21:20:48 [frame_rx] Received HELLO seq 139 from node 1 - CRC OK
+21:20:50 [frame_tx] Sent HELLO seq 39 to node 1
+21:21:00 [setting] Medium access set to CSMA (listen before talk)
+21:21:30 [preamble] Hearing a plain frame (preamble score 0.47)...
+21:21:31 [frame_rx] Frame rejected: bad sync byte 0xCE
+21:21:38 [preamble] Hearing a plain frame (preamble score 0.51)...
+21:21:39 [frame_rx] Frame rejected: bad sync byte 0x5E
+21:21:46 [preamble] Hearing a plain frame (preamble score 0.51)...
+21:21:50 [frame_rx] Frame rejected: bad sync byte 0x6C
+21:22:30 [preamble] Hearing a plain frame (preamble score 0.47)...
+21:22:31 [frame_rx] Frame rejected: bad sync byte 0x1A
+21:22:38 [preamble] Hearing a plain frame (preamble score 0.49)...
+21:22:39 [frame_rx] Frame rejected: bad sync byte 0x81
+21:22:46 [preamble] Hearing a plain frame (preamble score 0.48)...
+21:22:47 [frame_rx] Frame rejected: bad sync byte 0x81

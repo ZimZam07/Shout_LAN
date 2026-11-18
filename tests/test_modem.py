@@ -78,7 +78,7 @@ def test_whitening_is_reversible_and_breaks_runs():
 def test_equaliser_handles_a_weak_tone():
     # Tone 1 arrives 15 dB weaker than tone 0 (like the real laptop speaker).
     from scipy.signal import filtfilt, firwin
-    modem = Modem()
+    modem = Modem(freq0=2500, freq1=3500)              # the filter below is built around these tones
     rng = np.random.default_rng(9)
     bits = [0] * 40 + [1] + [0] * 40 + [int(b) for b in rng.integers(0, 2, 100)]
     sig = modem.modulate(bits).astype(np.float64)

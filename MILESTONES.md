@@ -28,3 +28,10 @@ Legend:
 - [~] **M8 NS-2** – OPTIONAL / PENDING academic confirmation. Scripts written (`ns2/`), AWK verified on a hand-written trace; **simulation not run** (NS-2 not installed: needs your sudo password) — G1 Blocked
 - [-] **M9 Optional extras** – 4-FSK, X25519 key exchange, file transfer: **not implemented** (optional; core reliability first). Symbol-timing recovery exists as an experimental, disabled feature
 - [~] **M10 Final** – all silent work done: integration, 99/99 tests on 3.13 and 3.14, 32/32 UI automation, all docs, final DoD statuses. **Remaining: the real-hardware session and two-laptop demo rehearsal** (docs/HARDWARE_TEST_PLAN.md)
+
+## Dashboard version and first two-laptop exchange (2026-11-18)
+
+- [x] **M11 Browser dashboard** – `shout.py` launcher, HTTP/SSE bridge, web app in `web/` (replaces the PySide6 app). Verified on the SIMULATED channel and on real sound.
+- [x] **M12 Noise Shield** – Hamming(7,4) with interleaving, announced by a down-chirp; clicks and hiss interference generator. Verified: unit and simulated tests; single-laptop real sound; two laptops (TESTING.md, "Two-laptop session").
+- [x] **M13 Two laptops** – MacBook (node 1) and Windows laptop (node 2) exchange messages by sound in both directions: turnaround gap, speaker-first start-up on Windows, adaptive equaliser, tones 3000 / 5000 Hz from the tone trial. Evidence: TESTING.md, "Two-laptop session". This closes C8 in spirit (messages delivered between two laptops); the ≥ 9/10 first-try criterion is **not** met in the Mac -> Windows direction.
+- [ ] **Demo rehearsal** in the real room (docs/DEMO_SCRIPT.md).

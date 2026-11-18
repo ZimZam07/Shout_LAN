@@ -13,7 +13,12 @@ class Stats:
                 "messages_delivered", "messages_failed", "messages_received",
                 "payload_bytes_acked", "pings_sent", "pongs_received", "injected_events",
                 "channel_busy_deferrals", "backoffs", "forwarded", "ttl_expired",
-                "security_rejects")
+                "security_rejects",
+                # Noise Shield (forward error correction, fec.py)
+                "bits_repaired",        # on-air bits the shield decoder corrected
+                "frames_repaired",      # frames that passed the CRC only because bits were corrected
+                "shield_frames_rx",     # shielded frames received with a valid CRC
+                "shield_frames_tx")     # shielded frames sent
 
     def __init__(self, source_label):
         self.lock = threading.Lock()        # several threads update the counters

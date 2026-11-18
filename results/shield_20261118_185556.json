@@ -1,0 +1,24 @@
+{
+ "kind": "Measured - acoustic (single laptop, generator on this speaker)",
+ "level": 0.25,
+ "frames_per_format": 20,
+ "frame_bytes": 16,
+ "system_volume_start": 60,
+ "system_volume_end": 60,
+ "plain": {
+  "ok": 15,
+  "rejected": 5,
+  "missed": 0,
+  "repaired": 0,
+  "sent": 20
+ },
+ "shield": {
+  "ok": 19,
+  "rejected": 1,
+  "missed": 0,
+  "repaired": 1,
+  "sent": 20
+ },
+ "speaker_underflows": 0,
+ "mic_overflows": 0
+}

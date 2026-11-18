@@ -1,127 +1,83 @@
-# SHOUT LAN — an acoustic computer network
+# SHOUT LAN — a network you can hear
 
-Windows laptops exchange messages **through sound**: speaker → air → microphone, using BFSK tones at 50 bit/s.
+Two laptops exchange messages **through sound**: speaker -> air -> microphone. No Wi-Fi, no Bluetooth, no cable. Each bit is a short beep (3000 Hz = 0, 5000 Hz = 1, 50 bits a second) after a chirp that marks the start of a frame.
 
-On top of that sound link SHOUT LAN implements real networking mechanisms:
-- framing, addressing, CRC-16;
-- ACK / timeout / retransmission (Stop-and-Wait and Selective Repeat);
-- CSMA and ALOHA medium access;
-- discovery, routing and multi-hop relay with TTL;
-- acoustic ping/RTT;
-- AES-256-GCM encryption.
+On top of that sound link SHOUT LAN implements real networking mechanisms, so the things that are invisible on Wi-Fi become audible and visible:
 
-A PySide6 desktop app shows everything as it happens.
+- framing, addressing and a CRC-16 checksum;
+- acknowledgements, timeouts and retransmission (Stop-and-Wait, Selective Repeat);
+- carrier sense (CSMA) and ALOHA medium access;
+- **Noise Shield**: forward error correction (Hamming(7,4) with interleaving) that repairs damaged bits without a retransmission;
+- discovery, routing and multi-hop relay with TTL; acoustic ping; AES-256-GCM encryption.
 
-> **Two communication paths, never mixed**
-> - **Acoustic link (sound):** between laptops. The *only* path that carries messages between laptops.
-> - **Local control link (TCP, 127.0.0.1):** between the app and the engine on the *same* laptop.
->
-> A **SIMULATED channel** exists for testing and as a demo backup. It is labelled SIMULATED everywhere.
+A browser dashboard shows every frame as it travels, arrives damaged, is resent or is repaired.
 
-Status of verification: see `docs/DEFINITION_OF_DONE.md` and `docs/HARDWARE_TEST_PLAN.md` (the real-hardware tests still to run).
+## Start
 
-## 1. Install (once per laptop)
-Windows 10/11, **Python 3.13** (primary, tested). 3.14 was also tested (see TESTING.md); 3.11–3.12 are untested.
-
-```powershell
-cd Shout_LAN
-py -3.13 -m venv .venv
-.venv\Scripts\python -m pip install -r requirements.txt
-```
-
-Encryption key, created once and then **copied by USB** to every laptop (never commit or send it):
-```powershell
-.venv\Scripts\python tools\gen_key.py
-```
-
-## 2. Before using sound (important)
-1. **Close every other program that plays sound** (browser tabs, Teams, music). The engine opens the speaker and microphone in **WASAPI exclusive mode**; Windows' normal shared mode measurably breaks the link (dropped playback buffers, noise suppression on the mic). If exclusive mode is refused, the app shows **"Speaker in SHARED mode"**: close the other app and restart the engine.
-2. Fix the Windows volume (e.g. 70 %) and don't change it while sending.
-3. Run **Calibrate** in the room you will use, and set the **same tones on every laptop** (default 2500/3500 Hz):
-   ```powershell
-   .venv\Scripts\python tools\loopback_test.py --calibrate      # plays test tones
-   ```
-
-## 3. Run the app
-```powershell
-.venv\Scripts\python run_ui.py
-```
-1. **Connect & Audio:** Node ID (laptop A = 1, laptop B = 2, …); **Acoustic link (sound)**; keep the pre-selected WASAPI devices and Exclusive mic mode; **Start engine**. The app starts `run_engine.py` and connects to it over TCP.
-2. **Overview → Discover:** nodes that answer appear (only nodes actually heard).
-3. **Messages:** choose the destination and send. "✓ Delivered (ACK received)" appears only after the receiver's ACK is heard. Optionally tick **Encrypt (AES-GCM)**.
-4. **Packet Monitor & Logs:** every frame with its layers; error-injection buttons.
-5. **Protocols & Performance:** Stop-and-Wait / Selective Repeat; CSMA / Pure ALOHA / none; measured metrics; ALOHA simulation chart.
-6. **Overview → Routing table:** "reach node 3 via node 2" for out-of-range nodes.
-
-### Two laptops
-Same setup on both, **different node IDs, same tones**, 0.5–1 m apart, speakers facing each other.
-
-Full walkthrough: `docs/DEMO_SCRIPT.md`.
-
-### Engine only (command line)
-```powershell
-.venv\Scripts\python run_engine.py --node 1                    # real acoustic link
-.venv\Scripts\python monitor_client.py                         # second TCP client: live events
-```
-Options:
-
-| Option | Meaning |
+| | |
 |---|---|
-| `--mic N --speaker N` | device numbers as listed in the app |
-| `--volume 0.5` | transmit volume |
-| `--f0 2500 --f1 3500` | BFSK tones |
-| `--port 5000` | local control port |
-| `--route 3:2` | routing table entry (reach node 3 through node 2) |
-| `--key secret.key` | encryption key file |
-| `--shared` | Windows-processed mic mode, not recommended |
-| `--simulated [--hears 2]` | SIMULATED backup mode (below) |
+| **Mac (node 1)** | double-click `start_mac.command` |
+| **Windows (node 2)** | double-click `start_windows.bat` |
 
-### SIMULATED backup / multi-node demo on ONE laptop (no sound)
-```powershell
-.venv\Scripts\python run_engine.py --node 1 --simulated --port 5001 --hears 2 --route 3:2
-.venv\Scripts\python run_engine.py --node 2 --simulated --port 5002
-.venv\Scripts\python run_engine.py --node 3 --simulated --port 5003 --hears 2
-.venv\Scripts\python run_ui.py      # Connect to port 5001 (or Start engine with SIMULATED selected)
+Each starts the engine on that laptop and opens its dashboard (`http://127.0.0.1:8081` on the Mac, `http://127.0.0.1:8082` on Windows). Nothing needs a network: the dashboard is served from the laptop to its own browser.
+
+The demo walk-through, with what to say and what to do if something fails, is in **`docs/DEMO_SCRIPT.md`**.
+
+From a terminal:
+
 ```
-`--hears` limits which simulated nodes are "in range" (here 1 and 3 can only reach each other through 2). The modulated audio samples travel over local UDP; everything is labelled SIMULATED.
-
-## 4. Tests
-
-**Silent (no sound):**
-```powershell
-.venv\Scripts\python -m pytest -q                 # unit, protocol, simulated, fake-audio, control-link, NS-2 AWK
-.venv\Scripts\python tools\ui_smoke_test.py       # drives the real window offscreen (SIMULATED channel)
+python shout.py --node 1 --peer 2       # real sound: this laptop's speaker + microphone
+python shout.py --node 1 --pair         # one laptop: nodes 1 and 2 share its speaker + mic (real sound)
+python shout.py --node 1 --simulated    # no sound: nodes 1 and 2 on a SIMULATED software air
 ```
 
-**Hardware (play sound; see `docs/HARDWARE_TEST_PLAN.md`):**
+Options: `--http PORT`, `--port PORT` (TCP control link, default 5000), `--mic N`, `--speaker N`, `--shared`, `--volume V`, `--f0 HZ`, `--f1 HZ`, `--key FILE`, `--no-browser`. Stop with Ctrl+C.
 
-| Tool | What it does |
-|---|---|
-| `tools/loopback_test.py` | known bits → speaker → mic, BER; `--calibrate`, `--noise 60`, `--save-audio` |
-| `tools/frame_test.py` | real frames incl. a 3-fragment message; `--listen` / `--send-only` for two laptops |
-| `tools/arq_test.py` | Stop-and-Wait / Selective Repeat / CSMA / security over real sound; `--quick --rest --security --m6 --save-audio` |
-| `tools/engine_acoustic_check.py` | the real engine process over TCP: calibrate + HELLO |
+## Install (once per laptop)
 
-## 5. Troubleshooting
-| Problem | Fix |
-|---|---|
-| "Speaker in SHARED mode" / "exclusive mode refused" | Another program is using audio: close it, then Stop/Start engine |
-| "Device N does not exist / has no input channels" | **Refresh devices**, pick the WASAPI microphone/speaker |
-| Many "CRC mismatch" | Same tones on both laptops? Run Calibrate; move closer; quieter room; check speaker exclusive |
-| Frames never detected | Tones differ between laptops, speaker muted, or Windows volume too low |
-| Want to test without sound | SIMULATED channel (section 3) or the silent test suite |
+Python 3.13.
 
-## 6. Project layout
 ```
-run_engine.py  run_ui.py  monitor_client.py   entry points
-shout_lan/   config, modem, audio_io, channel, receiver, frame, crc, arq, mac, engine,
-             control_server, linebuffer, node, security, stats, calibration, aloha_sim
-ui/          PySide6 app (app.py, control_client.py, widgets.py, style.py, pages/)
-tools/       hardware diagnostics, key generator, UI smoke test
-tests/       pytest suite (incl. fake_audio.py for silent acoustic-path tests)
-ns2/         NS-2 topology script + AWK analysis (separate simulation module)
-docs/        SCOPE, DEFINITION_OF_DONE, TESTING, ARCHITECTURE, SYLLABUS_MAPPING,
-             DEMO_SCRIPT, THREAT_MODEL, HARDWARE_TEST_PLAN
-results/     saved measurements (JSON) and UI screenshots
-course_material/  original course files (unchanged)
+macOS:    python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt
+Windows:  py -3.13 -m venv .venv
+          .venv\Scripts\python -m pip install -r requirements.txt
+```
+
+The start files do this by themselves on the first run. The web app is committed pre-built in `web/dist/`, so Node is only needed to change the dashboard (`cd web && npm install && npm run build`).
+
+## Before using sound
+
+1. Close every other program that plays sound. On Windows the engine opens the speaker and microphone in WASAPI **exclusive** mode, because the normal shared mode runs noise suppression that removes the beeps.
+2. Set the volume and do not change it while frames are in the air.
+3. Keep the laptops 30-50 cm apart, speakers facing each other, and do not move them once it works.
+4. The two tone frequencies have to suit the two laptops and the room. The default 3000 / 5000 Hz was measured between a MacBook and a Windows laptop; `tools/tone_trial.py` measures it again (see `docs/DEMO_SCRIPT.md`).
+
+## What the two demo controls are
+
+- **Noise Shield** — off: a plain frame; any flipped bit fails the checksum and the frame is resent. On: the frame carries spare bits (3 for every 4) and the receiver repairs up to one flipped bit in every 7. It costs about 1.75 times the airtime, and it does not beat strong steady noise or noise that hides the start chirp.
+- **Generated noise** — the laptop really plays noise through its speaker (clicks or hiss) so the demo is repeatable. It is always labelled as generated.
+
+## Tests
+
+```
+python -m pytest -q          # silent: unit, protocol, simulated air, fake audio, web bridge
+```
+
+The tools under `tools/` play sound: `loopback_test.py`, `frame_test.py`, `arq_test.py`, `shield_test.py`, `tone_trial.py`.
+
+What was measured, on which machines, and what is still unverified: **`docs/TESTING.md`**.
+
+## Project layout
+
+```
+shout.py                   launcher: engine + dashboard server
+start_mac.command  start_windows.bat
+shout_lan/   config, modem, fec, audio_io, channel, receiver, frame, crc, arq, mac, engine,
+             control_server, web_bridge, node, security, stats, calibration, aloha_sim
+web/         the dashboard (React + TypeScript); built output in web/dist/
+tools/       sound tests, tone trial, key generator
+tests/       pytest suite
+ns2/         NS-2 topology script + AWK analysis (separate simulation module, not run)
+docs/        DEMO_SCRIPT, DASHBOARD_API, TESTING, ARCHITECTURE, SYLLABUS_MAPPING, THREAT_MODEL, SCOPE
+results/     saved measurements
 ```

@@ -1,0 +1,110 @@
+{
+  "kind": "Measured - acoustic (single-laptop loopback)",
+  "mic": 9,
+  "speaker": 8,
+  "exclusive": true,
+  "freq0": 2500,
+  "freq1": 3500,
+  "bit_time": 0.02,
+  "volume": 0.5,
+  "system_volume_start": null,
+  "system_volume_end": null,
+  "bits_per_trial": 256,
+  "trials": 10,
+  "preambles_detected": 10,
+  "total_bits": 2560,
+  "bit_errors": 19,
+  "ber": 0.007421875,
+  "details": [
+    {
+      "trial": 0,
+      "preamble": true,
+      "score": 0.802,
+      "errors": 1,
+      "min_confidence": 0.082,
+      "rx_rms": 0.0318,
+      "overflows": 0
+    },
+    {
+      "trial": 1,
+      "preamble": true,
+      "score": 0.792,
+      "errors": 0,
+      "min_confidence": 0.516,
+      "rx_rms": 0.0275,
+      "overflows": 0
+    },
+    {
+      "trial": 2,
+      "preamble": true,
+      "score": 0.779,
+      "errors": 6,
+      "min_confidence": 0.012,
+      "rx_rms": 0.0193,
+      "overflows": 0
+    },
+    {
+      "trial": 3,
+      "preamble": true,
+      "score": 0.711,
+      "errors": 0,
+      "min_confidence": 0.517,
+      "rx_rms": 0.0178,
+      "overflows": 0
+    },
+    {
+      "trial": 4,
+      "preamble": true,
+      "score": 0.697,
+      "errors": 0,
+      "min_confidence": 0.574,
+      "rx_rms": 0.0205,
+      "overflows": 0
+    },
+    {
+      "trial": 5,
+      "preamble": true,
+      "score": 0.691,
+      "errors": 0,
+      "min_confidence": 0.488,
+      "rx_rms": 0.02,
+      "overflows": 0
+    },
+    {
+      "trial": 6,
+      "preamble": true,
+      "score": 0.68,
+      "errors": 0,
+      "min_confidence": 0.61,
+      "rx_rms": 0.0218,
+      "overflows": 0
+    },
+    {
+      "trial": 7,
+      "preamble": true,
+      "score": 0.694,
+      "errors": 0,
+      "min_confidence": 0.569,
+      "rx_rms": 0.0203,
+      "overflows": 0
+    },
+    {
+      "trial": 8,
+      "preamble": true,
+      "score": 0.689,
+      "errors": 0,
+      "min_confidence": 0.181,
+      "rx_rms": 0.0184,
+      "overflows": 0
+    },
+    {
+      "trial": 9,
+      "preamble": true,
+      "score": 0.65,
+      "errors": 12,
+      "min_confidence": 0.004,
+      "rx_rms": 0.0177,
+      "overflows": 0
+    }
+  ]
+}
