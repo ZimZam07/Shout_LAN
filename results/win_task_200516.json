@@ -1,0 +1,188 @@
+{
+ "stamp": "200516",
+ "steps": [
+  {
+   "step": "procs",
+   "arg": {},
+   "result": [
+    "16060|\"C:\\Users\\Zimran Ullah\\Downloads\\Shout_LAN\\.venv\\Scripts\\python.exe\" -u shout.py --node 2",
+    "9948|\"C:\\Users\\Zimran Ullah\\Downloads\\Shout_LAN\\.venv\\Scripts\\python.exe\" -u shout.py --node 2",
+    "22760|\"C:\\Users\\Zimran Ullah\\Downloads\\Shout_LAN\\.venv\\Scripts\\python.exe\" tools/win_task.py",
+    "24200|\"C:\\Users\\Zimran Ullah\\Downloads\\Shout_LAN\\.venv\\Scripts\\python.exe\" tools/win_task.py"
+   ]
+  },
+  {
+   "step": "kill_nodes",
+   "arg": {},
+   "result": [
+    "16060|\"C:\\Users\\Zimran Ullah\\Downloads\\Shout_LAN\\.venv\\Scripts\\python.exe\" -u shout.py --node 2",
+    "9948|\"C:\\Users\\Zimran Ullah\\Downloads\\Shout_LAN\\.venv\\Scripts\\python.exe\" -u shout.py --node 2"
+   ]
+  },
+  {
+   "step": "restart",
+   "arg": {
+    "stacks_after": 25
+   },
+   "result": "restarted"
+  },
+  {
+   "step": "sleep",
+   "arg": 30,
+   "result": "ok"
+  },
+  {
+   "step": "procs",
+   "arg": {},
+   "result": [
+    "22760|\"C:\\Users\\Zimran Ullah\\Downloads\\Shout_LAN\\.venv\\Scripts\\python.exe\" tools/win_task.py",
+    "24200|\"C:\\Users\\Zimran Ullah\\Downloads\\Shout_LAN\\.venv\\Scripts\\python.exe\" tools/win_task.py",
+    "1996|\"C:\\Users\\Zimran Ullah\\Downloads\\Shout_LAN\\.venv\\Scripts\\python.exe\" -u -c \"import faulthandler, sys, runpy; f = open('C:\\\\Users\\\\Zimran Ullah\\\\Downloads\\\\Shout_LAN\\\\results\\\\win_stacks_200516.txt', 'w'); faulthandler.dump_traceback_later(25, file=f); sys.argv = ['shout.py', '--node', '2', '--no-browser']; runpy.run_path('shout.py', run_name='__main__')\"",
+    "22416|\"C:\\Users\\Zimran Ullah\\Downloads\\Shout_LAN\\.venv\\Scripts\\python.exe\" -u -c \"import faulthandler, sys, runpy; f = open('C:\\\\Users\\\\Zimran Ullah\\\\Downloads\\\\Shout_LAN\\\\results\\\\win_stacks_200516.txt', 'w'); faulthandler.dump_traceback_later(25, file=f); sys.argv = ['shout.py', '--node', '2', '--no-browser']; runpy.run_path('shout.py', run_name='__main__')\""
+   ]
+  }
+ ],
+ "status": {
+  "node_id": 2,
+  "channel": "acoustic",
+  "channel_label": "Acoustic link (sound)",
+  "running": false,
+  "transmitting": false,
+  "protocol": "Stop-and-Wait",
+  "protocol_id": "sw",
+  "mac": "csma",
+  "mac_name": "CSMA (listen before talk)",
+  "channel_busy": false,
+  "rto": 4.37,
+  "inject": {
+   "corrupt_next_data": false,
+   "drop_next_ack": false,
+   "drop_frame": 0,
+   "drop_next_sack": false
+  },
+  "nodes": {},
+  "stats": {
+   "source": "Measured - acoustic",
+   "counters": {
+    "frames_tx": 0,
+    "data_frames_tx": 0,
+    "frames_rx_ok": 0,
+    "crc_failures": 0,
+    "acks_tx": 0,
+    "acks_rx": 0,
+    "retransmissions": 0,
+    "timeouts": 0,
+    "duplicates": 0,
+    "messages_sent": 0,
+    "messages_delivered": 0,
+    "messages_failed": 0,
+    "messages_received": 0,
+    "payload_bytes_acked": 0,
+    "pings_sent": 0,
+    "pongs_received": 0,
+    "injected_events": 0,
+    "channel_busy_deferrals": 0,
+    "backoffs": 0,
+    "forwarded": 0,
+    "ttl_expired": 0,
+    "security_rejects": 0,
+    "bits_repaired": 0,
+    "frames_repaired": 0,
+    "shield_frames_rx": 0,
+    "shield_frames_tx": 0
+   },
+   "delivery_ratio": null,
+   "frame_loss": null,
+   "goodput_bps": null,
+   "rtt": null,
+   "recent_rtts": [],
+   "ping_rtt": null,
+   "ping_loss": null
+  },
+  "freq0": 2500,
+  "freq1": 3500,
+  "bit_time": 0.02,
+  "volume": 0.5,
+  "mic_level": 0.0006,
+  "mic_overflows": 0,
+  "noise_floor": null,
+  "encryption_available": true,
+  "speaker_mode": "closed",
+  "shield": false,
+  "shield_info": {
+   "code": "Hamming(7,4)",
+   "rate": 0.571,
+   "decoder": "soft decision (nearest valid codeword, weighted by bit confidence)",
+   "interleaving": "per block: header (6 bytes) and body, sent column by column",
+   "preamble": "down-chirp (plain frames use an up-chirp)",
+   "filter_hz": [
+    900,
+    4500
+   ],
+   "filter_use": "frame detection, both formats",
+   "erasures": "bits drowned by a much louder burst are ignored by the decoder",
+   "limits": "repairs scattered errors: one wrong bit per 7-bit codeword (two if they are marked as erased). It cannot help when a frame's preamble is drowned, or when noise is strong and steady enough to damage many bits of the same codeword",
+   "airtime_factor": 1.75
+  },
+  "noise": {
+   "on": false,
+   "level": 0.0,
+   "kind": "clicks"
+  },
+  "routes": {},
+  "shield_available": true,
+  "noise_available": true,
+  "mode": "acoustic",
+  "peer": null,
+  "http_port": 8082,
+  "other_dashboards": [],
+  "sse_clients": 2
+ },
+ "events": [
+  {
+   "event": "message_status",
+   "time": 1795012004.769,
+   "node": 2,
+   "msg_id": 1,
+   "dst": 1,
+   "status": "queued",
+   "frames": 1,
+   "message": "hellooo",
+   "encrypted": false,
+   "via": 1,
+   "text": "Message #1 to node 1 queued (7 bytes, 1 frame(s))",
+   "replay": true
+  },
+  {
+   "event": "message_status",
+   "time": 1795012276.324,
+   "node": 2,
+   "msg_id": 2,
+   "dst": 1,
+   "status": "queued",
+   "frames": 1,
+   "message": "HELLO",
+   "encrypted": false,
+   "via": 1,
+   "text": "Message #2 to node 1 queued (5 bytes, 1 frame(s))",
+   "replay": true
+  },
+  {
+   "event": "replay_done",
+   "time": 1795012516.764,
+   "count": 2
+  },
+  {
+   "event": "listener_ended",
+   "text": "[WinError 10054] An existing connection was forcibly closed by the remote host",
+   "time": 1795012519.6829278
+  },
+  {
+   "event": "replay_done",
+   "time": 1795012535.777,
+   "count": 0
+  }
+ ],
+ "win_node_200516.log": "",
+ "win_stacks_200516.txt": "Timeout (0:00:25)!\nThread 0x00000b2c (most recent call first):\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\socket.py\", line 719 in readinto\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\http\\server.py\", line 404 in handle_one_request\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\http\\server.py\", line 438 in handle\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\socketserver.py\", line 766 in __init__\n  File \"__init__\", line ??? in __init__\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\socketserver.py\", line 362 in finish_request\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\socketserver.py\", line 697 in process_request_thread\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\threading.py\", line 994 in run\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\threading.py\", line 1043 in _bootstrap_inner\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\threading.py\", line 1014 in _bootstrap\n\nThread 0x000054dc (most recent call first):\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\threading.py\", line 363 in wait\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\queue.py\", line 213 in get\n  File \"C:\\Users\\Zimran Ullah\\Downloads\\Shout_LAN\\shout_lan\\web_bridge.py\", line 598 in _events\n  File \"C:\\Users\\Zimran Ullah\\Downloads\\Shout_LAN\\shout_lan\\web_bridge.py\", line 557 in do_GET\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\http\\server.py\", line 424 in handle_one_request\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\http\\server.py\", line 436 in handle\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\socketserver.py\", line 766 in __init__\n  File \"__init__\", line ??? in __init__\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\socketserver.py\", line 362 in finish_request\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\socketserver.py\", line 697 in process_request_thread\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\threading.py\", line 994 in run\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\threading.py\", line 1043 in _bootstrap_inner\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\threading.py\", line 1014 in _bootstrap\n\nThread 0x00005054 (most recent call first):\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\threading.py\", line 363 in wait\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\queue.py\", line 213 in get\n  File \"C:\\Users\\Zimran Ullah\\Downloads\\Shout_LAN\\shout_lan\\web_bridge.py\", line 598 in _events\n  File \"C:\\Users\\Zimran Ullah\\Downloads\\Shout_LAN\\shout_lan\\web_bridge.py\", line 557 in do_GET\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\http\\server.py\", line 424 in handle_one_request\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\http\\server.py\", line 436 in handle\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\socketserver.py\", line 766 in __init__\n  File \"__init__\", line ??? in __init__\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\socketserver.py\", line 362 in finish_request\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\socketserver.py\", line 697 in process_request_thread\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\threading.py\", line 994 in run\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\threading.py\", line 1043 in _bootstrap_inner\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\threading.py\", line 1014 in _bootstrap\n\nThread 0x00002f5c (most recent call first):\n  <no Python frame>\n\nThread 0x0000299c (most recent call first):\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\socket.py\", line 295 in accept\n  File \"C:\\Users\\Zimran Ullah\\Downloads\\Shout_LAN\\shout_lan\\control_server.py\", line 113 in accept_loop\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\threading.py\", line 994 in run\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\threading.py\", line 1043 in _bootstrap_inner\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\threading.py\", line 1014 in _bootstrap\n\nThread 0x00000324 (most recent call first):\n  File \"C:\\Users\\Zimran Ullah\\Downloads\\Shout_LAN\\shout_lan\\web_bridge.py\", line 340 in _loop\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\threading.py\", line 994 in run\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\threading.py\", line 1043 in _bootstrap_inner\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\threading.py\", line 1014 in _bootstrap\n\nThread 0x00004438 (most recent call first):\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\selectors.py\", line 305 in _select\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\selectors.py\", line 314 in select\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\socketserver.py\", line 235 in serve_forever\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\threading.py\", line 994 in run\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\threading.py\", line 1043 in _bootstrap_inner\n  File \"C:\\Users\\Zimran Ullah\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\threading.py\", line 1014 in _bootstrap\n\nThread 0x00002210 (most recent call first):\n  File \"C:\\Users\\Zimran Ullah\\Downloads\\Shout_LAN\\.venv\\Lib\\site-packages\\sounddevice.py\", line 1317 in _raw_write\n  File \"C:\\Users\\Zimran Ullah\\Downloads\\Shout_LAN\\.venv\\Lib\\site-packages\\sounddevice.py\", line 1583 in write\n  File \"C:\\Users\\Zimran Ullah\\Downloads\\Shout_LAN\\shout_lan\\audio_io.py\", line 298 in _open_stream\n  File \"C:\\Users\\Zimran Ullah\\Downloads\\Shout_LAN\\shout_lan\\audio_io.py\", line 313 in open\n  File \"C:\\Users\\Zimran Ullah\\Downloads\\Shout_LAN\\shout_lan\\channel.py\", line 40 in start\n  File \"C:\\Users\\Zimran Ullah\\Downloads\\Shout_LAN\\shout_lan\\engine.py\", line 106 in start\n  File \"shout.py\", line 180 in launch\n  File \"shout.py\", line 199 in main\n  File \"shout.py\", line 236 in <module>\n  File \"<frozen runpy>\", line 88 in _run_code\n  File \"<frozen runpy>\", line 98 in _run_module_code\n  File \"<frozen runpy>\", line 287 in run_path\n  File \"<string>\", line 1 in <module>\n"
+}
