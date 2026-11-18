@@ -5,7 +5,8 @@ run_engine.py - start one SHOUT LAN node (the engine + its local TCP control ser
     python run_engine.py --node 2 --mic 9 --speaker 8
     python run_engine.py --node 1 --simulated --port 5001   # SIMULATED backup mode
 
-Then start the UI (python run_ui.py) or the monitor (python monitor_client.py).
+For the browser dashboard use shout.py instead; this engine-only entry point
+works with the monitor (python monitor_client.py).
 The terminal shows every engine event as it happens. Stop with Ctrl+C.
 """
 

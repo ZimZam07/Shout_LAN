@@ -1,5 +1,15 @@
 # SHOUT LAN — an acoustic computer network
 
+## Run (browser dashboard)
+
+```
+python shout.py --node 1                # real sound: this laptop's speaker + microphone
+python shout.py --node 1 --pair         # one laptop: nodes 1 and 2 share its speaker + mic (real sound)
+python shout.py --node 1 --simulated    # no sound: nodes 1 and 2 on a SIMULATED software air
+```
+
+The dashboard opens in the browser at `http://127.0.0.1:8081` (node N: port 8080+N; `--pair`/`--simulated` also open node 2 on 8082). Options: `--http PORT`, `--port PORT` (TCP control link, default 5000), `--mic N`, `--speaker N`, `--shared`, `--volume V`, `--f0 HZ`, `--f1 HZ`, `--key FILE`, `--no-browser`. Stop with Ctrl+C. API: `docs/DASHBOARD_API.md`.
+
 Windows laptops exchange messages **through sound**: speaker → air → microphone, using BFSK tones at 50 bit/s.
 
 On top of that sound link SHOUT LAN implements real networking mechanisms:
