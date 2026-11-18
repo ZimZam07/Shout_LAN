@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/works%20with-Wi--Fi%20and%20Bluetooth%20off-2f9e77" alt="Works with Wi-Fi and Bluetooth off">
   <img src="https://img.shields.io/badge/rate-50%20bit%2Fs%20BFSK-111827" alt="50 bits per second BFSK">
   <img src="https://img.shields.io/badge/error%20correction-Hamming(7%2C4)-4B5563" alt="Hamming(7,4) error correction">
-  <img src="https://img.shields.io/badge/tests-pytest%2C%20silent-9CA3AF" alt="Silent pytest suite">
+  <img src="https://img.shields.io/badge/tests-143%20pytest-9CA3AF" alt="143 pytest tests pass">
 </p>
 
 SHOUT LAN is a computer network whose only cable is the air in the room. Two laptops exchange messages as sound:
