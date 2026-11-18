@@ -23,10 +23,12 @@ lock = threading.Lock()
 
 # ---- what to do this time -------------------------------------------------
 TASK = [
-    ("kill_nodes", {}),                                   # stop every running node
-    ("restart", {"extra": ["--peer", "1"]}),              # start the code now on disk
-    ("sleep", 8),
-    ("send", {"dst": 1, "text": "HELLO", "wait": 70}),    # three short messages to the Mac
+    ("cmd", {"cmd": "set_shield", "value": False}),       # plain frames only: this run measures the plain link
+    ("cmd", {"cmd": "set_noise", "on": False}),
+    ("sleep", 2),
+    ("send", {"dst": 1, "text": "HELLO", "wait": 70}),
+    ("sleep", 3),
+    ("send", {"dst": 1, "text": "HELLO", "wait": 70}),
     ("sleep", 3),
     ("send", {"dst": 1, "text": "HELLO", "wait": 70}),
     ("sleep", 3),
