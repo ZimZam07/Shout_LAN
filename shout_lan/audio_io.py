@@ -289,13 +289,39 @@ class Speaker:
         self._mix_items = collections.deque()
         self._mix_thread = None
 
+    # The warm-up silence must be taken by the device within this time. On the
+    # Windows test laptop an exclusive output stream started right after the
+    # exclusive microphone sometimes never began playing: the stream said
+    # "active" but its buffer never drained, so a blocking write waited forever
+    # and the node hung at start-up (docs/TESTING.md, 2026-11-18).
+    WARMUP_SAMPLES = 2400
+    WARMUP_TIMEOUT = 2.0
+
     def _open_stream(self, exclusive):
         extra = sd.WasapiSettings(exclusive=True) if exclusive else None
         stream = sd.OutputStream(device=self.device, channels=self.channels,
                                  samplerate=config.SAMPLE_RATE, dtype="float32",
                                  latency=OUT_LATENCY, extra_settings=extra)
         stream.start()
-        stream.write(np.zeros((2400, self.channels), dtype=np.float32))   # warm-up silence
+        # warm-up silence, written only as fast as the device takes it (a
+        # blocking write could wait forever on a device that is not playing)
+        left = self.WARMUP_SAMPLES
+        deadline = time.time() + self.WARMUP_TIMEOUT
+        while left > 0:
+            room = min(stream.write_available, left)
+            if room > 0:
+                stream.write(np.zeros((room, self.channels), dtype=np.float32))
+                left -= room
+            elif time.time() > deadline:
+                try:
+                    stream.abort()
+                    stream.close()
+                except Exception:
+                    pass
+                raise AudioError(f"speaker {self.device} opened but did not start playing "
+                                 f"within {self.WARMUP_TIMEOUT:.0f} s")
+            else:
+                time.sleep(0.005)
         return stream
 
     def open(self):
@@ -309,15 +335,24 @@ class Speaker:
             return
         self.channels = _channels(self.device, "output")
         if OUT_EXCLUSIVE and _is_wasapi(self.device):
-            try:
-                self.stream = self._open_stream(True)
-                self.mode, self.warning = "exclusive", None
-                return
-            except Exception as exc:
-                self.warning = (f"Speaker exclusive mode refused ({exc}) - another program is "
-                                f"probably playing audio. Using shared mode: expect more errors. "
-                                f"Close other audio apps and restart the engine.")
-        self.stream = self._open_stream(False)
+            error = None
+            for attempt in range(3):         # a stream that did not start is retried
+                try:
+                    self.stream = self._open_stream(True)
+                    self.mode, self.warning = "exclusive", None
+                    return
+                except Exception as exc:
+                    error = exc
+                    time.sleep(0.5)
+            self.warning = (f"Speaker exclusive mode failed ({error}) - another program is "
+                            f"probably playing audio. Using shared mode: expect more errors. "
+                            f"Close other audio apps and restart the engine.")
+        try:
+            self.stream = self._open_stream(False)
+        except AudioError:
+            raise
+        except Exception as exc:
+            raise AudioError(f"Could not open speaker {self.device}: {exc}") from exc
         self.mode = "shared"
 
     def play(self, samples):

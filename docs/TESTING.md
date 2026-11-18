@@ -607,3 +607,70 @@ Purpose: a generated noise that plain frames almost never survive, while the Noi
 - The engine now reads the shield setting when each frame actually goes on air, not when it was queued.
 - Before this change, a retry waiting in carrier sense kept the old format.
 - The test: a message is stuck as plain frames under clicks, the shield is switched on at the first timeout, every later DATA transmission is shielded, and the message is delivered.
+
+---
+
+## Windows node 2: start-up hang and transmit-path check (2026-11-18 evening)
+
+*Measured – acoustic, Windows laptop alone (speaker to its own microphone), Windows volume 70 %, other audio apps closed.*
+
+### Problem 1: the node hung at start-up (`running: false`, `speaker_mode: "closed"`)
+- **Where:** a thread stack dump (`results/win_task_200516.json`) showed the main thread waiting in the blocking warm-up `stream.write` of `Speaker._open_stream`, inside `channel.start()`.
+- **Not two competing nodes:** each "pair" of `shout.py` PIDs in that file was one node. The venv's `.venv\Scripts\python.exe` is a launcher that starts the real interpreter as a child with the same command line (checked with parent PIDs).
+- **Not a new code change:** the warm-up write and the open order were the same in `e3cb3f1`, which started.
+- **Reproduced in a standalone script** that opens the devices the way `AcousticChannel.start()` did. The stream reported "active", but `write_available` went 1024 → 0 and never recovered: the device never took samples.
+
+| Open sequence (exclusive mode) | Hung (no playback after 10 s) |
+|---|---|
+| microphone, then speaker immediately (the old order) | **8 / 26** |
+| microphone, 1–3 s pause, then speaker | 0 / 11 |
+| speaker first, then microphone | 0 / 11 |
+| speaker only | 0 / 2 |
+
+- **Fix:**
+  1. `AcousticChannel.start()` and `AcousticLoopbackHub.attach()` open the **speaker first**, then the microphone.
+  2. `Speaker._open_stream()` writes the warm-up silence only as fast as the device takes it, with a 2 s deadline. A stream that never starts playing is aborted with an `AudioError`.
+  3. `Speaker.open()` retries exclusive mode 3 times, then falls back to shared mode with the existing visible warning. If shared mode also fails, the `AudioError` reaches `shout.py`, which prints one `ERROR:` line and exits instead of serving a page in front of a dead engine.
+  4. New silent tests: `tests/test_speaker_start.py` (3 tests, fake stream).
+- **After:** 6 / 6 consecutive `shout.py --node 2` starts printed `engine_started` and READY, with `running: true` and `speaker_mode: "exclusive"`.
+- A second node on the same ports was already refused (`cannot open dashboard port ...`, the bridge does not use `SO_REUSEADDR` on Windows), so no change was needed there.
+
+### Problem 2: frames from this laptop arrive corrupted in the first byte
+- **Hypothesis tested:** "the persistent stream idles between frames and drops or inserts a buffer when it restarts".
+- **Runs, current code:**
+
+| Run | Result |
+|---|---|
+| `loopback_20261118_202310` (fresh stream per trial) | preambles **10/10**, **19/2560 = 0.74 % BER** |
+| `arq_20261118_202443` (persistent stream, `--quick`) | **3/3**; 4 of 11 transmissions were rejected (2 bad sync byte 0x6E, 2 CRC), all recovered by ARQ |
+| `arq_20261118_203040` (same, repeat) | **3/3**; no rejections other than the scenario's injected corruption |
+
+  - 0 speaker underflows and 0 microphone overflows in both arq runs.
+- **Timing:** each transmitted waveform was cross-correlated against the recording in 8-bit windows. The lag stayed within about 1 sample through every frame. No persistent jump appeared, so no buffer was lost or inserted, and the hypothesis is **not supported** on this laptop. The occasional outliers were single windows that snapped back, which is correlation ambiguity on repetitive bit patterns.
+- **What the errors are:** inter-symbol interference.
+  - The first frame byte on air is the same for every frame, because the scrambler seed is fixed: bits `0 0 0 1 0 0 1 0`.
+  - Bits 3 and 6 are lone 3500 Hz bits after runs of 2500 Hz. They had about 0 dB margin on **every** frame, and failed frames were the ones where they tipped below 0 dB. This explains "the same position fails on every frame" without any timing fault.
+  - Across all bits of `arq_20261118_202443`:
+
+| Sent tone | After N bits of the other tone | Median margin | Bits below 0 dB |
+|---|---|---|---|
+| 2500 Hz | any | 13.5–23 dB | **0** of 859 |
+| 3500 Hz | 0 | 13.7 dB | 0 |
+| 3500 Hz | 1–2 | 4.4–5.0 dB | 10 |
+| 3500 Hz | 3–4+ | **−0.5 to 0.8 dB** | **45** |
+
+  - The steady 2500 and 3500 Hz levels are equal (−0.5 dB), so 3500 Hz is not simply weaker. The 2500 Hz tone keeps ringing after it stops, and more so after long runs.
+  - Within one bit slot, a lone 3500 Hz bit only reaches parity with the lingering 2500 Hz tone near the end of the slot. The fresh-stream loopback shows the same one-sided pattern, milder because random bits have shorter runs.
+- **Receiver settings replayed offline** on the same recordings (no sound):
+
+| Setting | `arq_..._202443` frames clean | `loopback_..._202310` bit errors | `arq_..._203040` frames clean | October 2000/3000 Hz recording `arq_20261031_203726` |
+|---|---|---|---|---|
+| `ECHO_CANCEL` 0.15, `WIN_LO` 0.5 (current) | 8 / 11 | 19 / 2560 | 8 / 8 | 31 / 44 |
+| `ECHO_CANCEL` 0.30, `WIN_LO` 0.7 | 11 / 11 | 5 / 2560 | 8 / 8 | **25 / 44** |
+| `ECHO_CANCEL` 0.45, `WIN_LO` 0.5 | 9 / 11 | 2 / 2560 | 8 / 8 | **3 / 44** |
+
+  - Stronger echo cancelling clearly helps this laptop's current recordings, but makes an older recording worse.
+  - The receiver code is shared with the Mac, so the defaults were **not changed**. This needs checking against recordings made on the Mac's microphone first.
+- **Not done:**
+  - The candidate fix "keep the mixer writing silence between frames" was not applied: the mechanism it targets (buffer loss while idle) was not observed.
+  - The Mac side, including the Windows → Mac link, could not be measured from this laptop.

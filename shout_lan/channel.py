@@ -35,12 +35,18 @@ class AcousticChannel:
         self.speaker_device = speaker_device
 
     def start(self):
-        self.mic.start()
+        # Speaker FIRST, then microphone: on the Windows laptop an exclusive speaker
+        # stream started right after the exclusive microphone sometimes never began
+        # playing (8 of 26 tries; 0 of 11 with the speaker first, docs/TESTING.md 2026-11-18).
         try:
             self.speaker.open()             # reserve the speaker now, not at the first frame
         except Exception as exc:
-            self.mic.stop()
             raise AudioError(f"Could not open speaker {self.speaker_device}: {exc}") from exc
+        try:
+            self.mic.start()
+        except Exception:
+            self.speaker.close()
+            raise
 
     def stop(self):
         self.mic.stop()
@@ -96,8 +102,12 @@ class AcousticLoopbackHub:
             self.members.append(channel)
             first = len(self.members) == 1
         if first:
-            self.mic.start()
-            self.speaker.open()
+            self.speaker.open()             # speaker first (see AcousticChannel.start)
+            try:
+                self.mic.start()
+            except Exception:
+                self.speaker.close()
+                raise
             self.running = True
             self.thread = threading.Thread(target=self._fanout, daemon=True)
             self.thread.start()
