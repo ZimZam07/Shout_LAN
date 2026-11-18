@@ -23,7 +23,11 @@ lock = threading.Lock()
 
 # ---- what to do this time -------------------------------------------------
 TASK = [
-    ("send", {"dst": 1, "text": "HELLO", "wait": 60}),   # with the node exactly as it is running now
+    ("procs", {}),                                        # which python processes exist right now
+    ("kill_nodes", {}),                                   # stop every shout.py / run_engine.py process
+    ("restart", {"stacks_after": 25}),                    # start the code on disk; dump thread stacks after 25 s
+    ("sleep", 30),
+    ("procs", {}),
 ]
 # ---------------------------------------------------------------------------
 
@@ -68,17 +72,54 @@ def wait_node(seconds=40):
     return None
 
 
-def restart_node(extra=()):
+def list_procs():
+    """Python processes with their command lines (Windows: via PowerShell)."""
+    if os.name != "nt":
+        out = subprocess.run(["ps", "-axo", "pid,command"], capture_output=True, text=True).stdout
+        return [l.strip() for l in out.splitlines() if "python" in l.lower()]
+    ps = ("Get-CimInstance Win32_Process | Where-Object { $_.Name -like 'python*' } | "
+          "ForEach-Object { \"$($_.ProcessId)|$($_.CommandLine)\" }")
+    out = subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, text=True).stdout
+    return [l.strip() for l in out.splitlines() if l.strip()]
+
+
+def kill_nodes():
+    """Force-stop every node process (shout.py / run_engine.py), never this script."""
+    killed = []
+    for line in list_procs():
+        pid, _, cmdline = line.partition("|") if os.name == "nt" else line.partition(" ")
+        if ("shout.py" in cmdline or "run_engine.py" in cmdline) and str(os.getpid()) != pid.strip():
+            if os.name == "nt":
+                subprocess.run(["taskkill", "/F", "/T", "/PID", pid.strip()], capture_output=True)
+            else:
+                subprocess.run(["kill", "-9", pid.strip()])
+            killed.append(line)
+    time.sleep(3)
+    return killed
+
+
+def restart_node(extra=(), stacks_after=0):
     """Stop the running node (through its own API) and start the code now on disk."""
     try:
         cmd({"cmd": "shutdown"})
     except Exception:
         pass
     time.sleep(4)
+    kill_nodes()
     log = open(os.path.join(ROOT, "results", f"win_node_{STAMP}.log"), "w")
     flags = 0x00000008 | 0x00000200 if os.name == "nt" else 0     # detached, own process group
-    subprocess.Popen([sys.executable, "-u", "shout.py", "--node", "2", "--no-browser", *extra],
-                     cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, creationflags=flags)
+    argv = ["shout.py", "--node", "2", "--no-browser", *extra]
+    if stacks_after:
+        # same program, but after N seconds every thread's stack is written to a file:
+        # shows exactly where a start-up that never finishes is waiting
+        stacks = os.path.join(ROOT, "results", f"win_stacks_{STAMP}.txt")
+        code = ("import faulthandler, sys, runpy; f = open(%r, 'w'); "
+                "faulthandler.dump_traceback_later(%d, file=f); sys.argv = %r; "
+                "runpy.run_path('shout.py', run_name='__main__')" % (stacks, stacks_after, argv))
+        launch = [sys.executable, "-u", "-c", code]
+    else:
+        launch = [sys.executable, "-u", *argv]
+    subprocess.Popen(launch, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, creationflags=flags)
     return wait_node()
 
 
@@ -99,19 +140,17 @@ def do_send(dst, text, wait):
 def main():
     os.makedirs(os.path.join(ROOT, "results"), exist_ok=True)
     report = {"stamp": STAMP, "steps": []}
-    status = wait_node(5)
-    if status is None:
-        print("Node 2 is not running on port 8082 - starting it")
-        status = restart_node()
-    if status is None:
-        print("ERROR: could not reach or start the node")
-        sys.exit(1)
-    start_listener()
+    if wait_node(3) is not None:
+        start_listener()
     for name, arg in TASK:
         if name == "send":
             result = do_send(arg["dst"], arg["text"], arg["wait"])
+        elif name == "procs":
+            result = list_procs()
+        elif name == "kill_nodes":
+            result = kill_nodes()
         elif name == "restart":
-            status = restart_node(arg.get("extra", ()))
+            status = restart_node(arg.get("extra", ()), arg.get("stacks_after", 0))
             result = "restarted" if status else "restart FAILED"
             start_listener()
         elif name == "cmd":
@@ -130,6 +169,10 @@ def main():
         report["status"] = {"error": str(exc)}
     with lock:
         report["events"] = [e for e in events]
+    for extra_file in (f"win_node_{STAMP}.log", f"win_stacks_{STAMP}.txt"):
+        fp = os.path.join(ROOT, "results", extra_file)
+        if os.path.exists(fp):
+            report[extra_file] = open(fp, encoding="utf-8", errors="replace").read()[-12000:]
     path = os.path.join(ROOT, "results", f"win_task_{STAMP}.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=1)
