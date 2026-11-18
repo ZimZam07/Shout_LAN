@@ -41,3 +41,64 @@ Sending message #3 with Stop-and-Wait + CSMA (listen before talk)
 20:57:53 [frame_rx] Received ACK seq 250 from node 1 [Noise Shield] - CRC OK
 20:57:53 [message_progress] Frame 1/1 acknowledged (seq 250)
 20:57:53 [message_status] Message #3 DELIVERED to node 1 in 8.9 s (every frame acknowledged)
+20:59:58 [shield_set] Noise Shield OFF: node 2 sends plain frames (CRC detects errors, ARQ retransmits)
+20:59:58 [noise_set] Interference generator OFF (clicks; generated noise from this laptop's speaker stopped)
+21:00:0021:00:00  [message_status][message_status]  Sending message #4 with Stop-and-Wait + CSMA (listen before talk)Message #4 to node 1 queued (5 bytes, 1 frame(s))
+
+21:00:02 [frame_tx] Sent DATA seq 251 to node 1
+21:00:09 [timeout] No ACK for seq 251 after 6.5 s - timeout
+21:00:09 [retransmit] Retransmitting frame seq 251 (attempt 2)
+21:00:11 [frame_tx] Sent DATA seq 251 to node 1 (retry 1)
+21:00:18 [timeout] No ACK for seq 251 after 6.5 s - timeout
+21:00:18 [retransmit] Retransmitting frame seq 251 (attempt 3)
+21:00:20 [frame_tx] Sent DATA seq 251 to node 1 (retry 2)
+21:00:27 [timeout] No ACK for seq 251 after 6.5 s - timeout
+21:00:27 [retransmit] Retransmitting frame seq 251 (attempt 4)
+21:00:30 [frame_tx] Sent DATA seq 251 to node 1 (retry 3)
+21:00:36 [timeout] No ACK for seq 251 after 6.5 s - timeout
+21:00:36 [retransmit] Retransmitting frame seq 251 (attempt 5)
+21:00:39 [frame_tx] Sent DATA seq 251 to node 1 (retry 4)
+21:00:45 [timeout] No ACK for seq 251 after 6.5 s - timeout
+21:00:45 [retransmit] Retransmitting frame seq 251 (attempt 6)
+21:00:48 [frame_tx] Sent DATA seq 251 to node 1 (retry 5)
+21:00:54 [timeout] No ACK for seq 251 after 6.5 s - timeout
+21:00:54 [message_status] Message #4 FAILED: no ACK after 5 retries
+21:00:5721:00:57 [message_status]  [message_status]Sending message #5 with Stop-and-Wait + CSMA (listen before talk) 
+Message #5 to node 1 queued (5 bytes, 1 frame(s))
+21:01:00 [frame_tx] Sent DATA seq 252 to node 1
+21:01:07 [timeout] No ACK for seq 252 after 6.5 s - timeout
+21:01:07 [retransmit] Retransmitting frame seq 252 (attempt 2)
+21:01:09 [frame_tx] Sent DATA seq 252 to node 1 (retry 1)
+21:01:16 [timeout] No ACK for seq 252 after 6.5 s - timeout
+21:01:16 [retransmit] Retransmitting frame seq 252 (attempt 3)
+21:01:18 [frame_tx] Sent DATA seq 252 to node 1 (retry 2)
+21:01:19 [preamble] Hearing a plain frame (preamble score 0.47)...
+21:01:21 [frame_rx] Received ACK seq 252 from node 1 - CRC OK
+21:01:21 [message_progress] Frame 1/1 acknowledged (seq 252)
+21:01:21 [message_status] Message #5 DELIVERED to node 1 in 23.3 s (every frame acknowledged)
+21:01:24 [message_status] Sending message #6 with Stop-and-Wait + CSMA (listen before talk)
+21:01:24 [message_status] Message #6 to node 1 queued (5 bytes, 1 frame(s))
+21:01:27 [frame_tx] Sent DATA seq 253 to node 1
+21:01:27 [preamble] Hearing a plain frame (preamble score 0.51)...
+21:01:29 [frame_rx] Received ACK seq 253 from node 1 - CRC OK
+21:01:29 [message_progress] Frame 1/1 acknowledged (seq 253)
+21:01:29 [message_status] Message #6 DELIVERED to node 1 in 5.1 s (every frame acknowledged)
+21:01:32 [message_status] Message #7 to node 1 queued (5 bytes, 1 frame(s))
+21:01:32 [message_status] Sending message #7 with Stop-and-Wait + CSMA (listen before talk)
+21:01:35 [frame_tx] Sent DATA seq 254 to node 1
+21:01:41 [timeout] No ACK for seq 254 after 5.6 s - timeout
+21:01:41 [retransmit] Retransmitting frame seq 254 (attempt 2)
+21:01:43 [frame_tx] Sent DATA seq 254 to node 1 (retry 1)
+21:01:49 [timeout] No ACK for seq 254 after 5.6 s - timeout
+21:01:49 [retransmit] Retransmitting frame seq 254 (attempt 3)
+21:01:51 [frame_tx] Sent DATA seq 254 to node 1 (retry 2)
+21:01:57 [timeout] No ACK for seq 254 after 5.6 s - timeout
+21:01:57 [retransmit] Retransmitting frame seq 254 (attempt 4)
+21:02:00 [frame_tx] Sent DATA seq 254 to node 1 (retry 3)
+21:02:05 [timeout] No ACK for seq 254 after 5.6 s - timeout
+21:02:05 [retransmit] Retransmitting frame seq 254 (attempt 5)
+21:02:08 [frame_tx] Sent DATA seq 254 to node 1 (retry 4)
+21:02:09 [preamble] Hearing a plain frame (preamble score 0.48)...
+21:02:10 [frame_rx] Received ACK seq 254 from node 1 - CRC OK
+21:02:10 [message_progress] Frame 1/1 acknowledged (seq 254)
+21:02:10 [message_status] Message #7 DELIVERED to node 1 in 38.0 s (every frame acknowledged)
