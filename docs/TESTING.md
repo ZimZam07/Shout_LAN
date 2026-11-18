@@ -542,3 +542,68 @@ Labels: **[air 60 %]** real sound at demo volume, **[air 22 %]** real sound at t
 **Speech as the interferer [offline]:** recorded speech mixed in at the same overall loudness as level-0.3 generator noise: plain 19/24, shield 23/24. All plain losses were missed preambles, not CRC failures. Louder speech beat both formats by hiding the preamble. The shield does little against speech, which is mostly below 2 kHz.
 
 **Default level: 0.25.**
+
+### Clicks: impulsive generated noise (2026-11-18, OFFLINE MIXING ONLY, no sound played)
+Purpose: a generated noise that plain frames almost never survive, while the Noise Shield repairs it. It is chosen to suit forward error correction with interleaving, and is presented that way.
+
+**Method [offline]**
+- Synthetic click trains (`audio_io.ClickGenerator`) were mixed into REAL loopback recordings of random bits: `bits_20261118_185152` at 60 % and `bits_20261118_181012` at 50 %. 40 recordings, 3 click phases each, so 120 decodes per row.
+- Before mixing, each click train was passed through a channel response measured from that recording's own preamble (Wiener deconvolution), so it also gets the room echo.
+- Plain frame: OK only if every bit of the frame decodes right.
+- Shielded frame: decoded with the receiver's soft Hamming decoder (with erasures) per codeword, using that frame size's interleaver geometry. For a linear code the decision does not depend on which codeword was sent.
+- A missed preamble counts as a failure for both formats.
+
+**Design steps (all offline)**
+- **Per-burst flip probability:** a burst that knows nothing about the data flips a bit at most about half the time, because FSK compares the two tones and the burst lands on the sent tone half the time. One 18 ms full-scale single-tone burst flipped at least one bit in 48 % of cases.
+- **Burst span:** with the room echo and the echo canceller, a burst damaged 1-4 adjacent bits.
+- **Burst kind:** single-tone bursts beat two-tone and narrow-band-noise bursts (0.48 vs about 0.35 vs about 0.03 per burst).
+- **Interval geometry:** the interleaver sends codeword `t mod n` at on-air bit t (n = 12 for the header; 10, 12, 20, 32, 58 for the bodies of 11-, 12-, 16-, 22- and 35-byte frames). With an even interval, bursts tile the codewords in pairs. Among 22-29 bit times, 26 (520 ms) gave the best shield result:
+
+  | Interval (bit times) | Shielded DATA 16 B OK (of 80) |
+  |---|---|
+  | 23 | 60 |
+  | 25 | 66 |
+  | 26 | 73 |
+  | 27 | 61 |
+  | 29 | 72 |
+
+  Shorter intervals (11-17) broke the shield (at most 32/40 shielded decodes OK).
+- **Erasures (new, shield receiver):** a bit slot more than 4× louder than the frame's median is marked erased, and the decoder ignores it. A Hamming codeword can fill in 2 erased bits.
+  - Effect at the chosen setting: shielded DATA 91 → 103 of 120.
+  - With no generated noise: 120/120 both with and without erasures.
+  - Hiss at level 0.25 on real recorded frames: shield still 48/48.
+- **Echo-canceller cap: rejected.** Capping the canceller so a burst cannot spill into the next bit raised the clean-channel errors from 124 to 175-208 of 22 016 bits.
+
+**Chosen setting:** `CLICK_LEN` 864 samples (18 ms), `CLICK_INTERVAL` 26 bits (520 ms), level 0.8 (burst peak 0.8 of full scale), erasure factor 4.
+
+**Result: 120 decodes per cell [offline]**
+
+| Frame | Plain OK | Plain failed (rejected or missed) | Shielded OK first time |
+|---|---|---|---|
+| ACK, 11 bytes | 22 | **82 %** | **106 (88 %)** |
+| DATA, 16 bytes | 10 | **92 %** | **103 (86 %)** |
+
+7 of 120 decodes per row (6 %) lost the preamble to a burst, for both formats.
+
+**Same setting, real receiver, real recorded DATA frames [offline]:**
+- Full `FrameReceiver` (detection, header, soft decoding with erasures, CRC) on the 22 % recordings `frames22_a`, 4 click phases each.
+- Plain: 4/44 OK, 40 rejected by CRC (91 % failed).
+- Shield: 45/48 OK (94 %), 3 preambles missed, 235 bits repaired, 208 erased.
+
+**Exchange estimate:**
+- Plain DATA+ACK per attempt: (10/120)·(22/120) ≈ 1.5 %, so about 9 % of messages are delivered within the 6 attempts.
+- Shielded exchange first time: about 76 %; within 6 attempts it is practically always delivered.
+
+**Targets:**
+- Plain ≥ 90 % failed: met for DATA (92 %), not quite for ACK (82 %).
+- Shield ≥ 90 % OK first time: 86-88 % on the 50-60 % recordings, 94 % on the real-receiver DATA check.
+- Raising the level or shortening the interval makes plain fail more, but shield collisions and preamble misses grow faster (level 1.0: shield 75 %).
+
+**Simulated air [sim]:** clicks are not scaled. Plain ACK 5/40 OK, DATA 1/40; shield 40/40 for both.
+
+**Not verified:** clicks on real sound. The coordinator does the on-air confirmation.
+
+**Per-transmission shield [sim] (`test_shield_switched_on_while_a_plain_message_is_stuck_gets_it_through`):**
+- The engine now reads the shield setting when each frame actually goes on air, not when it was queued.
+- Before this change, a retry waiting in carrier sense kept the old format.
+- The test: a message is stuck as plain frames under clicks, the shield is switched on at the first timeout, every later DATA transmission is shielded, and the message is delivered.

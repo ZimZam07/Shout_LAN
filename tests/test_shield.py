@@ -189,7 +189,7 @@ def test_shield_switch_and_reply_in_kind(pair):
     assert c["shield_frames_rx"] >= 1 and c["shield_frames_tx"] >= 1
     st = a.status()
     assert st["shield"] is True and st["shield_info"]["code"] == "Hamming(7,4)"
-    assert st["noise"] == {"on": False, "level": 0.0}
+    assert st["noise"] == {"on": False, "level": 0.0, "kind": "clicks"}
 
 
 def test_plain_exchange_stays_plain(pair):
@@ -204,14 +204,17 @@ def test_plain_exchange_stays_plain(pair):
 
 def test_simulated_noise_generator_hurts_plain_and_shield_survives(pair):
     air, a, b, ra, rb = pair
-    a.set_noise(True, 0.35)
+    a.set_noise(True, 0.35, kind="hiss")
     ev = ra.of("noise_set")[0]
     assert ev["on"] is True and "SIMULATED" in ev["text"] and "generated" in ev["text"].lower()
-    assert a.noise == {"on": True, "level": 0.35} and b.noise["on"] is True
+    assert ev["kind"] == "hiss" and "hiss" in ev["text"]
+    assert a.noise == {"on": True, "level": 0.35, "kind": "hiss"} and b.noise["on"] is True
     # plain frames through heavy simulated noise: count CRC rejections at B
     m = Modem()
     noisy = SimulatedChannel(air)
     noisy.np_rng = np.random.default_rng(0)
+    from shout_lan.audio_io import NoiseGenerator
+    noisy.noise_gen = NoiseGenerator(seed=3)              # repeatable noise
     raw = fr.build(_frame(b"NOISY 16B", seq=5))
     plain_ok = shield_ok = 0
     for i in range(6):
@@ -248,8 +251,8 @@ def test_noise_generator_on_the_fake_acoustic_path():
     e.start()
     try:
         ch.mic.read_available()
-        e.set_noise(True, 0.5)
-        assert e.noise == {"on": True, "level": 0.5}
+        e.set_noise(True, 0.5, kind="hiss")
+        assert e.noise == {"on": True, "level": 0.5, "kind": "hiss"}
         ev = rec.of("noise_set")[0]
         assert "generated" in ev["text"].lower() and "SIMULATED" not in ev["text"]
         time.sleep(0.3)
@@ -296,3 +299,129 @@ def test_speaker_mixer_keeps_frame_timing_exact():
     assert np.max(np.abs(out[start:start + len(frame)] - frame)) < 0.01   # every sample in place
     assert np.all(np.abs(out[start + len(frame):start + len(frame) + 100]) < 0.01)
     assert start > 0                                   # noise blocks were written before it
+
+
+# ---------------------------------------------------------------- "clicks" (impulsive generated noise)
+def test_click_generator_bursts_are_short_and_regular():
+    from shout_lan.audio_io import CLICK_INTERVAL, CLICK_LEN, ClickGenerator
+    assert CLICK_LEN < 960                                # shorter than one 20 ms bit
+    g = ClickGenerator(seed=1)
+    x = np.concatenate([g.block(1000, 1.0) for _ in range(5 * CLICK_INTERVAL // 1000)])
+    on = np.abs(x) > 1e-6
+    starts = np.nonzero(on[1:] & ~on[:-1])[0] + 1
+    assert len(starts) >= 4
+    assert set(np.diff(starts)) == {CLICK_INTERVAL}       # fixed interval, continuous across blocks
+    assert max(int(np.argmin(on[s:])) for s in starts[:-1]) <= CLICK_LEN
+    assert np.max(np.abs(x)) <= 1.0
+
+
+def test_erasures_let_hamming_fill_in_two_drowned_bits():
+    from shout_lan.receiver import erase
+    raw = fr.build(_frame(b"ERASE"))
+    bits = fec.encode_frame(raw)
+    body = list(bits[fec.header_bits():])
+    n = len(body) // 7
+    conf = [0.8] * len(body)
+    powers = [1.0] * len(body)
+    for k in (3, 3 + n):                                  # two bits of the SAME codeword, both wrong,
+        body[k] ^= 1
+        powers[k] = 50.0                                  # in slots drowned by a loud burst
+    assert fec.decode_block(body, conf)[0] != raw[fec.HEADER_BYTES:]          # no erasures: fails
+    assert fec.decode_block(body, erase(conf, powers))[0] == raw[fec.HEADER_BYTES:]
+
+
+def test_simulated_clicks_break_plain_frames_and_the_shield_repairs_them():
+    air = SimulatedAir(noise=0.002)
+    air.set_noise(True, 0.8, "clicks")
+    from shout_lan.audio_io import ClickGenerator
+    m = Modem()
+    ch = SimulatedChannel(air)
+    ch.click_gen = ClickGenerator(seed=11)                # repeatable burst timing
+    for raw in (fr.build(fr.Frame(fr.ACK, 2, 1, seq=3)), fr.build(_frame(b"HELLO"))):
+        ok = {False: 0, True: 0}
+        for _ in range(15):
+            for shield in (False, True):
+                ch._hear(m.modulate_bytes(raw, shield) * air.gain)
+                res = FrameReceiver(m).feed(np.concatenate([np.zeros(4800, np.float32), ch.read()]))
+                ok[shield] += any(r["ok"] and r["raw"] == raw for r in res)
+        assert ok[False] <= 5 and ok[True] >= 14, ok
+
+
+def test_clicks_are_the_default_kind_and_engine_counts_repairs(pair):
+    air, a, b, ra, rb = pair
+    a.set_noise(True)                                     # no kind, no level -> clicks at 0.8
+    ev = ra.of("noise_set")[0]
+    assert ev["kind"] == "clicks" and ev["level"] == 0.8
+    assert "clicks" in ev["text"] and "generated" in ev["text"].lower() and "SIMULATED" in ev["text"]
+    assert a.noise == {"on": True, "level": 0.8, "kind": "clicks"}
+    a.set_shield(True)
+    for n in range(4):                                    # until the shield has had to repair data bits
+        mid = a.send_message(2, f"THROUGH CLICKS {n}")
+        ra.wait_for("message_status", msg_id=mid, status="delivered", timeout=120)
+        if any(e["repaired_at"] for e in rb.of("frame_rx", ok=True)):
+            break
+    rx = [e for e in rb.of("frame_rx", ok=True) if e["frame"]["src"] == 1]
+    assert any(e["repaired_at"] for e in rx)
+    assert all(0 <= p < 8 * len(e["raw"].split()) for e in rx for p in e["repaired_at"])
+    c = b.stats.snapshot()["counters"]
+    # counters move only with real repairs: they equal the sums over the received frames
+    assert c["bits_repaired"] == sum(e["bits_repaired"] for e in rb.of("frame_rx", ok=True))
+    assert c["frames_repaired"] == sum(1 for e in rb.of("frame_rx", ok=True) if e["repaired_at"])
+    a.set_noise(False)                                    # kind and level are kept
+    assert a.noise == {"on": False, "level": 0.8, "kind": "clicks"}
+    a.set_noise(True, kind="hiss")                        # a new kind starts at its own default
+    assert a.noise == {"on": True, "level": 0.25, "kind": "hiss"}
+    with pytest.raises(ValueError):
+        a.set_noise(True, kind="thunder")
+
+
+def test_shield_switched_on_while_a_plain_message_is_stuck_gets_it_through(pair):
+    """The shield setting is read for EVERY transmission: flipping it while a message is
+    stuck retrying makes the next retry go out shielded."""
+    air, a, b, ra, rb = pair
+    a.set_noise(True, 0.8, kind="clicks")
+
+    def presenter(e):
+        # flips the switch at the first timeout of the stuck plain message (a listener runs
+        # synchronously, so this is exactly "between two retries")
+        if e["event"] == "timeout" and not a.shield:
+            a.set_shield(True)
+    a.add_listener(presenter)
+    mid = a.send_message(2, "STUCK THEN SHIELDED")
+    ra.wait_for("shield_set", timeout=120)                # a plain attempt failed
+    switched = next(i for i, e in enumerate(list(ra.events)) if e["event"] == "shield_set")
+    end = time.time() + 240
+    while time.time() < end and not ra.of("message_status", msg_id=mid, status="delivered") \
+            and not ra.of("message_status", msg_id=mid, status="failed"):
+        time.sleep(0.1)
+    assert ra.of("message_status", msg_id=mid, status="delivered"), "not delivered after the switch"
+    events = list(ra.events)
+    before = [e for e in events[:switched] if e["event"] == "tx_start" and e["type"] == "DATA"]
+    after = [e for e in events[switched:] if e["event"] == "tx_start" and e["type"] == "DATA"]
+    assert before and all(e["shield"] is False for e in before)     # it was stuck as plain
+    assert after and all(e["shield"] is True for e in after)        # every retry since: shielded
+    retry_tx = [e for e in events[switched:] if e["event"] == "frame_tx" and e["frame"]["type"] == "DATA"]
+    assert retry_tx[0]["retry"] >= 1 and retry_tx[0]["frame"]["seq"] == before[0]["seq"]
+    assert rb.of("message_rx")[0]["message"] == "STUCK THEN SHIELDED"
+
+
+def test_clicks_on_the_fake_acoustic_path():
+    from tests.fake_audio import FakeAir, fake_acoustic_channel
+    air = FakeAir(time_scale=0.25)
+    ch = fake_acoustic_channel(air, "laptop")
+    e = Engine(1, ch, time_scale=0.25)
+    rec = Rec(e)
+    e.start()
+    try:
+        ch.mic.read_available()
+        e.set_noise(True)
+        assert e.noise == {"on": True, "level": 0.8, "kind": "clicks"}
+        ev = rec.of("noise_set")[0]
+        assert "clicks" in ev["text"] and "generated" in ev["text"].lower()
+        assert "SIMULATED" not in ev["text"]
+        heard = air.noise_for("laptop", 2 * 26 * 960)     # what the fake mic adds: two periods
+        assert np.max(np.abs(heard)) > 0.1                # bursts really reach the mic
+        e.set_noise(False)
+        assert not air.noise_sources
+    finally:
+        e.stop()
