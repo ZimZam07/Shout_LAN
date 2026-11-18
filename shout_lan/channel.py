@@ -267,7 +267,10 @@ class UdpSimulatedChannel:
     label = "SIMULATED channel (software, not sound)"
     BASE_PORT = 47100            # node N listens on 47100 + N
     MAX_NODES = 20
-    CHUNK = 16000                # samples per datagram (int16 -> 32 kB)
+    # samples per datagram: int16 -> 8000 bytes + 7-byte header. macOS limits a UDP
+    # datagram to 9216 bytes by default (net.inet.udp.maxdgram), so 32 kB chunks
+    # failed there with "Message too long"; 4000 samples fit every OS.
+    CHUNK = 4000
 
     def __init__(self, node_id, gain=0.3, noise=0.002, loss=0.0, neighbours=None):
         import socket
