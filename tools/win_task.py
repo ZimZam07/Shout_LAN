@@ -23,15 +23,8 @@ lock = threading.Lock()
 
 # ---- what to do this time -------------------------------------------------
 TASK = [
-    ("cmd", {"cmd": "set_shield", "value": False}),
-    ("cmd", {"cmd": "set_noise", "on": False}),
-    ("sleep", 2),
-    ("cmd", {"cmd": "calibrate"}),                        # plays one test tone per frequency, 1-6 kHz
-    ("sleep", 10),
-    ("cmd", {"cmd": "calibrate"}),
-    ("sleep", 10),
-    ("cmd", {"cmd": "calibrate"}),
-    ("sleep", 10),
+    # one pair of tones per minute, chosen from the clock; the Mac runs the same script
+    ("run", ["tools/tone_trial.py", "--port", "8082", "--role", "a", "--minutes", "7"]),
 ]
 # ---------------------------------------------------------------------------
 
@@ -159,6 +152,9 @@ def main():
             start_listener()
         elif name == "cmd":
             result = cmd(arg)
+        elif name == "run":
+            out = subprocess.run([sys.executable, "-u", *arg], cwd=ROOT, capture_output=True, text=True)
+            result = (out.stdout + out.stderr)[-6000:]
         elif name == "sleep":
             time.sleep(arg)
             result = "ok"
