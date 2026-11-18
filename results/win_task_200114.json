@@ -1,0 +1,144 @@
+{
+ "stamp": "200114",
+ "steps": [
+  {
+   "step": "send",
+   "arg": {
+    "dst": 1,
+    "text": "HELLO",
+    "wait": 60
+   },
+   "result": "no result in time"
+  }
+ ],
+ "status": {
+  "node_id": 2,
+  "channel": "acoustic",
+  "channel_label": "Acoustic link (sound)",
+  "running": false,
+  "transmitting": false,
+  "protocol": "Stop-and-Wait",
+  "protocol_id": "sw",
+  "mac": "csma",
+  "mac_name": "CSMA (listen before talk)",
+  "channel_busy": false,
+  "rto": 4.37,
+  "inject": {
+   "corrupt_next_data": false,
+   "drop_next_ack": false,
+   "drop_frame": 0,
+   "drop_next_sack": false
+  },
+  "nodes": {},
+  "stats": {
+   "source": "Measured - acoustic",
+   "counters": {
+    "frames_tx": 0,
+    "data_frames_tx": 0,
+    "frames_rx_ok": 0,
+    "crc_failures": 0,
+    "acks_tx": 0,
+    "acks_rx": 0,
+    "retransmissions": 0,
+    "timeouts": 0,
+    "duplicates": 0,
+    "messages_sent": 0,
+    "messages_delivered": 0,
+    "messages_failed": 0,
+    "messages_received": 0,
+    "payload_bytes_acked": 0,
+    "pings_sent": 0,
+    "pongs_received": 0,
+    "injected_events": 0,
+    "channel_busy_deferrals": 0,
+    "backoffs": 0,
+    "forwarded": 0,
+    "ttl_expired": 0,
+    "security_rejects": 0,
+    "bits_repaired": 0,
+    "frames_repaired": 0,
+    "shield_frames_rx": 0,
+    "shield_frames_tx": 0
+   },
+   "delivery_ratio": null,
+   "frame_loss": null,
+   "goodput_bps": null,
+   "rtt": null,
+   "recent_rtts": [],
+   "ping_rtt": null,
+   "ping_loss": null
+  },
+  "freq0": 2500,
+  "freq1": 3500,
+  "bit_time": 0.02,
+  "volume": 0.5,
+  "mic_level": 0.0009,
+  "mic_overflows": 0,
+  "noise_floor": null,
+  "encryption_available": true,
+  "speaker_mode": "closed",
+  "shield": false,
+  "shield_info": {
+   "code": "Hamming(7,4)",
+   "rate": 0.571,
+   "decoder": "soft decision (nearest valid codeword, weighted by bit confidence)",
+   "interleaving": "per block: header (6 bytes) and body, sent column by column",
+   "preamble": "down-chirp (plain frames use an up-chirp)",
+   "filter_hz": [
+    900,
+    4500
+   ],
+   "filter_use": "frame detection, both formats",
+   "erasures": "bits drowned by a much louder burst are ignored by the decoder",
+   "limits": "repairs scattered errors: one wrong bit per 7-bit codeword (two if they are marked as erased). It cannot help when a frame's preamble is drowned, or when noise is strong and steady enough to damage many bits of the same codeword",
+   "airtime_factor": 1.75
+  },
+  "noise": {
+   "on": false,
+   "level": 0.0,
+   "kind": "clicks"
+  },
+  "routes": {},
+  "shield_available": true,
+  "noise_available": true,
+  "mode": "acoustic",
+  "peer": null,
+  "http_port": 8082,
+  "other_dashboards": [],
+  "sse_clients": 2
+ },
+ "events": [
+  {
+   "event": "message_status",
+   "time": 1795012004.769,
+   "node": 2,
+   "msg_id": 1,
+   "dst": 1,
+   "status": "queued",
+   "frames": 1,
+   "message": "hellooo",
+   "encrypted": false,
+   "via": 1,
+   "text": "Message #1 to node 1 queued (7 bytes, 1 frame(s))",
+   "replay": true
+  },
+  {
+   "event": "replay_done",
+   "time": 1795012274.81,
+   "count": 1
+  },
+  {
+   "event": "message_status",
+   "time": 1795012276.324,
+   "node": 2,
+   "msg_id": 2,
+   "dst": 1,
+   "status": "queued",
+   "frames": 1,
+   "message": "HELLO",
+   "encrypted": false,
+   "via": 1,
+   "text": "Message #2 to node 1 queued (5 bytes, 1 frame(s))"
+  }
+ ]
+}
