@@ -140,6 +140,39 @@ def parse(data):
                  payload=bytes(body[8:8 + length]), origin=origin, final=final, ttl=ttl)
 
 
+def crc_fields(data):
+    """
+    (received CRC, calculated CRC) of a complete frame, or None if the length
+    byte is unusable. Used to SHOW why a frame was rejected.
+    """
+    try:
+        expected = total_length(data[:6])
+    except FrameError:
+        return None
+    if len(data) < expected:
+        return None
+    data = data[:expected]
+    return struct.unpack(">H", data[-2:])[0], crc16(data[1:-2])
+
+
+def parse_unchecked(data):
+    """
+    Best-effort reading of a frame whose CRC FAILED - for display only (the
+    packet monitor shows what the damaged frame claimed to be). Never used
+    to deliver data. Returns a Frame or None.
+    """
+    try:
+        expected = total_length(data[:6])
+    except FrameError:
+        return None
+    if len(data) < expected:
+        return None
+    body = data[1:expected - 2]
+    type_flags, src, dst, seq, length, origin, final, ttl = struct.unpack("BBBBBBBB", body[:8])
+    return Frame(ftype=type_flags >> 4, flags=type_flags & 0x0F, src=src, dst=dst, seq=seq,
+                 payload=bytes(body[8:8 + length]), origin=origin, final=final, ttl=ttl)
+
+
 # ---------------------------------------------------------------- fragmentation
 def fragment(message, max_payload=MAX_PAYLOAD):
     """

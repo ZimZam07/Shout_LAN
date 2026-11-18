@@ -24,6 +24,19 @@ class FakeAir:
         self.mics = {}
         self.lock = threading.Lock()
         self.active = 0               # transmissions currently "in the air"
+        self.noise_sources = {}       # speaker name -> level of its (fake) interference generator
+
+    def noise_for(self, mic_name, n):
+        """Generated interference reaching `mic_name`: every fake speaker whose generator is on."""
+        from shout_lan.audio_io import NoiseGenerator
+        out = np.zeros(n, dtype=np.float32)
+        with self.lock:
+            sources = dict(self.noise_sources)
+        for spk, level in sources.items():
+            if self.hears is None or mic_name in self.hears.get(spk, [mic_name]):
+                gen = self.__dict__.setdefault("_gens", {}).setdefault((spk, mic_name), NoiseGenerator())
+                out += gen.block(n, level) * self.gain
+        return out
 
     def add_mic(self, name, mic):
         with self.lock:
@@ -89,6 +102,7 @@ class FakeMicrophone:
         if len(audio) == 0:
             return audio
         audio = audio + self.rng.normal(0, self.air.noise, len(audio)).astype(np.float32)
+        audio = audio + self.air.noise_for(self.name, len(audio))
         self.level = float(np.sqrt(np.mean(audio * audio)))
         return audio
 
@@ -100,6 +114,17 @@ class FakeSpeaker:
         self.mode = "closed"
         self.warning = None
         self.refuse_exclusive = refuse_exclusive
+        self.noise_on = False
+        self.noise_level = 0.0
+
+    def set_noise(self, on, level):
+        """Fake interference generator: silent, mixed into the fake microphones digitally."""
+        self.noise_on, self.noise_level = bool(on), float(level)
+        with self.air.lock:
+            if self.noise_on:
+                self.air.noise_sources[self.name] = self.noise_level
+            else:
+                self.air.noise_sources.pop(self.name, None)
 
     def open(self):
         if self.refuse_exclusive:

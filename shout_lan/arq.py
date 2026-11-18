@@ -83,22 +83,22 @@ class StopAndWaitSender:
             if attempt:
                 e.before_retransmit(attempt)
                 e.stats.add("retransmissions")
-                e.emit("retransmit", seq=frame.seq, attempt=attempt, msg_id=msg_id,
+                e.emit("retransmit", seq=frame.seq, attempt=attempt + 1, msg_id=msg_id,
                        text=f"Retransmitting frame seq {frame.seq} (attempt {attempt + 1})")
             started = time.time()
             e.transmit(frame, retry=attempt, msg_id=msg_id)
             sent = time.time()
-            timeout = e.timer.timeout() * e.time_scale
+            timeout = (e.timer.timeout() + e.reply_extra_air()) * e.time_scale
             ack = e.wait_for_ack(frame.dst, frame.seq, timeout)
             if ack is not None:
                 if attempt == 0:                      # Karn's rule
-                    e.timer.sample((time.time() - sent) / e.time_scale)
+                    e.timer.sample((time.time() - sent) / e.time_scale - e.reply_extra_air())
                 e.stats.add_rtt(time.time() - started)
                 e.emit("message_progress", msg_id=msg_id, done=index + 1, total=total,
                        text=f"Frame {index + 1}/{total} acknowledged (seq {frame.seq})")
                 return True
             e.stats.add("timeouts")
-            e.emit("timeout", seq=frame.seq, msg_id=msg_id, waited=round(timeout, 2),
+            e.emit("timeout", seq=frame.seq, msg_id=msg_id, attempt=attempt + 1, waited=round(timeout, 2),
                    text=f"No ACK for seq {frame.seq} after {timeout:.1f} s - timeout")
         return False
 
@@ -195,7 +195,7 @@ class SelectiveRepeatSender:
                 if sent_before[i]:
                     had_retransmission = True
                     e.stats.add("retransmissions")
-                    e.emit("retransmit", seq=f.seq, msg_id=msg_id,
+                    e.emit("retransmit", seq=f.seq, msg_id=msg_id, attempt=timeouts_in_a_row + 1,
                            text=f"Selective Repeat: resending ONLY seq {f.seq}")
                 first_time = not sent_before[i]
                 sent_before[i] = True
@@ -206,12 +206,13 @@ class SelectiveRepeatSender:
                     continue
                 e.transmit(f, retry=0 if first_time else 1, msg_id=msg_id)
             sent_at = time.time()
-            timeout = e.timer.timeout() * e.time_scale
+            timeout = (e.timer.timeout() + e.reply_extra_air()) * e.time_scale
             sack = e.wait_for_sack(dst, timeout)
             if sack is None:
                 timeouts_in_a_row += 1
                 e.stats.add("timeouts")
-                e.emit("timeout", msg_id=msg_id, waited=round(timeout, 2),
+                e.emit("timeout", msg_id=msg_id, seq=frames[base].seq, attempt=timeouts_in_a_row,
+                       waited=round(timeout, 2),
                        text=f"No SACK after {timeout:.1f} s - timeout; resending the oldest "
                             f"missing frame (seq {frames[base].seq}) with POLL")
                 if timeouts_in_a_row > MAX_RETRIES:
@@ -220,7 +221,7 @@ class SelectiveRepeatSender:
                 e.before_retransmit(timeouts_in_a_row)
                 continue
             if not had_retransmission:                        # Karn's rule
-                e.timer.sample((time.time() - sent_at) / e.time_scale)
+                e.timer.sample((time.time() - sent_at) / e.time_scale - e.reply_extra_air())
             e.stats.add_rtt(time.time() - burst_start)
             timeouts_in_a_row = 0
             only_oldest = False

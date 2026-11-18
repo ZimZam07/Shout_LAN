@@ -7,6 +7,7 @@ tones as background noise and removes them. Opening the microphone through
 WASAPI in *exclusive* mode bypasses that processing, so it is the default.
 """
 
+import collections
 import queue
 import threading
 import time
@@ -156,6 +157,37 @@ class Microphone:
         return np.concatenate(parts)
 
 
+# ---------------------------------------------------------------- interference generator
+NOISE_BAND = (2000, 4000)     # Hz: covers both BFSK tones (2500 / 3500 Hz)
+NOISE_FULL_RMS = 0.35         # level 1.0 = as loud as our tones at the default volume 0.5
+
+
+class NoiseGenerator:
+    """
+    GENERATED interference for demonstrations: random (Gaussian) noise passed
+    through a band-pass filter, so its energy sits on top of our tone band
+    like a noisy room would - but repeatably, at a chosen level.
+    The filter memory is kept between calls, so consecutive blocks join up
+    into one continuous noise with no clicks.
+    """
+
+    def __init__(self, band=NOISE_BAND, sample_rate=config.SAMPLE_RATE, seed=None):
+        from scipy.signal import butter
+        self.sos = butter(4, band, btype="band", fs=sample_rate, output="sos")
+        self.zi = np.zeros((self.sos.shape[0], 2))
+        self.rng = np.random.default_rng(seed)
+        # white noise of RMS 1 keeps this fraction of its power after the filter
+        self.norm = np.sqrt(sample_rate / 2 / (band[1] - band[0]))
+        self.band = band
+
+    def block(self, n, level):
+        """n samples of band-limited noise with RMS = level * NOISE_FULL_RMS."""
+        from scipy.signal import sosfilt
+        white = self.rng.normal(0, 1, n)
+        out, self.zi = sosfilt(self.sos, white, zi=self.zi)
+        return (out * self.norm * level * NOISE_FULL_RMS).astype(np.float32)
+
+
 # ---------------------------------------------------------------- speaker
 class Speaker:
     """
@@ -175,6 +207,14 @@ class Speaker:
         self.underflows = 0              # times the output ran dry while playing (= a gap in the sound)
         self.mode = "closed"             # "exclusive" / "shared" once open
         self.warning = None              # set if we had to fall back to shared mode
+        self.write_lock = threading.Lock()   # only one writer to the stream at a time
+        # interference generator state (see set_noise)
+        self.noise_on = False
+        self.noise_level = 0.0
+        self.noise_gen = NoiseGenerator()
+        self._mix_cond = threading.Condition()
+        self._mix_items = collections.deque()
+        self._mix_thread = None
 
     def _open_stream(self, exclusive):
         extra = sd.WasapiSettings(exclusive=True) if exclusive else None
@@ -209,19 +249,109 @@ class Speaker:
 
     def play(self, samples):
         with self.lock:
+            item = self._submit_to_mixer(samples)
+            if item is not None:
+                # the interference generator is running: the mixer thread plays this
+                # frame on top of the noise; wait until all of it has been written
+                item["written"].wait()
+                if item["error"]:
+                    raise AudioError(f"Could not play on speaker {self.device}: {item['error']}")
+                time.sleep(self.stream.latency if self.stream is not None else 0)
+                return
             try:
-                if self.stream is None:
-                    self.open()
-                data = np.asarray(samples, dtype=np.float32)
-                data = np.repeat(data[:, None], self.channels, axis=1)
-                if self.stream.write(data):      # blocks until the data is in the output buffer
-                    self.underflows += 1             # True = the speaker ran out of samples (gap)
+                with self.write_lock:
+                    if self.stream is None:
+                        self.open()
+                    data = np.asarray(samples, dtype=np.float32)
+                    data = np.repeat(data[:, None], self.channels, axis=1)
+                    if self.stream.write(data):      # blocks until the data is in the output buffer
+                        self.underflows += 1             # True = the speaker ran out of samples (gap)
                 time.sleep(self.stream.latency)  # ...and until the buffer has actually played
             except Exception as exc:
                 self.close()
                 raise AudioError(f"Could not play on speaker {self.device}: {exc}") from exc
 
+    # ------------------------------------------------ interference generator (mixer)
+    # While the generator is on, ONE mixer thread owns the speaker stream and
+    # writes fixed blocks back to back: noise in every block, plus the next
+    # part of any frame waiting to be played. Frame samples are added at
+    # consecutive positions of a continuous stream, so the frame keeps exactly
+    # its sample timing (no gaps, no jumps); the noise never stops for a frame.
+    # When the generator is off this thread does not exist and play() writes
+    # directly, exactly as before.
+    MIX_BLOCK = 1024
+
+    def set_noise(self, on, level):
+        with self._mix_cond:
+            self.noise_on = bool(on)
+            self.noise_level = max(0.0, min(1.0, float(level)))
+            if self.noise_on and self._mix_thread is None:
+                self._mix_thread = threading.Thread(target=self._mixer, daemon=True, name="speaker-mixer")
+                self._mix_thread.start()
+            self._mix_cond.notify_all()
+
+    def _submit_to_mixer(self, samples):
+        with self._mix_cond:
+            if self._mix_thread is None:
+                return None
+            item = {"samples": np.asarray(samples, dtype=np.float32), "pos": 0,
+                    "written": threading.Event(), "error": None}
+            self._mix_items.append(item)
+            return item
+
+    def _mixer(self):
+        n = self.MIX_BLOCK
+        level_now = 0.0
+        while True:
+            with self._mix_cond:
+                if not self.noise_on and not self._mix_items and level_now == 0.0:
+                    self._mix_thread = None
+                    return
+                target = self.noise_level if self.noise_on else 0.0
+                block = np.zeros(n, dtype=np.float32)
+                finished = []
+                filled = 0
+                while self._mix_items and filled < n:
+                    item = self._mix_items[0]
+                    part = item["samples"][item["pos"]:item["pos"] + n - filled]
+                    block[filled:filled + len(part)] += part
+                    filled += len(part)
+                    item["pos"] += len(part)
+                    if item["pos"] >= len(item["samples"]):
+                        finished.append(self._mix_items.popleft())
+            # level ramps over one block when switched, so the noise never clicks
+            levels = np.linspace(level_now, target, n, dtype=np.float32)
+            block += self.noise_gen.block(n, 1.0) * levels
+            level_now = target
+            np.clip(block, -1.0, 1.0, out=block)
+            error = None
+            try:
+                with self.write_lock:
+                    if self.stream is None:
+                        self.open()
+                    if self.stream.write(np.repeat(block[:, None], self.channels, axis=1)):
+                        self.underflows += 1
+            except Exception as exc:
+                error = str(exc)
+            for item in finished:
+                item["written"].set()
+            if error:
+                with self._mix_cond:
+                    self.noise_on = False
+                    self.warning = f"Interference generator stopped: {error}"
+                    for item in self._mix_items:
+                        item["error"] = error
+                        item["written"].set()
+                    self._mix_items.clear()
+                    self._mix_thread = None
+                return
+
     def close(self):
+        with self._mix_cond:
+            self.noise_on = False
+            thread = self._mix_thread
+        if thread is not None:
+            thread.join(timeout=2)
         if self.stream is not None:
             try:
                 self.stream.stop()
@@ -230,6 +360,25 @@ class Speaker:
                 pass
             self.stream = None
             self.mode = "closed"
+
+
+def system_output_volume():
+    """
+    The operating system's output volume (0-100) if it can be read, else None.
+    Measurement tools record it at the start and end of every run: a volume
+    changed by hand in the middle of a run makes that run's numbers invalid.
+    (Only implemented for macOS; Windows returns None.)
+    """
+    import subprocess
+    import sys
+    if sys.platform != "darwin":
+        return None
+    try:
+        out = subprocess.run(["osascript", "-e", "output volume of (get volume settings)"],
+                             capture_output=True, text=True, timeout=5).stdout.strip()
+        return int(out)
+    except Exception:
+        return None
 
 
 def record_while_playing(signal, mic_device=None, speaker_device=None,

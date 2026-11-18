@@ -20,7 +20,7 @@ import time
 import numpy as np
 
 from shout_lan import config
-from shout_lan.audio_io import AudioError, Microphone, Speaker
+from shout_lan.audio_io import AudioError, Microphone, NoiseGenerator, Speaker
 
 
 class AcousticChannel:
@@ -53,6 +53,15 @@ class AcousticChannel:
 
     def level(self):
         return self.mic.level
+
+    # interference generator: this laptop's speaker really plays the noise
+    noise_label = "generated noise from this laptop's speaker"
+
+    def set_noise(self, on, level):
+        self.speaker.set_noise(on, level)
+
+    def noise_state(self):
+        return {"on": self.speaker.noise_on, "level": round(self.speaker.noise_level, 3)}
 
     @property
     def overflows(self):
@@ -146,6 +155,15 @@ class LoopbackAcousticChannel:
     def level(self):
         return self.hub.mic.level
 
+    # both loopback nodes share ONE speaker, so its generator is shared too
+    noise_label = "generated noise from this laptop's speaker (shared by both loopback nodes)"
+
+    def set_noise(self, on, level):
+        self.hub.speaker.set_noise(on, level)
+
+    def noise_state(self):
+        return {"on": self.hub.speaker.noise_on, "level": round(self.hub.speaker.noise_level, 3)}
+
     @property
     def overflows(self):
         return self.hub.mic.overflows
@@ -153,6 +171,14 @@ class LoopbackAcousticChannel:
     @property
     def underflows(self):
         return self.hub.speaker.underflows
+
+
+# The software air has no echo and no fading, so the same generated noise hurts
+# far less than in a real room: plain 16-byte frames started failing at level
+# ~0.3 through real sound (MacBook loopback) but only at ~1.5 in the software
+# air (docs/TESTING.md). The SIMULATED generator is scaled by this factor so a
+# given dashboard level has a similar effect in both modes.
+SIM_NOISE_SCALE = 5.0
 
 
 class SimulatedAir:
@@ -176,6 +202,13 @@ class SimulatedAir:
         self.busy_until = 0.0               # for carrier sensing in the simulation
         # optional range model for multi-hop tests: {node_name: [names it can hear]}
         self.hears = hears
+        # SIMULATED interference generator (every node in the air hears it)
+        self.gen_noise_on = False
+        self.gen_noise_level = 0.0
+
+    def set_noise(self, on, level):
+        self.gen_noise_on = bool(on)
+        self.gen_noise_level = max(0.0, min(1.0, float(level)))
 
     def attach(self, channel):
         with self.lock:
@@ -213,6 +246,7 @@ class SimulatedChannel:
         self.pending = []                   # samples waiting to be read by this node
         self.np_rng = np.random.default_rng()
         self.last_lost = False
+        self.noise_gen = None               # created when the SIMULATED generator is first used
 
     def start(self):
         self.air.attach(self)
@@ -235,7 +269,22 @@ class SimulatedChannel:
             return np.zeros(0, dtype=np.float32)
         audio = np.concatenate(parts + [np.zeros(4800, dtype=np.float32)])
         audio = audio + self.np_rng.normal(0, self.air.noise, len(audio)).astype(np.float32)
+        if self.air.gen_noise_on:
+            # SIMULATED interference generator: the same band-limited noise a real
+            # speaker would play, reaching us with the same path loss as frames
+            if self.noise_gen is None:
+                self.noise_gen = NoiseGenerator()
+            audio = audio + (self.noise_gen.block(len(audio), self.air.gen_noise_level)
+                             * self.air.gain * SIM_NOISE_SCALE)
         return audio
+
+    noise_label = "SIMULATED generated noise added to the software air"
+
+    def set_noise(self, on, level):
+        self.air.set_noise(on, level)
+
+    def noise_state(self):
+        return {"on": self.air.gen_noise_on, "level": round(self.air.gen_noise_level, 3)}
 
     def transmit(self, samples):
         # Like real sound, the receivers have the complete frame only once it has
