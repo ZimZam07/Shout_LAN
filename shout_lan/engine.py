@@ -29,6 +29,13 @@ from shout_lan.security import SecurityError
 from shout_lan.stats import Stats
 
 OWN_ECHO_GUARD = 0.3       # seconds after our own transmission whose band energy CSMA ignores
+# Turnaround gap (the same idea as the short inter-frame space, SIFS, in Wi-Fi): after a
+# frame arrives we wait this long before our speaker answers. The other laptop needs a
+# moment to finish its own transmission (speaker buffer, room echo) and switch to
+# listening; a reply that starts instantly lands on top of that tail and is missed.
+# Found in the first two-laptop test (docs/TESTING.md): the Windows ACK started ~0.2 s
+# after the Mac's frame ended and the Mac never locked onto it.
+TURNAROUND_GAP = 0.35
 # Half-duplex handling: the microphone is NEVER switched off (a reply that starts while
 # our speaker is still finishing must not lose its preamble - found in silent tests).
 # Instead: our own frames are ignored by source address, and a corrupted frame whose
@@ -89,6 +96,7 @@ class Engine:
         self.transmitting = False
         self.tx_started = 0.0                   # time our current/last transmission started
         self.tx_ended = 0.0                     # time our last transmission ended
+        self.last_rx_done = 0.0                 # time the last frame from another node finished arriving
         self.running = False
         self.threads = []
         self.capture = None                     # list while calibration records raw audio
@@ -215,6 +223,9 @@ class Engine:
                 item["done"].set()
                 continue
             frame, raw, shield = item["frame"], item["raw"], item["shield"]
+            gap = self.last_rx_done + TURNAROUND_GAP * self.time_scale - time.time()
+            if gap > 0:
+                time.sleep(gap)                   # turnaround gap: let the other node start listening
             if shield is None:
                 shield = self.shield              # this node's setting, read NOW (per transmission)
             shield = bool(shield)
@@ -336,6 +347,7 @@ class Engine:
         if f.src == self.node_id:
             return                                    # our own echo
         self.stats.add("frames_rx_ok")
+        self.last_rx_done = time.time()
         if extra["shield"]:
             self.stats.add("shield_frames_rx")
             if extra["bits_repaired"]:
@@ -814,9 +826,9 @@ class Engine:
         the (longer) coded ACK is still arriving.
         """
         if not self.shield:
-            return 0.0
+            return TURNAROUND_GAP                     # the receiver waits this long before answering
         n = fr.OVERHEAD + 1                       # a SACK carries 1 payload byte
-        return self.modem.airtime(fec.coded_bits(n)) - self.modem.airtime(n * 8)
+        return TURNAROUND_GAP + self.modem.airtime(fec.coded_bits(n)) - self.modem.airtime(n * 8)
 
     @property
     def noise(self):
