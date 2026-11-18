@@ -1,0 +1,43 @@
+20:56:36 [engine_started] Node 2 started on the Acoustic link (sound)
+Encryption: AES-256-GCM key loaded from secret.key
+  node 2: dashboard http://127.0.0.1:8082  control 127.0.0.1:5000  (Acoustic link (sound))
+READY mode=acoustic node2=http://127.0.0.1:8082
+20:56:4620:56:46  [message_status] [message_status] Sending message #1 with Stop-and-Wait + CSMA (listen before talk)
+Message #1 to node 1 queued (5 bytes, 1 frame(s))
+20:56:48 [frame_tx] Sent DATA seq 248 to node 1
+20:56:53 [timeout] No ACK for seq 248 after 4.7 s - timeout
+20:56:53 [retransmit] Retransmitting frame seq 248 (attempt 2)
+20:56:56 [frame_tx] Sent DATA seq 248 to node 1 (retry 1)
+20:56:56 [preamble] Hearing a plain frame (preamble score 0.48)...
+20:56:58 [frame_rx] Received ACK seq 248 from node 1 - CRC OK
+20:56:58 [message_progress] Frame 1/1 acknowledged (seq 248)
+20:56:58 [message_status] Message #1 DELIVERED to node 1 in 12.6 s (every frame acknowledged)
+20:57:01 [message_status] Sending message #2 with Stop-and-Wait + CSMA (listen before talk)
+20:57:01 [message_status] Message #2 to node 1 queued (5 bytes, 1 frame(s))
+20:57:04 [frame_tx] Sent DATA seq 249 to node 1
+20:57:09 [timeout] No ACK for seq 249 after 4.7 s - timeout
+20:57:09 [retransmit] Retransmitting frame seq 249 (attempt 2)
+20:57:11 [frame_tx] Sent DATA seq 249 to node 1 (retry 1)
+20:57:16 [timeout] No ACK for seq 249 after 4.7 s - timeout
+20:57:16 [retransmit] Retransmitting frame seq 249 (attempt 3)
+20:57:19 [frame_tx] Sent DATA seq 249 to node 1 (retry 2)
+20:57:23 [timeout] No ACK for seq 249 after 4.7 s - timeout
+20:57:23 [retransmit] Retransmitting frame seq 249 (attempt 4)
+20:57:24 [shield_set] Noise Shield ON: frames from node 2 are now sent with Hamming(7,4) error correction + interleaving (1.75x airtime), announced by a down-chirp; replies come back in the same format
+20:57:26 [frame_tx] Sent DATA seq 249 to node 1 (retry 3)
+20:57:32 [timeout] No ACK for seq 249 after 6.2 s - timeout
+20:57:32 [retransmit] Retransmitting frame seq 249 (attempt 5)
+20:57:37 [frame_tx] Sent DATA seq 249 to node 1 with Noise Shield (Hamming(7,4), 224 bits on air) (retry 4)
+20:57:38 [preamble] Hearing a Noise Shield frame (preamble score 0.50)...
+20:57:41 [frame_rx] Received ACK seq 249 from node 1 [Noise Shield] - CRC OK
+20:57:41 [message_progress] Frame 1/1 acknowledged (seq 249)
+20:57:41 [message_status] Message #2 DELIVERED to node 1 in 39.2 s (every frame acknowledged)
+20:57:44 [message_status] 20:57:44 [message_status]Message #3 to node 1 queued (5 bytes, 1 frame(s)) 
+Sending message #3 with Stop-and-Wait + CSMA (listen before talk)
+20:57:44 [channel_busy] CSMA: channel BUSY (sound in our band 27 dB above the noise floor) - deferring DATA seq 250 for 0.5 s
+20:57:44 [channel_idle] Channel idle - transmitting now
+20:57:49 [frame_tx] Sent DATA seq 250 to node 1 with Noise Shield (Hamming(7,4), 224 bits on air)
+20:57:50 [preamble] Hearing a Noise Shield frame (preamble score 0.50)...
+20:57:53 [frame_rx] Received ACK seq 250 from node 1 [Noise Shield] - CRC OK
+20:57:53 [message_progress] Frame 1/1 acknowledged (seq 250)
+20:57:53 [message_status] Message #3 DELIVERED to node 1 in 8.9 s (every frame acknowledged)
