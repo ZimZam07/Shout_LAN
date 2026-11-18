@@ -105,4 +105,12 @@ All existing commands (`send`, `ping`, `hello`, `inject`, `set_volume`, `set_ton
 
 ## Deviations
 
-(none yet)
+Server (shout.py / shout_lan/web_bridge.py) — additions and clarifications, nothing in sections 1-5 removed:
+
+- **Node ids / ports.** `--pair` and `--simulated` run nodes N and N+1 (`--node 1`, the default, gives 1 and 2 as specified). `--http P` also works there: node N on P, node N+1 on P+1. `--http 0` / `--port 0` = any free port (used by the tests). The TCP control link of the second node is on `--port`+1 (5001 by default).
+- **READY line.** `READY mode=<acoustic|pair|simulated> node1=http://127.0.0.1:8081 [node2=http://127.0.0.1:8082]`, preceded by one `  node N: dashboard <url>  control 127.0.0.1:<port>  (<channel label>)` line per node.
+- **Status extras.** `shield_available` and `noise_available` (bool: whether this engine build has `set_shield` / `set_noise`), `sse_clients` (int). Until the Noise Shield is merged, `shield` is `false`, `shield_info` is `{}` and `noise` is `{"on": false, "level": 0.0}`.
+- **SIMULATED labelling.** In `--simulated` mode every SSE event (spectrum included) carries `"simulated": true`, and its `text` is prefixed with `[SIMULATED] ` unless it already says SIMULATED.
+- **`cleared` event.** After `{"cmd": "clear"}` the server pushes `{"event": "cleared", "text": ...}` to the connected streams (live only, not replayed), so every open tab can wipe its log. `replay_done` also carries `count` (events replayed).
+- **Command replies.** `{"cmd": "status"}` over HTTP replies `{"ok": true, "status": {...}}`. A JSON body that is not an object gives HTTP 200 `{"ok": false, ...}`; an empty or unparseable body gives 400. `set_shield` / `set_noise` on an engine without them reply `{"ok": false, "error": "... not available in this build ..."}`. `shutdown` over HTTP stops the whole process (both nodes in pair/simulated mode). Unknown `/api/...` paths give 404 JSON.
+- **Spectrum details.** dB is relative to a full-scale sine (amplitude 1.0 = 0 dB); each of the 48 bins is the peak of the FFT bins inside it (4096-point Hann FFT). No `spectrum` event is sent before the node has heard any audio. `spectrum` events go only to the browser, not over the TCP control link. In SIMULATED mode the software air delivers a whole frame at once, so the received audio is replayed into the display at real-time speed; the node's own transmissions are added to its own display (a real microphone hears its own speaker; the software air does not); when nothing is on the air the display shows the simulation's background-noise model (the same noise level the simulated channel adds to every frame).

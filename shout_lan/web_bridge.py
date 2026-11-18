@@ -34,6 +34,7 @@ import json
 import mimetypes
 import os
 import queue
+import socket
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -409,8 +410,7 @@ class _Server(ThreadingHTTPServer):
     allow_reuse_address = os.name != "nt"
 
     def server_bind(self):
-        if os.name == "nt" and hasattr(__import__("socket"), "SO_EXCLUSIVEADDRUSE"):
-            import socket
+        if os.name == "nt" and hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
         super().server_bind()
 
@@ -542,8 +542,7 @@ class _Handler(BaseHTTPRequestHandler):
         for k, v in (extra or {}).items():
             self.send_header(k, v)
         self.end_headers()
-        if self.command != "HEAD":
-            self.wfile.write(body)
+        self.wfile.write(body)
 
     def _json(self, obj, code=200):
         self._send(code, _json_bytes(obj))
@@ -562,8 +561,6 @@ class _Handler(BaseHTTPRequestHandler):
                 self._static(path)
         except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
             pass
-
-    do_HEAD = do_GET
 
     def do_POST(self):
         path = urlsplit(self.path).path
