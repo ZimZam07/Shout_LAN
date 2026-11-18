@@ -674,3 +674,48 @@ Purpose: a generated noise that plain frames almost never survive, while the Noi
 - **Not done:**
   - The candidate fix "keep the mixer writing silence between frames" was not applied: the mechanism it targets (buffer loss while idle) was not observed.
   - The Mac side, including the Windows → Mac link, could not be measured from this laptop.
+
+---
+
+## Two-laptop session: MacBook (node 1) and Windows laptop (node 2), 2026-11-18
+
+*Measured – acoustic, two laptops*, about 30-50 cm apart in a quiet room. Mac output volume 90-100 %, Windows 70 %. Logs: `results/win_task_*.json`, `results/win_events.jsonl`, `results/tone_trial_*.json`. These were the first frames this project ever exchanged between two different machines.
+
+### What went wrong, in order, and what fixed it
+
+| # | Symptom | Cause (how it was established) | Fix |
+|---|---|---|---|
+| 1 | The Mac sent a frame 6 times; the Windows laptop received the first and answered, but the Mac never detected the ACK | The ACK started the instant the Mac's frame ended. The Mac's own sound runs about 0.4 s longer than its `play()` call, so the reply landed on its tail (Mac microphone spectrum log) | 0.35 s turnaround gap before any reply (`TURNAROUND_GAP`, the SIFS idea); the retransmission timer allows for it |
+| 2 | The Windows node served its web page but the engine never started | Opening the exclusive speaker right after the exclusive microphone sometimes left the speaker stream stuck (stack dump; 8 hangs in 26 standalone tries, 0 in 11 with the order swapped). Found and fixed on the Windows laptop | Open the speaker first; the warm-up write has a deadline and falls back to a clear error |
+| 3 | The Mac detected every Windows frame but rejected all of them in the first byte | Not a timing slip (lag constant to about 1 sample). At the Mac's microphone the Windows speaker's 3500 Hz tone was about 8 dB louder than 2500 Hz and about half of it was still ringing in the next bit (least-squares fit against frames of known content) | Adaptive decision-feedback equaliser as a second-chance decode (`Modem.demodulate_adaptive`): on a recording of 5 real frames the receiver went from 0 to 4 decoded; bit errors on 4 frames of known content went from 35-75 per frame to 0 |
+| 4 | Plain frames Windows -> Mac still only 3 of 15 | With 15 frames of known content: the 3500 Hz tone's on/off contrast at the Mac was about 0 dB in most frames (it never switched off), 2500 Hz 7-15 dB. A tone sweep from the Windows speaker confirmed it: 3500 Hz dropped only 4 dB in the 15-25 ms after it stopped, 2500 Hz 8 dB, while 3250 and 4000 Hz dropped 20 dB | New default tones 3000 / 5000 Hz from the tone trial below |
+
+### Tone trial (`tools/tone_trial.py`): frames decoded per direction, 6 probes each way per pair
+
+| Tones | Mac hearing Windows | Windows hearing Mac |
+|---|---|---|
+| **3000 / 5000 Hz** | 6 / 6 (11-12 dB) | 6 / 6 (13-15 dB) |
+| 3250 / 4000 Hz | 6 / 6 (11-18 dB) | 6 / 6 (11-14 dB) |
+| 1750 / 2750 Hz | 5 / 5 and 6 / 6 (12-20 dB) | 6 / 6 and 5 / 6 (13-17 dB) |
+| 1750 / 3250 Hz | 6 / 6 (15-19 dB) | 6 / 6 (7-10 dB) |
+| 2750 / 4000 Hz | 5 / 5 (12-18 dB) | 4 / 6 |
+| 2500 / 3500 Hz (old default) | 3 / 6 (6-9 dB) | 5 / 5 (13-16 dB) |
+
+The dB figure is the tone contrast of the decoded frames. Each cell is 5-6 frames, so differences between the good pairs are not significant; the old default is clearly the worst.
+
+### After the change to 3000 / 5000 Hz
+
+| Test | Result |
+|---|---|
+| Windows -> Mac, 3 plain messages | 3 / 3 delivered. The Mac decoded 5 of 5 DATA frames. 2 of 5 ACKs were rejected at the Windows laptop (contrast 8-9 dB) and recovered by retransmission |
+| Mac -> Windows, 5 plain messages, no noise | 5 / 5 delivered: 3 first try, 1 on the 2nd, 1 on the 3rd (8 transmissions) |
+| Mac -> Windows, clicks 0.8 from the Mac, shield OFF, 3 messages | 1 delivered (on the 6th and last try), 2 failed; 18 transmissions |
+| Mac -> Windows, clicks 0.8 from the Mac, shield ON, 4 messages | 3 delivered (2 first try), 1 not delivered within the test's wait; 9 transmissions, 10 bits repaired |
+
+### Not verified / open
+
+- The Mac -> Windows direction is the weaker one on these tones (about 2 frames in 3 with no noise). Not investigated further.
+- The click comparison is 3 and 4 messages: enough to show the direction of the effect, not a rate.
+- With the generator on, the laptop playing the clicks hears them right next to its own microphone while it waits for the reply. How much that costs was not measured separately.
+- The tone choice depends on the two laptops and their position. It was measured once, in one room.
+- Nothing was tested with people talking close to the laptops, except by accident: speech right at the Mac's microphone clipped it during one early exchange.
