@@ -320,8 +320,7 @@ class Modem:
     # tone keeps ringing in the room into the next slot.
     WIN_LO = 0.50            # measure each slot from 50 % ...
     WIN_HI = 0.98            # ... to 98 % of its length
-    ECHO_CANCEL = 0.15       # fraction of the previous slot's tone power treated as echo
-    # The preamble-based tone equaliser (estimate_gains) is NOT reliable on the
+    ECHO_CANCEL = 0.15       # fraction of the previous slot's tone power treated as echo    # The preamble-based tone equaliser (estimate_gains) is NOT reliable on the
     # MacBook: the chirp passes each tone frequency for under 2 ms, and a brief
     # multipath notch at that moment gave gain errors of up to 32 dB, turning
     # good frames into bad ones. The receiver therefore decodes WITHOUT it first
@@ -333,7 +332,8 @@ class Modem:
         g0, g1 = gains
         return abs(10 * np.log10(max(g1, 1e-12) / max(g0, 1e-12))) >= self.EQUALISE_MIN_DB
 
-    def demodulate_bits(self, audio, first_bit, n_bits, gains=None, track=None, trace=None):
+    def demodulate_bits(self, audio, first_bit, n_bits, gains=None, track=None, trace=None,
+                        powers=None):
         """
         Decide each bit by comparing tone strengths inside that bit's time slot.
 
@@ -405,6 +405,8 @@ class Modem:
                 d0, d1 = p0[0], p1[0]
             bits.append(1 if d1 > d0 else 0)
             conf.append(float(min(1.0, abs(d1 - d0) / (p1[0] + p0[0] + 1e-20))))
+            if powers is not None:
+                powers.append(float(p0[0] + p1[0]))      # total tone power in this slot
             if track and (i + 1) % self.TRACK_GROUP == 0:
                 group = np.arange(i + 1 - self.TRACK_GROUP, i + 1)
                 shifts = np.arange(-self.TRACK_RANGE, self.TRACK_RANGE + 1, self.TRACK_STEP)

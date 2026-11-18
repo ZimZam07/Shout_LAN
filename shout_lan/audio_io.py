@@ -160,6 +160,21 @@ class Microphone:
 # ---------------------------------------------------------------- interference generator
 NOISE_BAND = (2000, 4000)     # Hz: covers both BFSK tones (2500 / 3500 Hz)
 NOISE_FULL_RMS = 0.35         # level 1.0 = as loud as our tones at the default volume 0.5
+# "clicks" (ClickGenerator): burst length and repeat interval in samples (48 kHz),
+# chosen offline against the interleaver geometry (docs/TESTING.md, "Clicks")
+CLICK_LEN = 864               # 18 ms: shorter than one 20 ms bit
+CLICK_INTERVAL = 26 * 960     # 520 ms = 26 bit times
+NOISE_KINDS = ("hiss", "clicks")
+DEFAULT_NOISE_KIND = "clicks"  # what the demo uses
+# default level per kind (0..1). hiss: 1.0 = noise RMS equal to our tones;
+# clicks: 1.0 = burst peak at full scale
+DEFAULT_NOISE_LEVEL = {"hiss": 0.25, "clicks": 0.8}
+
+
+def check_noise_kind(kind):
+    if kind not in NOISE_KINDS:
+        raise ValueError(f"noise kind must be one of {list(NOISE_KINDS)}")
+    return kind
 
 
 class NoiseGenerator:
@@ -188,6 +203,62 @@ class NoiseGenerator:
         return (out * self.norm * level * NOISE_FULL_RMS).astype(np.float32)
 
 
+class ClickGenerator:
+    """
+    GENERATED impulsive interference ("clicks"): short loud bursts at our two tone
+    frequencies, repeating at a fixed interval - like a ticking or clicking
+    machine next to the laptops.
+
+    This is deliberately the kind of noise that forward error correction with
+    interleaving handles well, and the opposite of what plain frames survive:
+      - each burst is shorter than one bit (CLICK_LEN), so it damages at most a
+        few ADJACENT bits, which the interleaver sends to different codewords;
+      - the interval (CLICK_INTERVAL) is chosen against the interleaver geometry
+        so that two bursts never land in the same Hamming(7,4) codeword of a
+        block (docs/TESTING.md, "Clicks"), so each codeword has at most one
+        error and is repaired;
+      - a plain frame is hit several times, and every hit can flip a bit,
+        which the CRC then rejects.
+    Each burst uses ONE of the two tone frequencies (chosen at random) with a
+    random phase. It knows nothing about the frames being sent.
+    """
+
+    def __init__(self, sample_rate=config.SAMPLE_RATE, seed=None,
+                 length=None, interval=None):
+        from scipy.signal.windows import tukey
+        self.sample_rate = sample_rate
+        self.length = length or CLICK_LEN
+        self.interval = interval or CLICK_INTERVAL
+        self.window = tukey(self.length, 0.2)
+        self.rng = np.random.default_rng(seed)
+        self.pos = int(self.rng.integers(0, self.interval))   # samples since the last burst start
+        self.freqs = (config.FREQ_0, config.FREQ_1)
+        if self.pos < self.length:
+            self._cur = self._burst()
+
+    def _burst(self):
+        f = self.freqs[int(self.rng.integers(0, 2))]
+        t = np.arange(self.length) / self.sample_rate
+        return self.window * np.sin(2 * np.pi * f * t + self.rng.uniform(0, 2 * np.pi))
+
+    def block(self, n, level):
+        """n samples of the click train; burst peak amplitude = level (1.0 = full scale)."""
+        out = np.zeros(n, dtype=np.float64)
+        i = 0
+        while i < n:
+            # self.pos = samples since the current period started; a burst fills [0, length)
+            if self.pos == 0:
+                self._cur = self._burst()
+            if self.pos < self.length:
+                take = min(self.length - self.pos, n - i)
+                out[i:i + take] = self._cur[self.pos:self.pos + take]
+            else:
+                take = min(self.interval - self.pos, n - i)
+            self.pos = (self.pos + take) % self.interval
+            i += take
+        return (out * level).astype(np.float32)
+
+
 # ---------------------------------------------------------------- speaker
 class Speaker:
     """
@@ -211,7 +282,9 @@ class Speaker:
         # interference generator state (see set_noise)
         self.noise_on = False
         self.noise_level = 0.0
+        self.noise_kind = DEFAULT_NOISE_KIND
         self.noise_gen = NoiseGenerator()
+        self.click_gen = ClickGenerator()
         self._mix_cond = threading.Condition()
         self._mix_items = collections.deque()
         self._mix_thread = None
@@ -281,10 +354,12 @@ class Speaker:
     # directly, exactly as before.
     MIX_BLOCK = 1024
 
-    def set_noise(self, on, level):
+    def set_noise(self, on, level, kind=None):
         with self._mix_cond:
             self.noise_on = bool(on)
             self.noise_level = max(0.0, min(1.0, float(level)))
+            if kind is not None:
+                self.noise_kind = check_noise_kind(kind)
             if self.noise_on and self._mix_thread is None:
                 self._mix_thread = threading.Thread(target=self._mixer, daemon=True, name="speaker-mixer")
                 self._mix_thread.start()
@@ -308,6 +383,7 @@ class Speaker:
                     self._mix_thread = None
                     return
                 target = self.noise_level if self.noise_on else 0.0
+                gen = self.click_gen if self.noise_kind == "clicks" else self.noise_gen
                 block = np.zeros(n, dtype=np.float32)
                 finished = []
                 filled = 0
@@ -321,7 +397,7 @@ class Speaker:
                         finished.append(self._mix_items.popleft())
             # level ramps over one block when switched, so the noise never clicks
             levels = np.linspace(level_now, target, n, dtype=np.float32)
-            block += self.noise_gen.block(n, 1.0) * levels
+            block += gen.block(n, 1.0) * levels
             level_now = target
             np.clip(block, -1.0, 1.0, out=block)
             error = None

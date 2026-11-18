@@ -21,7 +21,7 @@ import time
 
 import numpy as np
 
-from shout_lan import arq, calibration, config, fec, frame as fr, mac
+from shout_lan import arq, audio_io, calibration, config, fec, frame as fr, mac
 from shout_lan.crc import flip_bits
 from shout_lan.modem import Modem
 from shout_lan.receiver import FrameReceiver
@@ -177,10 +177,10 @@ class Engine:
         """
         Queue a frame for the speaker. With wait=True this returns only when the
         sound has finished playing (the ARQ timer must start AFTER sending).
-        shield: send in the Noise Shield format (None = this node's setting).
+        shield: send in the Noise Shield format (None = this node's setting, read
+        at the moment the frame goes on air - so flipping the switch while a
+        message is stuck retrying changes the very next retry).
         """
-        if shield is None:
-            shield = self.shield
         raw = fr.build(frame)
         injected = None
         if wait and frame.ftype not in (fr.ACK, fr.SACK, fr.PONG):
@@ -191,7 +191,7 @@ class Engine:
             self.stats.add("injected_events")
         done = threading.Event()
         item = {"frame": frame, "raw": raw, "retry": retry, "msg_id": msg_id,
-                "injected": injected, "done": done, "shield": bool(shield)}
+                "injected": injected, "done": done, "shield": shield}
         self.tx_queue.put((priority, next(self._order), item))
         if wait:
             limit = self.modem.airtime(fec.coded_bits(len(raw))) * 3 + 10
@@ -215,6 +215,9 @@ class Engine:
                 item["done"].set()
                 continue
             frame, raw, shield = item["frame"], item["raw"], item["shield"]
+            if shield is None:
+                shield = self.shield              # this node's setting, read NOW (per transmission)
+            shield = bool(shield)
             bits = self.modem.frame_bits(raw, shield)
             samples = self.modem.modulate(bits, shield)
             airtime = len(samples) / config.SAMPLE_RATE
@@ -308,7 +311,7 @@ class Engine:
                "repaired_at": list(result.get("repaired_at", []))[:64],
                "bit_conf": result.get("bit_conf", []),
                "snr_db": result.get("snr_db")}
-        for k in ("crc_rx", "crc_calc"):
+        for k in ("crc_rx", "crc_calc", "erased"):
             if k in result:
                 out[k] = result[k]
         return out
@@ -786,6 +789,11 @@ class Engine:
                 "preamble": "down-chirp (plain frames use an up-chirp)",
                 "filter_hz": list(config.DETECT_BAND),
                 "filter_use": "frame detection, both formats",
+                "erasures": "bits drowned by a much louder burst are ignored by the decoder",
+                "limits": ("repairs scattered errors: one wrong bit per 7-bit codeword (two if "
+                           "they are marked as erased). It cannot help when a frame's preamble "
+                           "is drowned, or when noise is strong and steady enough to damage "
+                           "many bits of the same codeword"),
                 "airtime_factor": 14 / 8}
 
     def set_shield(self, value):
@@ -812,23 +820,38 @@ class Engine:
 
     @property
     def noise(self):
-        """The interference generator: {"on": bool, "level": 0..1}."""
+        """The interference generator: {"on": bool, "level": 0..1, "kind": "hiss"/"clicks"}."""
         state = getattr(self.channel, "noise_state", None)
-        return state() if state else {"on": False, "level": 0.0}
+        return state() if state else {"on": False, "level": 0.0, "kind": audio_io.DEFAULT_NOISE_KIND}
 
-    def set_noise(self, on, level=None):
-        """Switch the GENERATED interference on/off (level 0..1, 1 = as loud as our tones)."""
+    NOISE_DESCRIPTION = {
+        "hiss": "steady band-limited noise over the tone band",
+        "clicks": ("short 18 ms bursts on our tone frequencies every 0.52 s - impulsive noise, "
+                   "the kind error correction with interleaving handles well"),
+    }
+
+    def set_noise(self, on, level=None, kind=None):
+        """
+        Switch the GENERATED interference on/off.
+        kind: "hiss" or "clicks" (None = keep the current kind).
+        level 0..1 (None = keep the current level, or the kind's default).
+        """
         if not hasattr(self.channel, "set_noise"):
             raise ValueError("the interference generator is not available on this channel")
+        current = self.noise
+        if kind is not None:
+            audio_io.check_noise_kind(kind)
+        new_kind = kind or current.get("kind", audio_io.DEFAULT_NOISE_KIND)
         if level is None:
-            level = self.noise["level"] or config.NOISE_DEFAULT_LEVEL
+            same = new_kind == current.get("kind") and current.get("level")
+            level = current["level"] if same else audio_io.DEFAULT_NOISE_LEVEL[new_kind]
         level = max(0.0, min(1.0, float(level)))
-        self.channel.set_noise(bool(on), level)
+        self.channel.set_noise(bool(on), level, new_kind)
         label = self.channel.noise_label
-        self.emit("noise_set", on=bool(on), level=level,
-                  text=(f"Interference generator ON at level {level:.2f}: {label} "
-                        f"(band-limited noise over the tone band)") if on else
-                       f"Interference generator OFF ({label} stopped)")
+        self.emit("noise_set", on=bool(on), level=level, kind=new_kind,
+                  text=(f"Interference generator ON ({new_kind}) at level {level:.2f}: {label} - "
+                        f"{self.NOISE_DESCRIPTION[new_kind]}") if on else
+                       f"Interference generator OFF ({new_kind}; {label} stopped)")
 
     def reset_stats(self):
         self.stats.reset()

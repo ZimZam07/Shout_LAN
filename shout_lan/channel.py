@@ -20,7 +20,8 @@ import time
 import numpy as np
 
 from shout_lan import config
-from shout_lan.audio_io import AudioError, Microphone, NoiseGenerator, Speaker
+from shout_lan.audio_io import (DEFAULT_NOISE_KIND, AudioError, ClickGenerator, Microphone,
+                                NoiseGenerator, Speaker, check_noise_kind)
 
 
 class AcousticChannel:
@@ -57,11 +58,12 @@ class AcousticChannel:
     # interference generator: this laptop's speaker really plays the noise
     noise_label = "generated noise from this laptop's speaker"
 
-    def set_noise(self, on, level):
-        self.speaker.set_noise(on, level)
+    def set_noise(self, on, level, kind=None):
+        self.speaker.set_noise(on, level, kind)
 
     def noise_state(self):
-        return {"on": self.speaker.noise_on, "level": round(self.speaker.noise_level, 3)}
+        return {"on": self.speaker.noise_on, "level": round(self.speaker.noise_level, 3),
+                "kind": self.speaker.noise_kind}
 
     @property
     def overflows(self):
@@ -158,11 +160,12 @@ class LoopbackAcousticChannel:
     # both loopback nodes share ONE speaker, so its generator is shared too
     noise_label = "generated noise from this laptop's speaker (shared by both loopback nodes)"
 
-    def set_noise(self, on, level):
-        self.hub.speaker.set_noise(on, level)
+    def set_noise(self, on, level, kind=None):
+        self.hub.speaker.set_noise(on, level, kind)
 
     def noise_state(self):
-        return {"on": self.hub.speaker.noise_on, "level": round(self.hub.speaker.noise_level, 3)}
+        return {"on": self.hub.speaker.noise_on, "level": round(self.hub.speaker.noise_level, 3),
+                "kind": self.hub.speaker.noise_kind}
 
     @property
     def overflows(self):
@@ -205,10 +208,13 @@ class SimulatedAir:
         # SIMULATED interference generator (every node in the air hears it)
         self.gen_noise_on = False
         self.gen_noise_level = 0.0
+        self.gen_noise_kind = DEFAULT_NOISE_KIND
 
-    def set_noise(self, on, level):
+    def set_noise(self, on, level, kind=None):
         self.gen_noise_on = bool(on)
         self.gen_noise_level = max(0.0, min(1.0, float(level)))
+        if kind is not None:
+            self.gen_noise_kind = check_noise_kind(kind)
 
     def attach(self, channel):
         with self.lock:
@@ -247,6 +253,7 @@ class SimulatedChannel:
         self.np_rng = np.random.default_rng()
         self.last_lost = False
         self.noise_gen = None               # created when the SIMULATED generator is first used
+        self.click_gen = None
 
     def start(self):
         self.air.attach(self)
@@ -272,19 +279,27 @@ class SimulatedChannel:
         if self.air.gen_noise_on:
             # SIMULATED interference generator: the same band-limited noise a real
             # speaker would play, reaching us with the same path loss as frames
-            if self.noise_gen is None:
-                self.noise_gen = NoiseGenerator()
-            audio = audio + (self.noise_gen.block(len(audio), self.air.gen_noise_level)
-                             * self.air.gain * SIM_NOISE_SCALE)
+            if self.air.gen_noise_kind == "clicks":
+                # clicks: same bursts as the real generator (scale 1: a burst flips bits
+                # in the software air too, there is nothing to compensate)
+                if self.click_gen is None:
+                    self.click_gen = ClickGenerator()
+                audio = audio + self.click_gen.block(len(audio), self.air.gen_noise_level) * self.air.gain
+            else:
+                if self.noise_gen is None:
+                    self.noise_gen = NoiseGenerator()
+                audio = audio + (self.noise_gen.block(len(audio), self.air.gen_noise_level)
+                                 * self.air.gain * SIM_NOISE_SCALE)
         return audio
 
     noise_label = "SIMULATED generated noise added to the software air"
 
-    def set_noise(self, on, level):
-        self.air.set_noise(on, level)
+    def set_noise(self, on, level, kind=None):
+        self.air.set_noise(on, level, kind)
 
     def noise_state(self):
-        return {"on": self.air.gen_noise_on, "level": round(self.air.gen_noise_level, 3)}
+        return {"on": self.air.gen_noise_on, "level": round(self.air.gen_noise_level, 3),
+                "kind": self.air.gen_noise_kind}
 
     def transmit(self, samples):
         # Like real sound, the receivers have the complete frame only once it has

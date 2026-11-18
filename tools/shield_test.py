@@ -6,7 +6,8 @@ Frames alternate plain / shielded (same 16-byte DATA frame), so both formats
 meet the same room and the same noise. The generator really plays band-limited
 noise from the speaker the whole time (the frames are mixed on top of it).
 
-    python tools/shield_test.py --level 0.25 --frames 20
+    python tools/shield_test.py --frames 20                # default: clicks at level 0.8
+    python tools/shield_test.py --kind hiss --level 0.25
     python tools/shield_test.py --level 0                 # no generated noise
     python tools/shield_test.py --save-audio               # keep the recording for offline analysis
 
@@ -26,7 +27,8 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from shout_lan import config, frame as fr                                   # noqa: E402
-from shout_lan.audio_io import Microphone, Speaker, default_devices, system_output_volume  # noqa: E402
+from shout_lan.audio_io import (DEFAULT_NOISE_KIND, DEFAULT_NOISE_LEVEL, NOISE_KINDS,  # noqa: E402
+                                Microphone, Speaker, default_devices, system_output_volume)
 from shout_lan.modem import Modem                                              # noqa: E402
 from shout_lan.receiver import FrameReceiver                                   # noqa: E402
 
@@ -35,7 +37,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--level", type=float, default=config.NOISE_DEFAULT_LEVEL)
+    p.add_argument("--kind", choices=NOISE_KINDS, default=DEFAULT_NOISE_KIND)
+    p.add_argument("--level", type=float, default=None, help="default: that kind's default level")
     p.add_argument("--frames", type=int, default=20, help="frames PER format")
     p.add_argument("--payload", type=int, default=5, help="payload bytes (5 -> 16-byte frame)")
     p.add_argument("--save-audio", action="store_true")
@@ -44,7 +47,9 @@ def main():
     mic_dev, spk_dev = default_devices()
     modem = Modem()
     vol_start = system_output_volume()
-    print(f"system output volume at start: {vol_start}; generator level {args.level}")
+    if args.level is None:
+        args.level = DEFAULT_NOISE_LEVEL[args.kind]
+    print(f"system output volume at start: {vol_start}; generator {args.kind} level {args.level}")
     mic, spk = Microphone(mic_dev), Speaker(spk_dev)
     mic.start()
     spk.open()
@@ -54,7 +59,7 @@ def main():
     recording = []
     try:
         if args.level > 0:
-            spk.set_noise(True, args.level)
+            spk.set_noise(True, args.level, args.kind)
         time.sleep(1.0)
         mic.read_available()
         for i in range(args.frames):
@@ -99,7 +104,7 @@ def main():
     path = os.path.join(ROOT, "results", f"shield_{stamp}.json")
     with open(path, "w") as fh:
         json.dump({"kind": "Measured - acoustic (single laptop, generator on this speaker)",
-                   "level": args.level, "frames_per_format": args.frames,
+                   "kind": args.kind, "level": args.level, "frames_per_format": args.frames,
                    "frame_bytes": fr.OVERHEAD + args.payload,
                    "system_volume_start": vol_start, "system_volume_end": vol_end,
                    "plain": stats[False], "shield": stats[True],

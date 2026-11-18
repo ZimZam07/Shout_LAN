@@ -76,7 +76,7 @@ Sender-side `timeout` and `retransmit` events must exist (add them if the ARQ co
 | `spectrum` | `bins` (list of 48 floats, dB, clamped −90..0), `f_lo`, `f_hi` (Hz, the range the bins span linearly; 500..6000), `level` (mic RMS 0..1), `tone0`, `tone1` (dB at the two tone frequencies), `noise_db` (median of the bins outside the tones), `transmitting` (bool) | about 12 times a second while the engine runs. NOT kept in the replay buffer |
 | `preamble` | `score`, `shield` (which format the chirp announced) | a frame start was detected (lets the UI show "hearing a frame…" before it is decoded) |
 | `shield_set` | `value` (bool), `text` | the shield setting changed |
-| `noise_set` | `on`, `level`, `text` | the interference generator changed |
+| `noise_set` | `on`, `level`, `kind`, `text` | the interference generator changed |
 | `replay_done` | — | end of the replay on connect |
 
 ## 5. Commands
@@ -86,7 +86,7 @@ All existing commands (`send`, `ping`, `hello`, `inject`, `set_volume`, `set_ton
 | Command | Meaning |
 |---|---|
 | `{"cmd": "set_shield", "value": true}` | Noise Shield for frames this node sends. Receivers decode both formats automatically, and a node answers (ACK, PONG) in the format of the frame it is answering, so ONE switch on the sending laptop controls the whole exchange |
-| `{"cmd": "set_noise", "on": true, "level": 0.5}` | interference generator, section 6 |
+| `{"cmd": "set_noise", "on": true, "level": 0.8, "kind": "clicks"}` | interference generator, section 6. `kind` is `"hiss"` or `"clicks"`; `level` and `kind` may be omitted (omitted kind = keep the current one, default `"clicks"`; omitted level = keep the current one, or the kind's default: clicks 0.8, hiss 0.25) |
 | `{"cmd": "clear"}` | forget the replay buffer and reset statistics (a clean slate before the demo) |
 
 ## 6. What the two demo controls really do
@@ -96,6 +96,12 @@ All existing commands (`send`, `ping`, `hello`, `inject`, `set_volume`, `set_ton
 - ON — the frame bytes are protected by a forward-error-correcting code (Hamming(7,4) with interleaving unless measurements pick something better), announced by a different preamble chirp so the receiver knows which decoder to use, and the receiver band-pass filters the microphone around the tone band before detection. Damaged bits are repaired without a retransmission; `bits_repaired` reports how many.
 
 **Interference generator** (`set_noise`): this laptop's speaker really plays band-limited noise (it is real sound in the room, not a number changed in software). It makes the demo repeatable: the same noise level corrupts plain frames and is survived by shielded frames. It is always labelled as generated noise in the UI and in event text. In simulated mode it adds noise to the software air and is labelled SIMULATED.
+
+Two kinds (`noise.kind`):
+- `"clicks"` (default, what the demo uses): an 18 ms burst on one of our two tone frequencies every 0.52 s (26 bit times). This is impulsive noise of exactly the kind error correction with interleaving handles well, and it is presented as such: each burst damages only a few ADJACENT bits, the interleaver spreads those over different codewords, and the burst interval is chosen so two bursts rarely meet in one codeword. Plain frames are hit several times and fail their CRC. Measured offline (TESTING.md, "Clicks"): plain 16-byte DATA frames got through 8 % of the time and plain ACKs 18 %; shielded ones 86 % and 88 % first time. The shield does NOT beat all noise: steady loud hiss (kind `"hiss"`) at high levels defeats it too.
+- `"hiss"`: steady band-limited noise over the tone band (the original generator).
+
+The shield setting is read at the moment each frame goes on air: switching it on while a message is stuck retrying as plain frames makes the very next retry go out shielded.
 
 ## 7. Honesty rules (kept from the original project)
 
@@ -122,7 +128,8 @@ Link side (modem / shield / generator), 2026-11-18:
 3. **`shield_info`** has extra keys besides `code`, `rate`, `filter_hz`: `decoder` (soft decision), `interleaving`, `preamble`, `filter_use`, `airtime_factor` (1.75). The decoder is soft-decision Hamming(7,4): the valid codeword closest to what was heard, weighting each bit by its confidence.
 4. **The receive filter is used for BOTH formats, for frame detection only.** `filter_hz` = `[900, 4500]` is the band-pass applied to the microphone audio before searching for either chirp. It is not a shield-only feature: it is the fix for the plain link's weak preamble detection on the MacBook (most mic noise was below 300 Hz). Bits are decoded from the unfiltered audio (Goertzel is already a narrow filter; a band-pass in front of it measured no gain).
 5. **`timeout` / `retransmit` `attempt`** = which transmission of the frame: `timeout` attempt 1 = the first transmission got no ACK; `retransmit` attempt 2 = the second transmission. The `retransmit` event already existed; its `attempt` value is now 1-based in this sense (it used to be 1 for the first retransmission). With Selective Repeat, `timeout` carries the oldest unacknowledged `seq` and `attempt` = timeouts in a row.
-6. **`set_noise`**: `level` may be omitted (then the current level, or the default 0.25). Level 1.0 = generated noise with the same RMS as our tones at the default transmit volume 0.5. In `--pair` mode both nodes share one speaker, so the generator is shared: switching it on from either node makes `noise.on` true on both (only the commanding node emits `noise_set`). In SIMULATED mode the noise added to the software air is scaled ×5 (`channel.SIM_NOISE_SCALE`), because the software air has no echo or fading and the same level would hardly hurt; the event text says SIMULATED. The multi-process UDP simulated channel has no generator (`set_noise` returns an error there).
+6. **`set_noise`**: `level` may be omitted (then the current level, or the kind's default: clicks 0.8, hiss 0.25). `kind` ("hiss"/"clicks", omitted = keep current; the initial kind is "clicks") was added after the first contract; `noise` is `{"on", "level", "kind"}` and `noise_set` carries `kind`. For clicks, level = burst peak amplitude (1.0 = full scale); for hiss, level 1.0 = generated noise with the same RMS as our tones at the default transmit volume 0.5. In `--pair` mode both nodes share one speaker, so the generator is shared: switching it on from either node makes `noise.on` true on both (only the commanding node emits `noise_set`). In SIMULATED mode hiss added to the software air is scaled ×5 (clicks are not scaled) (`channel.SIM_NOISE_SCALE`), because the software air has no echo or fading and the same level would hardly hurt; the event text says SIMULATED. The multi-process UDP simulated channel has no generator (`set_noise` returns an error there).
 7. **Extra fields**: `tx_start` also has `shield`. `frame_rx` with `ok: false` also has `shield`, `bits_repaired`, `snr_db`, `bit_conf`, and `crc_rx`/`crc_calc` when the whole frame was decoded; `frame` (with `"damaged": true`) is present only when the length byte was usable. `preamble` events are not emitted for a node's own transmissions on the acoustic channel.
 8. **`snr_db`** is the tone contrast of the frame: average power of the sent tone over the average power of the other tone in the same bit slots (noise plus room echo), in dB.
-9. The `clear` command is not handled in `node.py` (the replay buffer lives in the server); the server should call `engine.reset_stats()`.
+9. **`erased`** (int, extra field on shielded `frame_rx`): bits the decoder treated as erased because their slot was much louder than the rest of the frame (drowned by a burst). `bits_repaired` counts every bit whose value the decoder changed, erased or not. `shield_info` has extra keys `erasures` and `limits` (a plain statement of what the shield cannot do).
+10. The `clear` command is not handled in `node.py` (the replay buffer lives in the server); the server should call `engine.reset_stats()`.

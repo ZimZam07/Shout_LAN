@@ -28,13 +28,14 @@ class FakeAir:
 
     def noise_for(self, mic_name, n):
         """Generated interference reaching `mic_name`: every fake speaker whose generator is on."""
-        from shout_lan.audio_io import NoiseGenerator
+        from shout_lan.audio_io import ClickGenerator, NoiseGenerator
         out = np.zeros(n, dtype=np.float32)
         with self.lock:
             sources = dict(self.noise_sources)
-        for spk, level in sources.items():
+        for spk, (level, kind) in sources.items():
             if self.hears is None or mic_name in self.hears.get(spk, [mic_name]):
-                gen = self.__dict__.setdefault("_gens", {}).setdefault((spk, mic_name), NoiseGenerator())
+                make = ClickGenerator if kind == "clicks" else NoiseGenerator
+                gen = self.__dict__.setdefault("_gens", {}).setdefault((spk, mic_name, kind), make())
                 out += gen.block(n, level) * self.gain
         return out
 
@@ -116,13 +117,15 @@ class FakeSpeaker:
         self.refuse_exclusive = refuse_exclusive
         self.noise_on = False
         self.noise_level = 0.0
+        self.noise_kind = "clicks"
 
-    def set_noise(self, on, level):
+    def set_noise(self, on, level, kind=None):
         """Fake interference generator: silent, mixed into the fake microphones digitally."""
         self.noise_on, self.noise_level = bool(on), float(level)
+        self.noise_kind = kind or self.noise_kind
         with self.air.lock:
             if self.noise_on:
-                self.air.noise_sources[self.name] = self.noise_level
+                self.air.noise_sources[self.name] = (self.noise_level, self.noise_kind)
             else:
                 self.air.noise_sources.pop(self.name, None)
 

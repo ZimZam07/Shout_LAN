@@ -24,6 +24,23 @@ from shout_lan.modem import Modem, bits_to_bytes, whiten
 
 HEADER_BITS = 6 * 8      # SYNC .. LEN (plain format)
 
+# Erasures (shield frames only): a bit slot whose total tone power is far above
+# the frame's typical level was drowned by a loud burst (a click), so its
+# decision is worthless. Its confidence is set to 0 ("erased"): the Hamming
+# decoder then ignores it and relies on the other 6 bits of that codeword
+# (a Hamming code can fill in up to 2 erased bits per codeword). Plain frames
+# have no redundancy, so for them this would change nothing.
+# Factor 4 chosen by offline mixing of click trains into real recordings
+# (docs/TESTING.md, "Clicks").
+ERASE_FACTOR = 4.0
+
+
+def erase(conf, powers, factor=ERASE_FACTOR):
+    if not powers:
+        return list(conf)
+    med = float(np.median(powers))
+    return [0.0 if p > factor * med else c for c, p in zip(conf, powers)]
+
 
 class FrameReceiver:
     def __init__(self, modem=None, on_preamble=None):
@@ -113,9 +130,11 @@ class FrameReceiver:
                 return None                         # wait for more audio
             header, error = None, None
             for gains in self._gain_options():
-                bits, conf = m.demodulate_bits(self.buffer, self.first_bit, n_head, gains)
+                powers = []
+                bits, conf = m.demodulate_bits(self.buffer, self.first_bit, n_head, gains,
+                                               powers=powers)
                 if self.shield:
-                    header = whiten(fec.decode_block(bits, conf)[0])
+                    header = whiten(fec.decode_block(bits, erase(conf, powers))[0])
                 else:
                     header = whiten(bits_to_bytes(bits))
                 try:
@@ -131,8 +150,9 @@ class FrameReceiver:
         if len(self.buffer) < self.first_bit + n_bits * spb + margin:
             return None
         for gains in self._gain_options():
-            bits, conf = m.demodulate_bits(self.buffer, self.first_bit, n_bits, gains)
-            raw, info = self._decode_full(bits, conf)
+            powers = []
+            bits, conf = m.demodulate_bits(self.buffer, self.first_bit, n_bits, gains, powers=powers)
+            raw, info = self._decode_full(bits, conf, powers)
             try:
                 frame = fr.parse(raw)
                 break
@@ -163,19 +183,21 @@ class FrameReceiver:
         if self.gains is not None and self.modem.gains_significant(self.gains):
             yield self.gains
 
-    def _decode_full(self, bits, conf):
+    def _decode_full(self, bits, conf, powers=None):
         """Demodulated bits of a whole frame -> (frame bytes, details for the monitor)."""
         if not self.shield:
             raw = whiten(bits_to_bytes(bits))
             return raw, {"bits_repaired": 0, "repaired_at": [],
                          "bit_conf": [round(c, 2) for c in conf]}
         nh = fec.header_bits()
-        head, hi = fec.decode_block(bits[:nh], conf[:nh])
-        body, bi = fec.decode_block(bits[nh:], conf[nh:])
+        soft = erase(conf, powers) if powers else conf
+        head, hi = fec.decode_block(bits[:nh], soft[:nh])
+        body, bi = fec.decode_block(bits[nh:], soft[nh:])
         raw = whiten(head + body)
         repaired_at = hi["repaired_data"] + [p + 8 * fec.HEADER_BYTES for p in bi["repaired_data"]]
         return raw, {"bits_repaired": hi["repaired"] + bi["repaired"],
                      "repaired_at": repaired_at[:64],
+                     "erased": int(sum(1 for a, b in zip(soft, conf) if a == 0.0 and b != 0.0)),
                      "bit_conf": [round(c, 2) for c in hi["conf"] + bi["conf"]]}
 
     def _finish(self, n_bits):
