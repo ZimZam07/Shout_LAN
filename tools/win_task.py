@@ -23,8 +23,14 @@ lock = threading.Lock()
 
 # ---- what to do this time -------------------------------------------------
 TASK = [
-    # one pair of tones per minute, chosen from the clock; the Mac runs the same script
-    ("run", ["tools/tone_trial.py", "--port", "8082", "--role", "a", "--minutes", "7"]),
+    ("kill_nodes", {}),
+    ("restart", {"extra": ["--peer", "1"]}),              # new default tones: 3000 / 5000 Hz
+    ("sleep", 8),
+    ("send", {"dst": 1, "text": "HELLO", "wait": 70}),    # three plain messages to the Mac
+    ("sleep", 3),
+    ("send", {"dst": 1, "text": "HELLO", "wait": 70}),
+    ("sleep", 3),
+    ("send", {"dst": 1, "text": "HELLO", "wait": 70}),
 ]
 # ---------------------------------------------------------------------------
 

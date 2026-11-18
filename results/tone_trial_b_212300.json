@@ -1,0 +1,197 @@
+{
+ "role": "b",
+ "port": 8081,
+ "slots": [
+  {
+   "pair": [
+    2750,
+    4000
+   ],
+   "minute": "21:12",
+   "sent": 3,
+   "preambles": 0,
+   "rx_ok": 0,
+   "rx_bad": 0,
+   "snr_ok": [],
+   "errors": []
+  },
+  {
+   "pair": [
+    3250,
+    4000
+   ],
+   "minute": "21:13",
+   "sent": 3,
+   "preambles": 0,
+   "rx_ok": 0,
+   "rx_bad": 0,
+   "snr_ok": [],
+   "errors": []
+  },
+  {
+   "pair": [
+    1750,
+    2750
+   ],
+   "minute": "21:14",
+   "sent": 6,
+   "preambles": 5,
+   "rx_ok": 5,
+   "rx_bad": 0,
+   "snr_ok": [
+    14.7,
+    17.0,
+    12.1,
+    13.2,
+    13.2
+   ],
+   "errors": []
+  },
+  {
+   "pair": [
+    1750,
+    3250
+   ],
+   "minute": "21:15",
+   "sent": 6,
+   "preambles": 6,
+   "rx_ok": 6,
+   "rx_bad": 0,
+   "snr_ok": [
+    15.2,
+    18.8,
+    18.2,
+    18.4,
+    18.3,
+    18.6
+   ],
+   "errors": []
+  },
+  {
+   "pair": [
+    3000,
+    5000
+   ],
+   "minute": "21:16",
+   "sent": 6,
+   "preambles": 6,
+   "rx_ok": 6,
+   "rx_bad": 0,
+   "snr_ok": [
+    12.4,
+    11.9,
+    11.3,
+    11.4,
+    11.5,
+    12.1
+   ],
+   "errors": []
+  },
+  {
+   "pair": [
+    2500,
+    3500
+   ],
+   "minute": "21:17",
+   "sent": 5,
+   "preambles": 6,
+   "rx_ok": 3,
+   "rx_bad": 3,
+   "snr_ok": [
+    8.8,
+    8.7,
+    6.0
+   ],
+   "errors": [
+    "impossible length 128",
+    "CRC mismatch (received 0x2305, calculate",
+    "bad sync byte 0x66"
+   ]
+  },
+  {
+   "pair": [
+    2750,
+    4000
+   ],
+   "minute": "21:18",
+   "sent": 6,
+   "preambles": 5,
+   "rx_ok": 5,
+   "rx_bad": 0,
+   "snr_ok": [
+    12.9,
+    14.0,
+    12.3,
+    18.2,
+    12.9
+   ],
+   "errors": []
+  },
+  {
+   "pair": [
+    3250,
+    4000
+   ],
+   "minute": "21:19",
+   "sent": 6,
+   "preambles": 6,
+   "rx_ok": 6,
+   "rx_bad": 0,
+   "snr_ok": [
+    17.1,
+    17.7,
+    17.6,
+    18.1,
+    11.4,
+    12.6
+   ],
+   "errors": []
+  },
+  {
+   "pair": [
+    1750,
+    2750
+   ],
+   "minute": "21:20",
+   "sent": 6,
+   "preambles": 6,
+   "rx_ok": 6,
+   "rx_bad": 0,
+   "snr_ok": [
+    16.8,
+    16.4,
+    13.9,
+    19.3,
+    20.1,
+    20.2
+   ],
+   "errors": []
+  },
+  {
+   "pair": [
+    1750,
+    3250
+   ],
+   "minute": "21:21",
+   "sent": 3,
+   "preambles": 0,
+   "rx_ok": 0,
+   "rx_bad": 0,
+   "snr_ok": [],
+   "errors": []
+  },
+  {
+   "pair": [
+    3000,
+    5000
+   ],
+   "minute": "21:22",
+   "sent": 3,
+   "preambles": 0,
+   "rx_ok": 0,
+   "rx_bad": 0,
+   "snr_ok": [],
+   "errors": []
+  }
+ ]
+}

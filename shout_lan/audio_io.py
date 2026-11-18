@@ -158,7 +158,7 @@ class Microphone:
 
 
 # ---------------------------------------------------------------- interference generator
-NOISE_BAND = (2000, 4000)     # Hz: covers both BFSK tones (2500 / 3500 Hz)
+NOISE_BAND = (config.FREQ_0 - 500, config.FREQ_1 + 500)     # Hz: covers both BFSK tones
 NOISE_FULL_RMS = 0.35         # level 1.0 = as loud as our tones at the default volume 0.5
 # "clicks" (ClickGenerator): burst length and repeat interval in samples (48 kHz),
 # chosen offline against the interleaver geometry (docs/TESTING.md, "Clicks")

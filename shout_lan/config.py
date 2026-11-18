@@ -10,8 +10,13 @@ on the same signalling rules before they can talk.
 SAMPLE_RATE = 48000          # audio samples per second (both laptops' default)
 
 # BFSK: bit 0 is sent as one tone, bit 1 as another tone.
-FREQ_0 = 2500                # Hz used for bit 0  (chosen by calibration, TESTING.md M6;
-FREQ_1 = 3500                # Hz used for bit 1   run Calibrate in a new room!)
+FREQ_0 = 3000                # Hz used for bit 0
+FREQ_1 = 5000                # Hz used for bit 1
+# Chosen by measurement between two different laptops (docs/TESTING.md, "tone trial"):
+# at the old 2500 / 3500 Hz one laptop's speaker kept ringing, so the 3500 Hz tone never
+# switched off at the other microphone and half the plain frames failed. 3000 / 5000 Hz
+# gave 12 of 12 frames in both directions. The best pair depends on the laptops and where
+# they stand: tools/tone_trial.py measures it again in a new room.
 
 BIT_TIME = 0.020             # seconds per bit -> 1 / 0.020 = 50 bits per second
 
